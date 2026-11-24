@@ -39,7 +39,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           email: email.trim(),
           password,
           options: {
-            data: { full_name: name.trim(), terms_accepted: termsAccepted, terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, marketing_consent: marketingConsent },
+            data: { full_name: name.trim(), terms_accepted: termsAccepted, terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, marketing_consent: marketingConsent, cookie_consent: window.localStorage.getItem("nexus-cookie-choice") },
             emailRedirectTo: window.location.origin,
           },
         });
@@ -99,8 +99,8 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           {mode === "signup" && <div className="auth-consent-group">
             <label className="auth-consent-row"><input type="checkbox" required checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)}/><span>Li e aceito os <a href="#terms-signup">Termos de Uso</a> e a <a href="#privacy-signup">Política de Privacidade</a>. Este aceite é obrigatório para criar a conta.</span></label>
             <label className="auth-consent-row"><input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)}/><span>Quero receber novidades e ofertas por e-mail. Opcional; posso cancelar a qualquer momento.</span></label>
-            <details id="terms-signup"><summary>Consultar resumo dos Termos de Uso</summary><p>O NEXUS FINANCE é uma ferramenta de gestão. Antes de usar, confira regras, limitações, dados tratados, responsabilidades, condições comerciais e direitos do consumidor. Não há cobrança ou renovação automática ativa nesta versão.</p></details>
-            <details id="privacy-signup"><summary>Consultar resumo da Política de Privacidade</summary><p>Tratamos dados necessários à conta, segurança e funções solicitadas. Cookies não essenciais e marketing dependem de escolhas separadas. Você pode solicitar acesso, correção e exclusão quando cabível pelos controles de privacidade. A política integral e os dados do controlador devem ser revisados antes da publicação.</p></details>
+            <details id="terms-signup"><summary>Consultar resumo dos Termos de Uso</summary><p>O NEXUS FINANCE é uma ferramenta de gestão. Antes de usar, confira regras, limitações, dados tratados, responsabilidades, condições comerciais e direitos do consumidor. Não há cobrança ou renovação automática ativa nesta versão. <a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/TERMS_OF_USE_DRAFT.md" target="_blank" rel="noreferrer">Abrir documento integral (rascunho)</a>.</p></details>
+            <details id="privacy-signup"><summary>Consultar resumo da Política de Privacidade</summary><p>Tratamos dados necessários à conta, segurança e funções solicitadas. Cookies não essenciais e marketing dependem de escolhas separadas. Você pode solicitar acesso, correção e exclusão quando cabível pelos controles de privacidade. A política integral e os dados do controlador devem ser revisados antes da publicação. <a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/PRIVACY_POLICY_DRAFT.md" target="_blank" rel="noreferrer">Abrir documento integral (rascunho)</a>.</p></details>
           </div>}
           {error && <p className="auth-feedback auth-error" role="alert">{error}</p>}
           {message && <p className="auth-feedback auth-success" role="status">{message}</p>}
