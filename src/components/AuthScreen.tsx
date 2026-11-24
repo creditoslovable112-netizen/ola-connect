@@ -88,7 +88,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           <div><strong>NEXUS</strong><span>FINANCE</span></div>
         </div>
         <div className="auth-intro">
-          <span className="auth-eyebrow"><ShieldCheck size={13}/> AMBIENTE SEGURO</span>
+          <span className="auth-eyebrow"><ShieldCheck size={13}/> ACESSO À SUA CONTA</span>
           <h1>{title}</h1><p>{subtitle}</p>
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -112,7 +112,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           {mode === "forgot" && <button type="button" onClick={()=>changeMode("login")}>Voltar para o login</button>}
           {mode === "recovery" && <span>Use pelo menos 8 caracteres, incluindo letras e números.</span>}
         </div>
-        <div className="auth-security"><LockKeyhole size={13}/> Seus dados financeiros são protegidos por acesso individual.</div>
+        <div className="auth-security"><LockKeyhole size={13}/> O acesso aos registros é limitado por políticas de usuário no banco.</div>
       </section>
       <footer className="auth-footer"><span>NEXUS FINANCE · Gestão financeira inteligente</span><nav aria-label="Documentos legais"><a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/TERMS_OF_USE_DRAFT.md" target="_blank" rel="noreferrer">Termos de Uso</a><a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/PRIVACY_POLICY_DRAFT.md" target="_blank" rel="noreferrer">Política de Privacidade</a></nav><small>Identificação do fornecedor e canal de privacidade serão publicados após confirmação dos dados empresariais.</small></footer>
     </main>
