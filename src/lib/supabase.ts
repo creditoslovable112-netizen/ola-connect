@@ -2,9 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 
 const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || "https://obaxshuklmrwjplvvhpd.supabase.co";
+  import.meta.env["VITE_SUPABASE_URL"] || "https://obaxshuklmrwjplvvhpd.supabase.co";
 const supabasePublishableKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
   "sb_publishable_lVpoQYe9lwg2FQv_5xCjHQ_vsKOVa1u";
 
 export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
