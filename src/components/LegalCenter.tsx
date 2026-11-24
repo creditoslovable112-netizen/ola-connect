@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { CheckCircle2, FileText, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { listMyPrivacyConsents, listMyPrivacyRequests, recordMyConsent, submitPrivacyRequest, TERMS_VERSION, PRIVACY_VERSION, MARKETING_VERSION, type PrivacyConsent, type PrivacyRequest } from "../lib/privacy";
 
-type Props = { onNotice: (message: string) => void };
+type Props = { onNotice: (message: string) => void; onAccepted?: () => void };
 type SectionId = "privacy" | "terms" | "cookies" | "retention" | "rights" | "consumer";
 const sections: { id: SectionId; label: string; title: string }[] = [
   { id: "privacy", label: "Privacidade", title: "Política de Privacidade" },
@@ -13,7 +13,7 @@ const sections: { id: SectionId; label: string; title: string }[] = [
   { id: "consumer", label: "Compras e cancelamento", title: "Informações comerciais e direitos do consumidor" },
 ];
 
-export function LegalCenter({ onNotice }: Props) {
+export function LegalCenter({ onNotice, onAccepted }: Props) {
   const [active, setActive] = useState<SectionId>("privacy");
   const [consents, setConsents] = useState<PrivacyConsent[]>([]);
   const [requests, setRequests] = useState<PrivacyRequest[]>([]);
@@ -47,6 +47,7 @@ export function LegalCenter({ onNotice }: Props) {
       await recordMyConsent("privacy", true, PRIVACY_VERSION, "privacy_center");
       await refresh();
       onNotice("Aceite dos Termos e da Política registrado no servidor.");
+      onAccepted?.();
     } catch (error) { onNotice(error instanceof Error ? error.message : "Não foi possível registrar o aceite."); }
     finally { setSaving(false); }
   };
