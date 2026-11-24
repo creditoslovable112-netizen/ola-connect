@@ -3,7 +3,7 @@ import { LegalCenter } from "../components/LegalCenter";
 import { SupabaseDashboard, SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories, SupabaseTransactions, SupabaseReports, SupabaseContacts, SupabaseCompanies } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
-import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION } from "../lib/privacy";
+import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
 import { createFileRoute } from "@tanstack/react-router";
@@ -230,6 +230,8 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [cookieBanner, setCookieBanner] = useState(false);
+  const [legalStatusLoading, setLegalStatusLoading] = useState(false);
+  const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
   const showNotice = useCallback((message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 2600);
@@ -263,6 +265,20 @@ function DashboardPage() {
       }
     }).catch(() => showNotice("Não foi possível sincronizar a preferência de cookies com sua conta."));
   }, [session?.user.id, showNotice]);
+  useEffect(() => {
+    if (!session?.user.id) { setNeedsLegalAcceptance(false); setLegalStatusLoading(false); return; }
+    let active = true;
+    setLegalStatusLoading(true);
+    void listMyPrivacyConsents().then((items) => {
+      if (!active) return;
+      const terms = items.find((item) => item.purpose === "terms" && item.granted && item.document_version === TERMS_VERSION);
+      const privacy = items.find((item) => item.purpose === "privacy" && item.granted && item.document_version === PRIVACY_VERSION);
+      setNeedsLegalAcceptance(!terms || !privacy);
+    }).catch(() => {
+      if (active) { setNeedsLegalAcceptance(true); showNotice("Não foi possível validar seu aceite dos documentos."); }
+    }).finally(() => { if (active) setLegalStatusLoading(false); });
+    return () => { active = false; };
+  }, [session?.user.id, showNotice]);
   const saveCookieChoice = async (choice: "necessary" | "all") => {
     window.localStorage.setItem("nexus-cookie-choice", choice);
     if (session?.user.id) {
@@ -276,6 +292,8 @@ function DashboardPage() {
 
   if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
   if (!session || recoveryMode) return <><AuthScreen recoveryMode={recoveryMode}/>{cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Você controla os cookies</strong><p>O NEXUS usa armazenamento estritamente necessário para autenticação e funcionamento. Não carregamos analytics, pixels ou publicidade nesta versão. Rejeitar opcionais mantém qualquer tecnologia não essencial bloqueada.</p><a className="cookie-link" href="#privacy-signup">Saiba mais sobre privacidade</a></div><div className="cookie-actions"><button className="button-secondary" onClick={() => void saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => void saveCookieChoice("all")}>Aceitar todos</button></div></section>}</>;
+  if (legalStatusLoading) return <main className="nexus-auth"><section className="auth-card"><p role="status">Verificando a versão dos documentos e seu aceite…</p></section></main>;
+  if (needsLegalAcceptance) return <main className="nexus-auth"><div className="legal-gate"><LegalCenter onNotice={showNotice} onAccepted={() => setNeedsLegalAcceptance(false)}/></div></main>;
 
   return (
     <div className="nexus-app">
