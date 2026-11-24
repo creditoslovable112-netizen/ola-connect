@@ -36,7 +36,18 @@ Cookies estritamente necessários podem ser usados para funções essenciais e s
 
 ## 6. Retenção e eliminação
 
-Não manter dados indefinidamente. Definir tabela de retenção por categoria, finalidade e obrigação legal antes da produção. Como regra operacional proposta, revisar dados de contas encerradas e solicitações de exclusão em até 30 dias, eliminando ou anonimizando o que não tiver obrigação de guarda; preservar apenas o mínimo necessário quando houver obrigação legal, exercício regular de direitos ou prevenção a fraude. **Esse prazo é uma meta interna proposta, não promessa legal nem prazo já implementado.** Backups devem ter ciclo documentado de expiração e bloqueio de restauração indevida.
+Não manter dados indefinidamente. A tabela abaixo é uma **proposta de configuração para aprovação jurídica e técnica**, não uma retenção já implementada:
+
+| Categoria | Limite proposto | Regra |
+|---|---:|---|
+| Dados de perfil e workspace | Enquanto a conta estiver ativa; até 30 dias após encerramento | Excluir/anonimizar após solicitação e verificação, salvo obrigação legal documentada. |
+| Dados operacionais inseridos pelo cliente | Enquanto necessários ao serviço; iniciar exclusão em até 30 dias após encerramento | Cliente deve exportar antes do encerramento; retenções legais específicas prevalecem apenas sobre os campos necessários. |
+| Backups | Expiração em até 90 dias | Backups devem ter ciclo documentado; dados excluídos não podem ser restaurados para uso operacional. |
+| Logs de segurança e acesso | Até 6 meses, sujeito à validação de aplicabilidade legal | Acesso restrito, finalidade de segurança e descarte ao fim do prazo, salvo preservação legal. |
+| Tickets de suporte | Até 12 meses após encerramento | Remover dados excessivos e anexos desnecessários. |
+| Documentos fiscais/contábeis | Pelo prazo legal aplicável a cada documento | Definir com contador/advogado; não aplicar retenção genérica a todos os dados. |
+
+Os prazos são metas propostas e devem ser ajustados conforme a legislação aplicável, incluindo obrigações fiscais, regulatórias e de guarda de registros. **Nenhum prazo está sendo aplicado automaticamente nesta versão demonstrativa.**
 
 ## 7. Direitos dos titulares
 
