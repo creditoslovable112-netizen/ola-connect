@@ -119,3 +119,45 @@ export async function deleteTransaction(id: string) {
   const { error } = await supabase.from("transactions").delete().eq("id", id);
   if (error) throw error;
 }
+
+
+export type BusinessContact = Tables<"business_contacts">;
+export type Company = Tables<"companies">;
+
+export async function listBusinessContacts(contactType?: "customer" | "supplier") {
+  let query = supabase.from("business_contacts").select("*").order("name");
+  if (contactType) query = query.eq("contact_type", contactType);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function createBusinessContact(contact: Omit<TablesInsert<"business_contacts">, "user_id">) {
+  const user_id = await requireUserId();
+  const { data, error } = await supabase.from("business_contacts").insert({ ...contact, user_id }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteBusinessContact(id: string) {
+  const { error } = await supabase.from("business_contacts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function listCompanies() {
+  const { data, error } = await supabase.from("companies").select("*").order("name");
+  if (error) throw error;
+  return data;
+}
+
+export async function createCompany(company: Omit<TablesInsert<"companies">, "user_id">) {
+  const user_id = await requireUserId();
+  const { data, error } = await supabase.from("companies").insert({ ...company, user_id }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteCompany(id: string) {
+  const { error } = await supabase.from("companies").delete().eq("id", id);
+  if (error) throw error;
+}
