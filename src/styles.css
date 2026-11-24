@@ -713,3 +713,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .auth-footer nav { display:flex;justify-content:center;gap:16px;flex-wrap:wrap; }
 .auth-footer a { color:#8bdcff;text-decoration:underline;text-underline-offset:3px; }
 .auth-footer small { max-width:540px;margin:0 auto;color:#829bb4;line-height:1.5; }
+
+
+.workspace-unavailable { display:grid;gap:12px;max-width:760px;padding:clamp(24px,4vw,40px);border:1px solid rgba(140,180,220,.24);border-radius:18px;background:linear-gradient(145deg,#102844,#0a1d33);color:#eaf4ff; }
+.workspace-unavailable h1 { margin:0;font-size:clamp(24px,3vw,32px); }
+.workspace-unavailable p { margin:0;color:#c0d3e7;line-height:1.7; }
+.workspace-unavailable span { color:#9db7d0;font-size:12px; }
