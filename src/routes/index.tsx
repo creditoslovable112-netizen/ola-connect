@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LegalCenter } from "../components/LegalCenter";
+import { AuthScreen } from "../components/AuthScreen";
+import { supabase } from "../lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -8,7 +11,7 @@ import {
   Download, FileBarChart, FileText, Filter, LayoutDashboard, LifeBuoy,
   Menu, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles,
   TrendingUp, Wallet, X, Users, Receipt, Landmark, CircleDollarSign, Tags, Network,
-  ArrowLeftRight, Check, Clock3, Eye, EyeOff
+  ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut
 } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -204,6 +207,9 @@ function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:st
 }
 
 function DashboardPage() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
   const [period, setPeriod] = useState("Últimos 7 meses");
   const [company, setCompany] = useState("Nexus Studio");
@@ -213,6 +219,22 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [cookieBanner, setCookieBanner] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+      setSession(nextSession);
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
+      if (event === "SIGNED_OUT") setRecoveryMode(false);
+      setAuthLoading(false);
+    });
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      if (!error) setSession(data.session);
+      setAuthLoading(false);
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
   const saveCookieChoice = (choice: "necessary" | "all") => {
     window.localStorage.setItem("nexus-cookie-choice", choice);
@@ -224,6 +246,9 @@ function DashboardPage() {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 2600);
   };
+
+  if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
+  if (!session || recoveryMode) return <AuthScreen recoveryMode={recoveryMode}/>;
 
   return (
     <div className="nexus-app">
@@ -260,9 +285,9 @@ function DashboardPage() {
           <button className="nav-item" onClick={() => showNotice("Central de ajuda em breve.")}><LifeBuoy size={17}/><span>Central de ajuda</span></button>
           <button className="nav-item" onClick={() => setActive("Configurações")}><Settings2 size={17}/><span>Configurações</span></button>
           <div className="profile">
-            <div className="profile-avatar">RC</div>
-            <div className="profile-copy"><strong>Conta demonstrativa</strong><small>Perfil fictício</small></div>
-            <MoreHorizontal size={18} className="muted-icon"/>
+            <div className="profile-avatar">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
+            <div className="profile-copy"><strong>{String(session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Minha conta")}</strong><small>{session.user.email}</small></div>
+            <button className="profile-signout" title="Sair da conta" aria-label="Sair da conta" onClick={() => { void supabase.auth.signOut().then(({ error }) => { if (error) showNotice(error.message); }); }}><LogOut size={16}/></button>
           </div>
         </div>
       </aside>
@@ -277,7 +302,7 @@ function DashboardPage() {
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
             <button className="icon-button help-button" aria-label="Ajuda" onClick={() => showNotice("Central de ajuda em breve.")}><CircleHelp size={18}/></button>
             <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Você está em dia! Nenhuma notificação nova.")}><Bell size={18}/><i/></button>
-            <div className="top-avatar" aria-label="Perfil demonstrativo">NF</div>
+            <div className="top-avatar" aria-label="Perfil da conta">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
 
