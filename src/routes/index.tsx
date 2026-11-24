@@ -3,7 +3,7 @@ import { LegalCenter } from "../components/LegalCenter";
 import { SupabaseDashboard, SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories, SupabaseTransactions, SupabaseReports, SupabaseContacts, SupabaseCompanies } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
-import { recordMyConsent, COOKIE_VERSION } from "../lib/privacy";
+import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
 import { createFileRoute } from "@tanstack/react-router";
@@ -247,6 +247,18 @@ function DashboardPage() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
+  useEffect(() => {
+    if (!session?.user.id) return;
+    const choice = window.localStorage.getItem("nexus-cookie-choice");
+    if (choice !== "all" && choice !== "necessary") return;
+    void listMyPrivacyConsents().then((items) => {
+      const latest = items.find((item) => item.purpose === "cookies");
+      const granted = choice === "all";
+      if (!latest || latest.granted !== granted) {
+        return recordMyConsent("cookies", granted, COOKIE_VERSION, "cookie_banner_sync");
+      }
+    }).catch(() => showNotice("Não foi possível sincronizar a preferência de cookies com sua conta."));
+  }, [session?.user.id, showNotice]);
   const saveCookieChoice = async (choice: "necessary" | "all") => {
     window.localStorage.setItem("nexus-cookie-choice", choice);
     if (session?.user.id) {
