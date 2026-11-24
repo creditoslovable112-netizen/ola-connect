@@ -34,7 +34,16 @@ const navGroups = [
   { title: "GESTÃO", items: [
     { label: "Relatórios", icon: FileBarChart },
     { label: "Categorias e centros de custo", icon: Receipt },
+    { label: "Clientes", icon: Users },
+    { label: "Fornecedores", icon: Building2 },
+    { label: "Empresas", icon: Building2 },
     { label: "Equipe", icon: Users },
+  ]},
+  { title: "PLATAFORMA", items: [
+    { label: "NEXUS AI", icon: Sparkles },
+    { label: "Assinatura", icon: CreditCard },
+    { label: "Administração", icon: ShieldCheck },
+    { label: "Configurações", icon: Settings2 },
   ]},
 ];
 
