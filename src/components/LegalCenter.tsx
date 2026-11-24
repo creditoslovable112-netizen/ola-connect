@@ -153,7 +153,7 @@ export function LegalCenter({ onNotice, onAccepted, onManageCookies }: Props) {
 
     <article className="panel legal-controls">
       <h2>Contato e transparência empresarial</h2>
-      <p><Mail size={15}/> Canal de privacidade / Encarregado: <strong>pendente de e-mail oficial</strong>.</p>
+      <p><Mail size={15}/> Canal disponível: formulário de solicitações nesta área autenticada. Identidade do Encarregado e e-mail oficial: <strong>pendentes de indicação</strong>.</p>
       <p>Razão social, CNPJ e endereço: <strong>pendentes de confirmação do responsável pelo negócio</strong>.</p>
       <p className="legal-muted">Não inventamos dados de contato nem identificadores empresariais. Esses campos são bloqueadores para publicação pública.</p>
     </article>
