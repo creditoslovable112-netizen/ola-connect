@@ -149,6 +149,7 @@ export type Database = {
           amount: number
           category_id: string | null
           cost_center_id: string | null
+          counterparty: string | null
           created_at: string
           description: string
           due_date: string | null
@@ -166,6 +167,7 @@ export type Database = {
           amount: number
           category_id?: string | null
           cost_center_id?: string | null
+          counterparty?: string | null
           created_at?: string
           description: string
           due_date?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           amount?: number
           category_id?: string | null
           cost_center_id?: string | null
+          counterparty?: string | null
           created_at?: string
           description?: string
           due_date?: string | null
