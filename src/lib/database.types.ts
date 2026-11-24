@@ -119,6 +119,18 @@ export type Database = {
         }
         Relationships: []
       }
+      business_contacts: {
+        Row: { id: string; user_id: string; contact_type: string; name: string; document: string | null; email: string | null; phone: string | null; status: string; notes: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; user_id: string; contact_type: string; name: string; document?: string | null; email?: string | null; phone?: string | null; status?: string; notes?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; user_id?: string; contact_type?: string; name?: string; document?: string | null; email?: string | null; phone?: string | null; status?: string; notes?: string | null; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      companies: {
+        Row: { id: string; user_id: string; name: string; legal_name: string | null; document: string | null; email: string | null; phone: string | null; status: string; is_default: boolean; created_at: string; updated_at: string }
+        Insert: { id?: string; user_id: string; name: string; legal_name?: string | null; document?: string | null; email?: string | null; phone?: string | null; status?: string; is_default?: boolean; created_at?: string; updated_at?: string }
+        Update: { id?: string; user_id?: string; name?: string; legal_name?: string | null; document?: string | null; email?: string | null; phone?: string | null; status?: string; is_default?: boolean; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
