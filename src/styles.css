@@ -229,3 +229,21 @@ button { cursor: pointer; }
 .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:8px}
 @media(max-width:1180px){.payable-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.payable-summary-grid{gap:9px}.payable-toolbar{flex-direction:column}.payable-search{max-width:none;height:38px}.payable-toolbar select{height:38px}.payable-modal{padding:18px}.modal-fields{grid-template-columns:1fr}}
+\n
+.cashflow-toolbar{display:flex;align-items:end;gap:14px;margin:16px 0}
+.cashflow-toolbar label{display:flex;flex-direction:column;gap:6px;color:#758191;font-size:10px;font-weight:600}
+.cashflow-toolbar select,.cashflow-filter{height:36px;border:1px solid #e8edf0;border-radius:8px;background:#fff;color:#536171;padding:0 11px;font-size:10px}
+.cashflow-asof{display:flex;align-items:center;gap:6px;color:#98a2ad;font-size:10px;margin:0 0 10px auto}
+.cashflow-metrics{margin:12px 0 15px}
+.cashflow-chart-grid{grid-template-columns:minmax(0,1.65fr) minmax(260px,.85fr)}
+.projection-tag{background:#edf3ff;color:#6683c8;border-radius:20px;padding:6px 9px;font-size:9px;font-weight:600}
+.legend-projection{display:inline-block;width:17px;border-top:2px dashed #6c8fe8;vertical-align:middle;margin-right:5px}
+.cashflow-projection-total{display:flex;flex-direction:column;gap:5px;padding:17px 0 20px}
+.cashflow-projection-total strong{font-size:25px;letter-spacing:-.8px;color:#2e3c4b}
+.cashflow-projection-total span{font-size:10px;color:#929daa}
+.cashflow-horizon-note{font-size:9px;line-height:1.5;color:#9aa4af;margin-top:17px}
+.cashflow-table-head,.cashflow-table-row{min-width:680px;grid-template-columns:1.5fr .8fr .7fr .8fr .9fr}
+.cashflow-filter{min-width:120px}
+.amount-in{color:#229b76!important}.amount-out{color:#d98268!important}
+@media(max-width:900px){.cashflow-chart-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.cashflow-toolbar{align-items:stretch;flex-direction:column}.cashflow-toolbar label select{width:100%}.cashflow-asof{margin:2px 0 0}}
