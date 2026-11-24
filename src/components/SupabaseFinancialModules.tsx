@@ -40,7 +40,7 @@ function DataState({ loading, error, retry }: { loading: boolean; error: string;
   return null;
 }
 
-function TransactionForm({ type, accounts, categories, onClose, onSaved, notice }: {
+function TransactionForm({ type, accounts, categories, centers, onClose, onSaved, notice }: {
   type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[];
   onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
 }) {
