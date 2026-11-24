@@ -317,3 +317,115 @@ button { cursor: pointer; }
  .workspace-module .row-meta { font-size:10px; }
  .workspace-module .summary-grid { grid-template-columns:1fr; }
 }
+
+
+/* NEXUS FINANCE — midnight banking visual system */
+:root {
+  --nexus-bg:#071426; --nexus-panel:#0d2038; --nexus-panel-2:#102844;
+  --nexus-border:rgba(150,190,225,.15); --nexus-text:#e8f2ff;
+  --nexus-muted:#91a9c3; --nexus-blue:#328cff; --nexus-cyan:#35d5e8;
+}
+html,body { background:var(--nexus-bg)!important; color:var(--nexus-text); }
+body { background:radial-gradient(ellipse at 70% -15%,#173b65 0%,#091a30 42%,#050e1c 100%)!important; }
+.nexus-app { background:transparent!important; color:var(--nexus-text)!important; }
+.sidebar { background:rgba(7,19,35,.96)!important; border-right:1px solid var(--nexus-border)!important; box-shadow:12px 0 40px #02091440; backdrop-filter:blur(18px); }
+.brand strong,.workspace-copy strong,.profile-copy strong { color:#edf6ff!important; }
+.brand small,.workspace-copy small,.profile-copy small,.nav-label { color:#718ba8!important; }
+.brand-mark { background:linear-gradient(145deg,#287fe9,#35c5e0)!important; box-shadow:0 0 24px #268bff55!important; }
+.brand-mark i { background:#7ff5e8!important; border-color:#174e7b!important; }
+.workspace-switch { background:#0d233d!important; border-color:var(--nexus-border)!important; }
+.workspace-avatar { background:#153b62!important; color:#6dc8ff!important; }
+.nav-item { color:#91a9c3!important; }
+.nav-item:hover,.nav-active { background:linear-gradient(100deg,#173d67,#12304f)!important; color:#eaf6ff!important; box-shadow:inset 3px 0 #35b9ff,0 5px 18px #020b1740; }
+.sidebar-promo { background:linear-gradient(145deg,#102d4c,#0b2038)!important; border-color:var(--nexus-border)!important; }
+.sidebar-promo strong { color:#d9ebff!important; }.sidebar-promo p { color:#88a3c0!important; }
+.sidebar-bottom,.profile { border-color:var(--nexus-border)!important; }
+.main-area { background:transparent!important; }
+.topbar { background:rgba(7,20,38,.88)!important; border-bottom:1px solid var(--nexus-border)!important; backdrop-filter:blur(18px); }
+.breadcrumb,.breadcrumb strong { color:#9cb5d0!important; }
+.search-box { background:#0d223b!important; border-color:var(--nexus-border)!important; }
+.search-box input { color:#eaf4ff!important; }.search-box kbd { background:#173452!important; border-color:var(--nexus-border)!important; color:#9bb5d1!important; }
+.content-area,.page-content,.dashboard-content { color:var(--nexus-text)!important; }
+.welcome-row h1,.page-title,.panel h2,.account-section-heading h2 { color:#edf6ff!important; }
+.welcome-row p,.eyebrow,.panel-heading p { color:#8da8c5!important; }
+.panel,.metric-card,.summary-card,.financial-account-card,.payable-list-panel,.account-transfer-panel {
+ background:linear-gradient(145deg,rgba(16,40,68,.96),rgba(10,28,49,.97))!important;
+ border:1px solid var(--nexus-border)!important; color:#e6f2ff!important;
+ box-shadow:0 14px 38px #020b183d,inset 0 1px #ffffff08!important;
+}
+.metric-card,.summary-card { border-radius:15px!important; }
+.metric-top,.metric-foot,.metric-label,.metric-card span,.summary-card>span { color:#91abc7!important; }
+.metric-value,.summary-card>strong,.account-total-card strong,.cashflow-projection-total strong { color:#f2f8ff!important; }
+.panel h2,.panel strong,.financial-account-card h3,.account-section-heading h2 { color:#e7f3ff!important; }
+.panel p,.panel small,.financial-account-card span,.account-balance-label { color:#91a9c3!important; }
+.account-total-card { background:linear-gradient(115deg,#12365e,#155b83 65%,#087f9b)!important; border:1px solid #5cb9e455; box-shadow:0 15px 40px #061a2e80; }
+.account-total-card span,.account-total-card small { color:#c3e6ff!important; }
+.account-bank-icon,.metric-icon,.promo-icon { background:#153b60!important; color:#62c9ff!important; }
+.account-kind,.select-like,.cashflow-filter,.cashflow-toolbar select { background:#102b49!important; border-color:var(--nexus-border)!important; color:#c5dcf4!important; }
+.payable-table-head,.table-head { color:#7895b4!important; border-color:var(--nexus-border)!important; }
+.payable-table-row,.transaction-row,.cashflow-table-row { border-color:var(--nexus-border)!important; color:#a8bfd9!important; }
+.payable-table-row>div strong,.payable-table-row>strong,.transaction-name strong,.category-name-cell strong { color:#e7f2ff!important; }
+.payable-table-row>div small,.transaction-name small { color:#829db9!important; }
+.payable-search,.payable-toolbar select,.payable-modal input,.payable-modal select,.settings-form select {
+ background:#0a1d33!important; border-color:var(--nexus-border)!important; color:#e6f2ff!important;
+}
+.payable-search input { color:#e6f2ff!important; }
+.button-secondary,.pay-action { background:#123251!important; border-color:#28547b!important; color:#b9ddff!important; }
+.button-primary { background:linear-gradient(105deg,#2478e8,#1ab8d1)!important; color:#fff!important; border:0!important; box-shadow:0 8px 24px #168de94a!important; }
+.button-primary:hover { filter:brightness(1.14); transform:translateY(-2px); }
+.icon-button { background:#102b49!important; color:#b8d8f6!important; }
+.status-pending { background:#233951!important; color:#c1d5e9!important; }
+.status-today { background:#493b27!important; color:#ffd18a!important; }
+.status-late { background:#482d35!important; color:#ffb2b8!important; }
+.status-paid { background:#153f4b!important; color:#83e7db!important; }
+.category-tabs { border-color:var(--nexus-border)!important; }
+.category-tabs button { color:#8da9c5!important; }.category-tabs button.active { color:#62caff!important; border-color:#32b8ff!important; }
+.transfer-info,.insight-card { background:#102c48!important; border-color:var(--nexus-border)!important; color:#a9c7e4!important; }
+.insight-card strong { color:#d8efff!important; }.insight-card p { color:#9bb6d1!important; }
+.demo-disclaimer { color:#819bb7!important; }
+.modal-backdrop { background:#020814c9!important; backdrop-filter:blur(9px); }
+.payable-modal,.company-menu { background:#0d223b!important; border:1px solid var(--nexus-border)!important; color:#e7f2ff!important; }
+.modal-heading h2,.payable-modal label { color:#e3f1ff!important; }
+.company-menu button { background:transparent!important; color:#b4cbe3!important; }
+.company-menu button:hover { background:#173654!important; }
+.workspace-module .summary-card,.workspace-module .insight-card { background:#102844!important; border-color:var(--nexus-border)!important; }
+.workspace-module .summary-card>span,.workspace-module .summary-card>small,.workspace-module .plan-card p { color:#91abc7!important; }
+.workspace-module .summary-card>strong,.workspace-module .plan-card h2 { color:#eaf5ff!important; }
+.workspace-module .insight-card strong { color:#d8efff!important; }
+.workspace-module .insight-card p { color:#9bb6d1!important; }
+.workspace-module .settings-form>label:not(.setting-toggle),.workspace-module .setting-toggle { color:#a8c0d9!important; }
+.workspace-module .status-pill { background:#153f4b!important; color:#8de6dc!important; }
+.recharts-cartesian-grid line { stroke:#24415f!important; }
+.recharts-text,.recharts-cartesian-axis-tick-value { fill:#86a3c2!important; }
+.recharts-tooltip-wrapper .recharts-default-tooltip { background:#0d223b!important; border:1px solid #315575!important; border-radius:10px; color:#eaf5ff!important; }
+* { scrollbar-color:#24496c #08182a; }
+button,a,.metric-card,.summary-card,.financial-account-card,.panel { transition:background .28s ease,border-color .28s ease,box-shadow .3s ease,transform .3s cubic-bezier(.2,.8,.2,1),filter .3s ease; }
+.metric-card:hover,.summary-card:hover,.financial-account-card:hover { transform:translateY(-5px); border-color:#3b9ee477!important; box-shadow:0 18px 42px #020b1877,0 0 0 1px #2b9df022!important; }
+.nexus-app .main-area { animation:nexus-page-in .7s cubic-bezier(.16,1,.3,1) both; }
+.nexus-app .panel,.nexus-app .metric-card,.nexus-app .summary-card { animation:nexus-card-in .65s cubic-bezier(.16,1,.3,1) both; }
+.nexus-app .metric-card:nth-child(2),.nexus-app .summary-card:nth-child(2) { animation-delay:.07s; }
+.nexus-app .metric-card:nth-child(3),.nexus-app .summary-card:nth-child(3) { animation-delay:.14s; }
+.nexus-app .metric-card:nth-child(4),.nexus-app .summary-card:nth-child(4) { animation-delay:.21s; }
+.live-dot { box-shadow:0 0 0 0 #37d6e880; animation:nexus-pulse 1.8s infinite; }
+.button-primary { position:relative; overflow:hidden; }
+.button-primary::after { content:""; position:absolute; inset:-60% auto -60% -45%; width:30%; transform:rotate(22deg); background:linear-gradient(90deg,transparent,#ffffff55,transparent); animation:nexus-shine 4.5s ease-in-out infinite; }
+@keyframes nexus-page-in { from { opacity:0; transform:translateY(14px) scale(.995); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes nexus-card-in { from { opacity:0; transform:translateY(18px); filter:blur(3px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
+@keyframes nexus-pulse { 0% { box-shadow:0 0 0 0 #37d6e880; } 70% { box-shadow:0 0 0 8px #37d6e800; } 100% { box-shadow:0 0 0 0 #37d6e800; } }
+@keyframes nexus-shine { 0%,65% { left:-45%; } 85%,100% { left:130%; } }
+@media(max-width:900px) {
+ .sidebar { background:rgba(7,19,35,.98)!important; }
+ .topbar { padding:0 16px!important; }
+ .main-area { background:transparent!important; }
+}
+@media(max-width:620px) {
+ .nexus-app { background:radial-gradient(ellipse at 50% 0%,#15385e 0%,#08182b 48%,#050e1c 100%)!important; }
+ .topbar { background:rgba(7,20,38,.94)!important; }
+ .welcome-row h1 { font-size:23px!important; }
+ .metric-card,.summary-card,.panel { border-radius:13px!important; }
+ .payable-modal { background:#0d223b!important; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .nexus-app .main-area,.nexus-app .panel,.nexus-app .metric-card,.nexus-app .summary-card,.live-dot,.button-primary::after { animation:none!important; }
+ button,a,.metric-card,.summary-card,.financial-account-card,.panel { transition:none!important; }
+}
