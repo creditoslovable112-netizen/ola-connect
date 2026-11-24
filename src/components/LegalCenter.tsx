@@ -86,10 +86,10 @@ export function LegalCenter({ onNotice, onAccepted, onManageCookies }: Props) {
 
   return <section className="legal-center" aria-labelledby="legal-title">
     <div className="welcome-row"><div><div className="eyebrow">TRANSPARÊNCIA, DIREITOS E CONTROLES</div><h1 id="legal-title">Privacidade e termos</h1><p>Consulte documentos, gerencie consentimentos e envie solicitações sobre seus dados.</p></div></div>
-    <div className="legal-tabs" role="tablist" aria-label="Documentos e controles de privacidade">
-      {sections.map((item) => <button key={item.id} type="button" role="tab" aria-selected={active === item.id} aria-controls="legal-panel" className={active === item.id ? "active" : ""} onClick={() => setActive(item.id)}>{item.label}</button>)}
-    </div>
-    <article id="legal-panel" role="tabpanel" className="panel legal-document">
+    <nav className="legal-tabs" aria-label="Documentos e controles de privacidade">
+      {sections.map((item) => <button key={item.id} type="button" aria-current={active === item.id ? "page" : undefined} className={active === item.id ? "active" : ""} onClick={() => setActive(item.id)}>{item.label}</button>)}
+    </nav>
+    <article id="legal-panel" className="panel legal-document">
       <div className="eyebrow">VERSÃO 1.0 · 24/11/2026 · DOCUMENTO PRELIMINAR</div>
       <h2>{section.title}</h2>
       {active === "privacy" && <>
