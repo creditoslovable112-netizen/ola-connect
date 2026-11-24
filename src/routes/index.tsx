@@ -183,7 +183,16 @@ function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:st
   return () => { active = false; };
  }, [title]);
  const [period,setPeriod]=useState("Este mês");
- const descriptions:Record<string,string>={"Transações":"Controle entradas, saídas e transferências","Relatórios":"Indicadores gerenciais e demonstrativos financeiros","Clientes":"Relacionamento e dados comerciais","Fornecedores":"Contatos, pagamentos e condições comerciais","Empresas":"Organizações e unidades de negócio","Equipe":"Colaboradores e níveis de acesso","NEXUS AI":"Insights demonstrativos para apoiar decisões financeiras","Assinatura":"Planos e recursos da plataforma","Administração":"Visão geral da operação da plataforma","Configurações":"Preferências do seu ambiente"};
+ const descriptions:Record<string,string>={"Transações":"Controle entradas, saídas e transferências","Relatórios":"Indicadores gerenciais e demonstrativos financeiros","Clientes":"Relacionamento e dados comerciais","Fornecedores":"Contatos, pagamentos e condições comerciais","Empresas":"Organizações e unidades de negócio","Equipe":"Módulo ainda não disponível","NEXUS AI":"Integração de IA ainda não ativa","Assinatura":"Sem contratação ou cobrança ativa","Administração":"Painel administrativo ainda não disponível","Configurações":"Preferências do seu ambiente"};
+ if (["Equipe", "NEXUS AI", "Assinatura", "Administração"].includes(title)) {
+  const explanations: Record<string, string> = {
+   "Equipe": "Convites, perfis e permissões de colaboradores ainda não estão disponíveis.",
+   "NEXUS AI": "A integração com provedores de IA ainda não está ativa. Nenhum dado financeiro é enviado a modelos externos por este módulo.",
+   "Assinatura": "Não existe checkout, plano pago, cobrança ou renovação automática ativa nesta versão.",
+   "Administração": "O painel administrativo e as ferramentas de operação ainda não estão disponíveis."
+  };
+  return <section className="workspace-unavailable" aria-labelledby="module-unavailable-title"><div className="eyebrow">MÓDULO NÃO DISPONÍVEL</div><h1 id="module-unavailable-title">{title}</h1><p>{explanations[title]}</p><span>Em preparação · Nenhuma ação ou cobrança será executada aqui.</span></section>;
+ }
  const fields:Record<string,{key:string;label:string;type?:string;required?:boolean;options?:string[]}[]> = {
   "Transações":[{key:"description",label:"Descrição",required:true},{key:"type",label:"Tipo",options:["Receita","Despesa","Transferência"]},{key:"amount",label:"Valor (R$)",type:"number",required:true},{key:"date",label:"Data",type:"date",required:true},{key:"category",label:"Categoria"},{key:"account",label:"Conta bancária"},{key:"status",label:"Status",options:["Pago","Pendente","Agendado"]}],
   "Clientes":[{key:"name",label:"Nome / Razão social",required:true},{key:"document",label:"CPF / CNPJ"},{key:"email",label:"E-mail",type:"email"},{key:"phone",label:"Telefone"},{key:"status",label:"Status",options:["Ativo","Inativo"]}],
