@@ -3,7 +3,8 @@ import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, Re
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
-  updateTransaction, type Category, type CostCenter, type FinancialAccount, type Transaction,
+  updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
+  type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
 
 type Notice = (message: string) => void;
@@ -198,5 +199,52 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" onClick={() => showNotice("A exportação PDF/Excel será adicionada após validar os demonstrativos.")}><RefreshCw size={15}/> Atualizar</button></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <><section className="summary-grid"><div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Resultado realizado</span><strong>{money(income - expense)}</strong><small>Receitas menos despesas</small></div></section><section className="panel payable-list-panel"><h2>Posição financeira</h2><div className="summary-line"><span>Recebimentos pendentes</span><strong>{money(openIncome)}</strong></div><div className="summary-line"><span>Pagamentos pendentes</span><strong>{money(openExpense)}</strong></div><div className="summary-footer"><span>Contas cadastradas</span><strong>{data.transactions.length}</strong></div><div className="demo-disclaimer"><ShieldCheck size={14}/> Relatório calculado em tempo real a partir do Supabase; sem valores fictícios.</div></section></>}
+  </>;
+}
+
+
+export function SupabaseContacts({ contactType, showNotice }: { contactType: "customer" | "supplier"; showNotice: Notice }) {
+  const [items, setItems] = useState<BusinessContact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modal, setModal] = useState(false);
+  const [name, setName] = useState(""); const [document, setDocument] = useState("");
+  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const title = contactType === "customer" ? "Clientes" : "Fornecedores";
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { setItems(await listBusinessContacts(contactType)); }
+    catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar contatos."); }
+    finally { setLoading(false); }
+  }, [contactType]);
+  useEffect(() => { void load(); }, [load]);
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    try { await createBusinessContact({ contact_type: contactType, name, document: document || null, email: email || null, phone: phone || null, status: "active", notes: null }); await load(); setModal(false); setName(""); setDocument(""); setEmail(""); setPhone(""); showNotice("Contato salvo no Supabase."); }
+    catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar contato."); }
+  };
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>{title}</h1><p>Cadastros vinculados à sua conta e protegidos por RLS.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Novo {contactType === "customer" ? "cliente" : "fornecedor"}</button></div>
+    {loading ? <div className="panel">Carregando contatos…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{items.length} cadastro(s)</h2>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{[item.email, item.phone, item.document].filter(Boolean).join(" · ")}</small></div><span>{item.status === "active" ? "Ativo" : "Inativo"}</span></div>)}{items.length === 0 && <p>Nenhum cadastro encontrado.</p>}</section>}
+    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Novo {contactType === "customer" ? "cliente" : "fornecedor"}</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Nome / razão social<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>CPF / CNPJ<input value={document} onChange={(e) => setDocument(e.target.value)}/></label><label>E-mail<input type="email" value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input value={phone} onChange={(e) => setPhone(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="button-primary">Salvar cadastro</button></div></form></div>}
+  </>;
+}
+
+export function SupabaseCompanies({ showNotice }: { showNotice: Notice }) {
+  const [items, setItems] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modal, setModal] = useState(false);
+  const [name, setName] = useState(""); const [legalName, setLegalName] = useState("");
+  const [document, setDocument] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(await listCompanies()); } catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar empresas."); } finally { setLoading(false); } }, []);
+  useEffect(() => { void load(); }, [load]);
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    try { await createCompany({ name, legal_name: legalName || null, document: document || null, email: email || null, phone: phone || null, status: "active", is_default: items.length === 0 }); await load(); setModal(false); setName(""); setLegalName(""); setDocument(""); setEmail(""); setPhone(""); showNotice("Empresa salva no Supabase."); }
+    catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar empresa."); }
+  };
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Empresas</h1><p>Organizações cadastradas no seu workspace.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova empresa</button></div>
+    {loading ? <div className="panel">Carregando empresas…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{items.length} empresa(s)</h2>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{[item.legal_name, item.document, item.email].filter(Boolean).join(" · ")}</small></div><span>{item.is_default ? "Principal" : "Empresa"}</span></div>)}{items.length === 0 && <p>Nenhuma empresa cadastrada.</p>}</section>}
+    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Nova empresa</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Nome fantasia<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>Razão social<input value={legalName} onChange={(e) => setLegalName(e.target.value)}/></label><label>CNPJ<input value={document} onChange={(e) => setDocument(e.target.value)}/></label><label>E-mail<input type="email" value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input value={phone} onChange={(e) => setPhone(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="button-primary">Salvar empresa</button></div></form></div>}
   </>;
 }
