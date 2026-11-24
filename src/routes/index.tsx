@@ -337,7 +337,7 @@ function DashboardPage() {
           </div>
         </div>
         <div className="sidebar-bottom">
-          <button className="nav-item" onClick={() => showNotice("Central de ajuda em breve.")}><LifeBuoy size={17}/><span>Central de ajuda</span></button>
+          <button className="nav-item" onClick={() => showNotice("Central de ajuda ainda não está disponível.")}><LifeBuoy size={17}/><span>Central de ajuda</span></button>
           <button className="nav-item" onClick={() => setActive("Configurações")}><Settings2 size={17}/><span>Configurações</span></button>
           <div className="profile">
             <div className="profile-avatar">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
@@ -356,7 +356,7 @@ function DashboardPage() {
           <div className="topbar-actions">
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
             <button className="icon-button help-button" aria-label="Ajuda" onClick={() => showNotice("Central de ajuda em breve.")}><CircleHelp size={18}/></button>
-            <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Você está em dia! Nenhuma notificação nova.")}><Bell size={18}/><i/></button>
+            <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Central de notificações ainda não está disponível.")}><Bell size={18}/><i/></button>
             <div className="top-avatar" aria-label="Perfil da conta">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
