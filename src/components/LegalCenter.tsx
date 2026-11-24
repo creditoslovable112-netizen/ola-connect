@@ -18,6 +18,7 @@ export function LegalCenter({ onNotice, onAccepted }: Props) {
   const [consents, setConsents] = useState<PrivacyConsent[]>([]);
   const [requests, setRequests] = useState<PrivacyRequest[]>([]);
   const [marketing, setMarketing] = useState(false);
+  const [confirmDocuments, setConfirmDocuments] = useState(false);
   const [requestType, setRequestType] = useState<"access" | "deletion" | "correction" | "portability" | "other">("access");
   const [requestDescription, setRequestDescription] = useState("");
   const [loading, setLoading] = useState(true);
@@ -134,7 +135,8 @@ export function LegalCenter({ onNotice, onAccepted }: Props) {
     <article className="panel legal-controls">
       <div className="panel-heading"><div><h2>Registros e preferências</h2><p>Consentimentos separados e histórico armazenado no servidor.</p></div><ShieldCheck size={20}/></div>
       {loading ? <p>Carregando registros…</p> : <div className="legal-consent-status"><div><span>Termos de Uso</span><strong>{status("terms")}</strong></div><div><span>Política de Privacidade</span><strong>{status("privacy")}</strong></div><div><span>Marketing</span><strong>{status("marketing")}</strong></div><div><span>Cookies opcionais</span><strong>{status("cookies")}</strong></div></div>}
-      <button className="button-secondary" disabled={saving} onClick={() => void acceptCurrentDocuments()}><CheckCircle2 size={16}/> Registrar aceite da versão atual</button>
+      <label className="legal-toggle"><input type="checkbox" checked={confirmDocuments} onChange={(event) => setConfirmDocuments(event.target.checked)}/> Li e aceito a versão atual dos Termos de Uso e da Política de Privacidade.</label>
+      <button className="button-secondary" disabled={saving || !confirmDocuments} onClick={() => void acceptCurrentDocuments()}><CheckCircle2 size={16}/> Registrar meu aceite</button>
       <label className="legal-toggle"><input type="checkbox" checked={marketing} disabled={saving} onChange={(event) => void updateMarketing(event.target.checked)}/> Aceito receber novidades e ofertas por e-mail (opcional).</label>
       <p className="legal-muted">A opção de marketing não é condição para usar o serviço. Não há campanhas configuradas; nenhum e-mail promocional será enviado até existir um mecanismo de descadastro funcional em cada mensagem.</p>
     </article>
