@@ -173,3 +173,28 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
     </>}
   </>;
 }
+
+
+export function SupabaseTransactions({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Transações</h1><p>Todos os lançamentos da sua conta em um só lugar.</p></div><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="panel-heading"><div><h2>{data.transactions.length} lançamento(s)</h2><p>Registros reais protegidos por RLS</p></div></div>
+      {data.transactions.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Receita" : "Despesa"}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span></div>)}
+      {data.transactions.length === 0 && <p>Nenhuma transação cadastrada ainda.</p>}
+    </section>}
+  </>;
+}
+
+export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const paid = data.transactions.filter((item) => item.status === "paid");
+  const income = paid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const expense = paid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const openIncome = data.transactions.filter((item) => item.type === "income" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const openExpense = data.transactions.filter((item) => item.type === "expense" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" onClick={() => showNotice("A exportação PDF/Excel será adicionada após validar os demonstrativos.")}><RefreshCw size={15}/> Atualizar</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <><section className="summary-grid"><div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Resultado realizado</span><strong>{money(income - expense)}</strong><small>Receitas menos despesas</small></div></section><section className="panel payable-list-panel"><h2>Posição financeira</h2><div className="summary-line"><span>Recebimentos pendentes</span><strong>{money(openIncome)}</strong></div><div className="summary-line"><span>Pagamentos pendentes</span><strong>{money(openExpense)}</strong></div><div className="summary-footer"><span>Contas cadastradas</span><strong>{data.transactions.length}</strong></div><div className="demo-disclaimer"><ShieldCheck size={14}/> Relatório calculado em tempo real a partir do Supabase; sem valores fictícios.</div></section></>}
+  </>;
+}
