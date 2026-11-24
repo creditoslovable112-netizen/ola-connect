@@ -62,7 +62,7 @@ function TransactionForm({ type, accounts, categories, onClose, onSaved, notice 
     try {
       await createTransaction({ account_id: accountId, category_id: categoryId || null, cost_center_id: centerId || null,
         type, description: description.trim(), counterparty: counterparty.trim() || null, amount: value,
-        status: "pending", transaction_date: due, due_date: due, notes: null });
+        status: "pending", transaction_date: today(), due_date: due, notes: null });
       await onSaved(); onClose(); notice(type === "expense" ? "Conta a pagar salva no Supabase." : "Conta a receber salva no Supabase.");
     } catch (e) { notice(e instanceof Error ? e.message : "Falha ao salvar movimentação."); }
     finally { setSaving(false); }
@@ -149,7 +149,7 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice);
   const paid = data.transactions.filter((item) => item.status === "paid");
   const month = today().slice(0, 7);
-  const monthPaid = paid.filter((item) => item.transaction_date.startsWith(month));
+  const monthPaid = paid.filter((item) => (item.paid_at ?? item.transaction_date).startsWith(month));
   const income = monthPaid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
   const expense = monthPaid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = data.accounts.reduce((sum, item) => sum + Number(item.opening_balance), 0) +
