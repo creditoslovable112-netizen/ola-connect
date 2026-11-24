@@ -1,80 +1,99 @@
-# Política de Privacidade — NEXUS FINANCE (RASCUNHO)
+# Política de Privacidade — NEXUS FINANCE
 
-**Status:** documento preliminar; não publicar antes de revisão jurídica e preenchimento dos campos pendentes.  
-**Última revisão do texto:** 24/11/2026.
+**Versão:** 1.0-2026-11-24  
+**Status:** RASCUNHO — não publicar até preencher os dados do controlador, validar o mapa de dados, os suboperadores, os prazos e obter revisão jurídica.
 
-## 1. Quem é o controlador
+## 1. Controlador e canal de privacidade
 
-O controlador dos dados será a pessoa jurídica que operar o NEXUS FINANCE. **Razão social, CNPJ, endereço e canal do Encarregado/DPO: PENDENTES DE CONFIRMAÇÃO.** Não use este serviço com dados reais até esses dados serem preenchidos e publicados.
+Controlador: **[RAZÃO SOCIAL PENDENTE]**  
+CNPJ: **[PENDENTE]**  
+Endereço: **[PENDENTE]**  
+Encarregado/canal de privacidade: **[NOME E E-MAIL OFICIAL PENDENTES]**
 
-Contato de privacidade: **[INSERIR E-MAIL DE PRIVACIDADE]**.
+Esses dados devem ser confirmados pelo responsável legal do negócio. Não usar dados fictícios. A indicação e divulgação do canal de contato devem ser verificadas à luz da LGPD e das regras aplicáveis ao porte e à natureza do controlador.
 
-## 2. Dados e finalidade
+## 2. Categorias de dados e minimização
 
-A plataforma deve solicitar somente dados necessários para:
-- criar e proteger contas e autenticar usuários;
-- prestar funções financeiras solicitadas pelo cliente;
-- manter suporte, segurança, prevenção a fraude e registros exigidos por lei;
-- processar pagamentos, caso um provedor de pagamento seja contratado;
-- enviar comunicações operacionais essenciais.
+O produto deve coletar somente o necessário para:
+- criar e autenticar a conta (nome, e-mail, identificadores de autenticação);
+- manter sessão, segurança, prevenção a fraude e suporte solicitado;
+- executar as funções financeiras escolhidas pelo cliente (lançamentos, contas, categorias, centros de custo e contatos inseridos pelo usuário);
+- registrar versões e evidências de aceites e preferências;
+- atender obrigações legais e solicitações de titulares.
 
-Dados financeiros, fiscais, cadastrais e de contato inseridos pelo cliente podem conter dados pessoais de terceiros. O cliente deve ter base legal e informar os titulares quando necessário. O operador da plataforma deverá tratar esses dados somente conforme instruções documentadas do cliente e contrato de tratamento de dados.
+Não solicitar dados sensíveis, documentos, dados de crianças ou informações excessivas em campos livres sem finalidade, necessidade, hipótese legal e controles definidos. Dados de clientes, fornecedores e colaboradores podem ser dados pessoais de terceiros; o cliente deve possuir base legal e cumprir os deveres de transparência.
 
-**Não coletar dados sensíveis ou dados de crianças por padrão.** Não usar dados do cliente para treinar modelos de IA. Qualquer recurso de IA deverá ter finalidade, fornecedor, transferências e controles divulgados antes da ativação; dados não poderão ser enviados a modelos externos sem autorização válida e informação clara.
+## 3. Finalidades e bases legais
 
-## 3. Bases legais e transparência
+A base legal deve ser documentada por operação, não presumida como consentimento para tudo. Podem ser aplicáveis, conforme o contexto, execução de contrato/procedimentos preliminares, cumprimento de obrigação legal ou regulatória, exercício regular de direitos, legítimo interesse após avaliação e consentimento livre, informado, específico e revogável quando exigido.
 
-Cada operação deverá ter finalidade e hipótese legal documentadas conforme a LGPD. Não presumir consentimento como base para todas as operações. Consentimentos opcionais, como marketing e cookies não essenciais, devem ser separados, específicos, informados, livres e revogáveis.
+O aceite dos Termos e a ciência da Política são registrados separadamente do consentimento opcional de marketing. Cookies não essenciais também têm escolha própria.
 
-## 4. Compartilhamento e suboperadores
+## 4. Compartilhamento, operadores e transferências
 
-Compartilhamento somente com fornecedores necessários à hospedagem, autenticação, suporte, pagamentos ou segurança, mediante avaliação e contrato adequado. **Lista de suboperadores, país de hospedagem, finalidade e política de transferência internacional: PENDENTES.** Não afirmar que não há compartilhamento até auditar a infraestrutura.
+A infraestrutura atual utiliza Supabase para banco e autenticação e Lovable/GitHub no desenvolvimento e publicação. Antes da produção, o controlador deverá validar os papéis de cada fornecedor, suboperadores, finalidades, países de hospedagem, transferências internacionais, medidas de segurança e contratos de tratamento de dados. Não declarar ausência de compartilhamento ou conformidade contratual sem essa verificação.
+
+Quando o cliente inserir dados pessoais de terceiros e atuar como controlador, o NEXUS poderá atuar como operador conforme as instruções documentadas. Um Acordo de Tratamento de Dados (DPA) deve definir objeto, duração, finalidades, instruções, confidencialidade, segurança, suboperadores, incidentes, assistência a direitos e eliminação/devolução.
 
 ## 5. Cookies e tecnologias semelhantes
 
-Cookies estritamente necessários podem ser usados para funções essenciais e segurança. Analytics, publicidade, pixels e rastreadores não essenciais devem permanecer bloqueados até consentimento válido. O usuário deve poder rejeitar os não essenciais com a mesma facilidade de aceitar e alterar a escolha depois. A plataforma ainda precisa de auditoria técnica para confirmar que nenhum script de terceiro é executado antes do consentimento.
+Armazenamento estritamente necessário pode manter autenticação, sessão e segurança. Cookies e tecnologias não essenciais — analytics, medição de desempenho, publicidade, pixels, rastreamento comportamental e conteúdo incorporado não essencial — devem permanecer bloqueados até escolha válida do titular, quando essa for a base aplicável.
 
-## 6. Retenção e eliminação
+O banner oferece rejeição dos opcionais e aceitação dos opcionais. A recusa deve ser tão simples quanto a aceitação. A escolha pode ser alterada. Marketing por e-mail é independente da escolha de cookies.
 
-Não manter dados indefinidamente. A tabela abaixo é uma **proposta de configuração para aprovação jurídica e técnica**, não uma retenção já implementada:
+Na versão atual não foram adicionados SDKs de analytics, pixels de publicidade ou scripts de rastreamento. Essa declaração deve ser revalidada após integração do ambiente de publicação, scripts de terceiros, extensões e serviços externos.
 
-| Categoria | Limite proposto | Regra |
-|---|---:|---|
-| Dados de perfil e workspace | Enquanto a conta estiver ativa; até 30 dias após encerramento | Excluir/anonimizar após solicitação e verificação, salvo obrigação legal documentada. |
-| Dados operacionais inseridos pelo cliente | Enquanto necessários ao serviço; iniciar exclusão em até 30 dias após encerramento | Cliente deve exportar antes do encerramento; retenções legais específicas prevalecem apenas sobre os campos necessários. |
-| Backups | Expiração em até 90 dias | Backups devem ter ciclo documentado; dados excluídos não podem ser restaurados para uso operacional. |
-| Logs de segurança e acesso | Até 6 meses, sujeito à validação de aplicabilidade legal | Acesso restrito, finalidade de segurança e descarte ao fim do prazo, salvo preservação legal. |
-| Tickets de suporte | Até 12 meses após encerramento | Remover dados excessivos e anexos desnecessários. |
-| Documentos fiscais/contábeis | Pelo prazo legal aplicável a cada documento | Definir com contador/advogado; não aplicar retenção genérica a todos os dados. |
+## 6. Marketing e comunicações
 
-Os prazos são metas propostas e devem ser ajustados conforme a legislação aplicável, incluindo obrigações fiscais, regulatórias e de guarda de registros. **Nenhum prazo está sendo aplicado automaticamente nesta versão demonstrativa.**
+Marketing é opcional, não condicionado ao uso do produto e registrado separadamente. O titular pode revogar a escolha. **Nenhuma campanha promocional deve ser enviada enquanto não existir um provedor de e-mail configurado, lista de supressão/descadastro e link funcional de cancelamento em cada mensagem.** Mensagens operacionais essenciais devem ser distinguidas de publicidade.
 
-## 7. Direitos dos titulares
+## 7. Crianças e adolescentes
 
-O titular poderá solicitar confirmação de tratamento, acesso, correção, anonimização, bloqueio, eliminação quando cabível, portabilidade nos termos aplicáveis, informação sobre compartilhamentos e revogação de consentimento. Canal: **[INSERIR CANAL]**. A identidade deve ser verificada de modo proporcional, sem coletar documentos excessivos. Solicitações e respostas precisam de registro seguro no backend.
+O serviço é destinado a empresas e adultos e não é direcionado a crianças. Não solicitar dados de crianças para cadastro. Qualquer tratamento incidental em registros de clientes deve observar o melhor interesse e as hipóteses legais aplicáveis ao art. 14 da LGPD. Quando utilizado consentimento como base para dados de crianças, ele deve ser específico e em destaque, dado por pelo menos um dos pais ou responsável legal, com esforços razoáveis de verificação. A avaliação jurídica deve considerar também o Enunciado CD/ANPD nº 1/2023 e as hipóteses legais aplicáveis a crianças e adolescentes.
 
-## 8. Segurança e incidentes
+## 8. Retenção e descarte
 
-Adotar controle de acesso por função, autenticação adequada, criptografia em trânsito e em repouso quando aplicável, backups protegidos, logs com acesso restrito, gestão de vulnerabilidades e plano de resposta a incidentes. Não declarar certificações (incluindo SOC 2 ou ISO 27001) sem auditoria e certificado válidos.
+Os prazos abaixo são **metas iniciais propostas**, sujeitas à validação jurídica, fiscal e operacional. Não afirmar que a exclusão automática está ativa até implementar e testar os processos.
 
-## 9. Crianças e adolescentes
+| Categoria | Prazo/meta proposto | Regra |
+|---|---|---|
+| Perfil e conta | Enquanto a conta estiver ativa; iniciar exclusão operacional em até 30 dias após encerramento | Preservar somente o necessário por obrigação legal ou exercício regular de direitos. |
+| Dados financeiros e contatos inseridos | Enquanto necessários ao serviço; iniciar exclusão em até 30 dias após encerramento | Cliente deve poder exportar antes do encerramento; retenção legal específica deve ser documentada. |
+| Backups | Expiração em até 90 dias | Validar ciclo de backup e impedir retorno de dados eliminados ao ambiente ativo. |
+| Logs de segurança | Até 6 meses como meta | Validar aplicabilidade legal e necessidade; acesso restrito. |
+| Solicitações de suporte/privacidade | Até 12 meses após conclusão como meta | Preservar evidência necessária, removendo dados excessivos. |
+| Documentos fiscais/contábeis | Prazo legal específico de cada documento | Definir com contador e jurídico, sem retenção genérica. |
+| Evidências de consentimento | Enquanto necessárias para comprovar conformidade e exercício de direitos | Definir prazo final, acesso restrito e descarte/anonymização com jurídico. |
 
-O serviço é destinado a empresas e adultos. Não direcionar o serviço a crianças. Se houver tratamento de dados de crianças ou adolescentes, interromper a coleta até avaliação específica, melhor interesse, transparência adequada e obtenção das autorizações exigidas, inclusive consentimento específico e destacado de responsável legal quando aplicável.
+Ao término da finalidade, os dados devem ser eliminados, anonimizados ou bloqueados, salvo hipótese legal de conservação. Os prazos precisam ser convertidos em rotinas automáticas e auditáveis antes da produção.
 
-## 10. IA e decisões automatizadas
+## 9. Direitos dos titulares e canal de atendimento
 
-Saídas de IA devem ser identificadas como geradas ou assistidas por IA, revisadas por pessoas e não apresentadas como aconselhamento contábil, jurídico ou financeiro profissional. Não usar conteúdo dos clientes para treinamento sem base legal, informação clara e autorização aplicável. Informar lógica e permitir revisão de decisões automatizadas quando exigido.
+O titular pode solicitar confirmação de tratamento, acesso, correção, anonimização, bloqueio, eliminação quando cabível, portabilidade nos termos aplicáveis, informação sobre compartilhamentos e revogação de consentimento.
 
-## 11. Alterações
+Pedidos podem ser enviados pela área **Privacidade e termos** autenticada. O formulário registra o pedido, mas não executa automaticamente a exportação ou exclusão. A equipe responsável deve verificar identidade proporcionalmente, avaliar exceções legais, responder, executar o que for cabível e manter trilha de atendimento. Canal alternativo do Encarregado: **[E-MAIL PENDENTE]**.
 
-Publicar data, versão e resumo de alterações. Mudanças materiais devem ser comunicadas de forma apropriada.
+## 10. Segurança e incidentes
 
-## 12. Pendências antes da publicação
+Adotar controle de acesso por usuário, RLS, autenticação, menor privilégio, gestão de segredos, criptografia em trânsito, backups protegidos, atualização de dependências, logs restritos, testes e plano de resposta. A existência de RLS não é garantia absoluta de segurança.
 
-- Identificar controlador, CNPJ, endereço e contato de privacidade.
-- Mapear dados, finalidades, bases legais e fluxos.
-- Auditar cookies, SDKs, analytics, pixels e scripts.
-- Publicar suboperadores, países e contratos.
-- Definir tabela final de retenção e descarte/backups.
-- Implementar canal autenticado de direitos e processo de atendimento.
-- Revisão por advogado(a) com experiência em LGPD.
+Quando um incidente afetar dados pessoais e puder acarretar risco ou dano relevante, o controlador deverá comunicar a ANPD e os titulares afetados no prazo regulamentar de três dias úteis contado do conhecimento de que o incidente afetou dados pessoais, observadas regras específicas e exceções aplicáveis (inclusive regime de agentes de pequeno porte, quando cabível). O controlador deve manter registro do incidente. O aplicativo não faz notificação automática; é necessário responsável, procedimento, contatos e plano de resposta.
+
+## 11. IA e decisões automatizadas
+
+Não usar dados financeiros para treinamento de modelos por padrão. Não enviar dados a provedores externos de IA sem avaliação, informação clara, base legal e salvaguardas. Saídas automatizadas devem ser identificadas, revisadas por pessoas e não apresentadas como aconselhamento profissional. Atender direitos de revisão e informação quando aplicáveis.
+
+## 12. Alterações e versão
+
+Publicar data e versão da política e comunicar mudanças relevantes. Novas finalidades ou alterações materiais devem ser avaliadas antes de iniciar o tratamento.
+
+## 13. Pendências obrigatórias antes do lançamento
+
+- Preencher razão social, CNPJ, endereço e contato oficial/Encarregado.
+- Validar mapa de dados, finalidades, bases legais e necessidade de cada campo.
+- Auditar cookies, localStorage, SDKs, scripts, pixels e requisições de terceiros em produção.
+- Validar suboperadores, países, transferências e contratos/DPA.
+- Aprovar prazos de retenção e implementar descarte e ciclo de backups.
+- Criar processo operacional para pedidos de titulares e exclusão de conta.
+- Designar responsável por incidentes e ensaiar comunicação ANPD/titulares.
+- Revisar com advogado(a) especializado(a) em LGPD e consumidor.
