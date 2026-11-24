@@ -26,9 +26,9 @@ function useFinanceData(notice: Notice) {
       setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
-      setError(message); notice(message);
+      setError(message);
     } finally { setLoading(false); }
-  }, [notice]);
+  }, []);
   useEffect(() => { void reload(); }, [reload]);
   return { accounts, setAccounts, categories, setCategories, centers, setCenters, transactions, setTransactions, loading, error, reload };
 }
