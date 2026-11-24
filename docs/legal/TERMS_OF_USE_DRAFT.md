@@ -8,7 +8,7 @@
 
 ## 1. Aceitação e documentos aplicáveis
 
-O cadastro exige aceite afirmativo dos Termos de Uso e ciência/aceite da Política de Privacidade apresentada no fluxo de cadastro. O aceite é separado e obrigatório para contratar o serviço; consentimento de marketing e cookies opcionais são escolhas independentes e não pré-selecionadas. A versão e data/hora do aceite são registradas no servidor.
+O cadastro exige aceite afirmativo dos Termos de Uso e confirmação de ciência da Política de Privacidade apresentada no fluxo de cadastro. O aceite é separado e obrigatório para contratar o serviço; consentimento de marketing e cookies opcionais são escolhas independentes e não pré-selecionadas. A versão e data/hora do aceite são registradas no servidor.
 
 ## 2. Serviço e funcionalidades
 
