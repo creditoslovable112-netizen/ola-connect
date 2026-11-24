@@ -131,6 +131,18 @@ export type Database = {
         Update: { id?: string; user_id?: string; name?: string; legal_name?: string | null; document?: string | null; email?: string | null; phone?: string | null; status?: string; is_default?: boolean; created_at?: string; updated_at?: string }
         Relationships: []
       }
+      privacy_consents: {
+        Row: { id: string; user_id: string; purpose: string; granted: boolean; document_version: string | null; source: string; created_at: string }
+        Insert: { id?: string; user_id: string; purpose: string; granted: boolean; document_version?: string | null; source?: string; created_at?: string }
+        Update: { id?: string; user_id?: string; purpose?: string; granted?: boolean; document_version?: string | null; source?: string; created_at?: string }
+        Relationships: []
+      }
+      privacy_requests: {
+        Row: { id: string; user_id: string; request_type: string; description: string | null; status: string; created_at: string; updated_at: string }
+        Insert: { id?: string; user_id: string; request_type: string; description?: string | null; status?: string; created_at?: string; updated_at?: string }
+        Update: { id?: string; user_id?: string; request_type?: string; description?: string | null; status?: string; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
