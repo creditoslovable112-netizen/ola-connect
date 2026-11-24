@@ -294,7 +294,7 @@ function DashboardPage() {
               </article>
             </section>
             <div className="demo-disclaimer"><ShieldCheck size={14}/> Ambiente de demonstração · Os valores exibidos são ilustrativos.</div>
-          </> : active === "Contas a pagar" ? <AccountsPayable showNotice={showNotice}/> : active === "Contas a receber" ? <AccountsReceivable showNotice={showNotice}/> : active === "Fluxo de caixa" ? <CashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <FinancialAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <CategoriesCostCenters showNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/><div className="coming-icon"><Command size={24}/></div><span className="eyebrow">NEXUS FINANCE</span><h1>{active}</h1><p>Esta área faz parte do NEXUS FINANCE e será construída em uma próxima etapa.</p><button className="button-primary" onClick={() => setActive("Dashboard")}><ChevronLeft size={16}/> Voltar ao dashboard</button></section>}
+          </> : active === "Contas a pagar" ? <AccountsPayable showNotice={showNotice}/> : active === "Contas a receber" ? <AccountsReceivable showNotice={showNotice}/> : active === "Fluxo de caixa" ? <CashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <FinancialAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <CategoriesCostCenters showNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast"><Check size={16}/>{notice}</div>}
