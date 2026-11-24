@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 
 type AuthMode = "login" | "signup" | "forgot" | "recovery";
 
@@ -10,6 +11,8 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,7 +39,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           email: email.trim(),
           password,
           options: {
-            data: { full_name: name.trim() },
+            data: { full_name: name.trim(), terms_accepted: termsAccepted, terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, marketing_consent: marketingConsent },
             emailRedirectTo: window.location.origin,
           },
         });
@@ -93,6 +96,12 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
           {mode !== "recovery" && <label>E-mail<div className="auth-input-wrap"><Mail size={17}/><input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@empresa.com"/></div></label>}
           {(mode === "login" || mode === "signup" || mode === "recovery") && <label>{mode === "recovery" ? "Nova senha" : "Senha"}<div className="auth-input-wrap"><LockKeyhole size={17}/><input type={showPassword?"text":"password"} autoComplete={mode==="login"?"current-password":"new-password"} minLength={8} required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mínimo de 8 caracteres"/><button className="auth-eye" type="button" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>}
           {(mode === "signup" || mode === "recovery") && <label>Confirmar senha<div className="auth-input-wrap"><LockKeyhole size={17}/><input type={showPassword?"text":"password"} autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Digite a senha novamente"/></div></label>}
+          {mode === "signup" && <div className="auth-consent-group">
+            <label className="auth-consent-row"><input type="checkbox" required checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)}/><span>Li e aceito os <a href="#terms-signup">Termos de Uso</a> e a <a href="#privacy-signup">Política de Privacidade</a>. Este aceite é obrigatório para criar a conta.</span></label>
+            <label className="auth-consent-row"><input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)}/><span>Quero receber novidades e ofertas por e-mail. Opcional; posso cancelar a qualquer momento.</span></label>
+            <details id="terms-signup"><summary>Consultar resumo dos Termos de Uso</summary><p>O NEXUS FINANCE é uma ferramenta de gestão. Antes de usar, confira regras, limitações, dados tratados, responsabilidades, condições comerciais e direitos do consumidor. Não há cobrança ou renovação automática ativa nesta versão.</p></details>
+            <details id="privacy-signup"><summary>Consultar resumo da Política de Privacidade</summary><p>Tratamos dados necessários à conta, segurança e funções solicitadas. Cookies não essenciais e marketing dependem de escolhas separadas. Você pode solicitar acesso, correção e exclusão quando cabível pelos controles de privacidade. A política integral e os dados do controlador devem ser revisados antes da publicação.</p></details>
+          </div>}
           {error && <p className="auth-feedback auth-error" role="alert">{error}</p>}
           {message && <p className="auth-feedback auth-success" role="status">{message}</p>}
           <button className="auth-submit" type="submit" disabled={loading}>{loading?"Aguarde...":mode==="signup"?"Criar minha conta":mode==="forgot"?"Enviar link de recuperação":mode==="recovery"?"Salvar nova senha":"Entrar no NEXUS"}<ArrowRight size={17}/></button>
