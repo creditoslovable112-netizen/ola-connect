@@ -29,7 +29,7 @@ const sections = [
 export function LegalCenter({ onNotice }: Props) {
   const [active, setActive] = useState("privacy");
   const [marketing, setMarketing] = useState(false);
-  const section = sections.find((item) => item.id === active) ?? sections[0];
+  const section = sections.find((item) => item.id === active) ?? sections[0]!;
   return <section className="legal-center" aria-labelledby="legal-title">
     <div className="welcome-row"><div><div className="eyebrow">TRANSPARÊNCIA E CONTROLES</div><h1 id="legal-title">Privacidade e termos</h1><p>Informações claras sobre dados, cookies, condições e direitos.</p></div></div>
     <div className="legal-tabs" role="tablist" aria-label="Documentos legais">
