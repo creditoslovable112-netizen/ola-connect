@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LegalCenter } from "../components/LegalCenter";
-import { SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories } from "../components/SupabaseFinancialModules";
+import { SupabaseDashboard, SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -308,72 +308,7 @@ function DashboardPage() {
         </header>
 
         <div className="page-content">
-          {active === "Dashboard" ? <>
-            <div className="welcome-row">
-              <div><div className="eyebrow"><span className="live-dot"/> VISÃO GERAL</div><h1>Bem-vindo ao NEXUS <span>✦</span></h1><p>Acompanhe a saúde financeira do seu negócio.</p></div>
-              <div className="welcome-actions">
-                <button className="button-secondary" onClick={() => showNotice("Exportação demonstrativa: disponível em uma próxima etapa.")}><Download size={16}/> Exportar</button>
-                <button className="button-primary" onClick={() => showNotice("Formulário de nova transação será implementado na próxima etapa.")}><Plus size={17}/> Nova transação</button>
-              </div>
-            </div>
-
-            <div className="dashboard-toolbar">
-              <div className="period-label"><CalendarDays size={15}/> Período</div>
-              <select value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Selecionar período">
-                <option>Últimos 7 meses</option><option>Este mês</option><option>Últimos 30 dias</option><option>Este trimestre</option>
-              </select>
-              <span className="updated-label">Dados demonstrativos</span>
-            </div>
-
-            <section className="metrics-grid">
-              <article className="metric-card balance-card">
-                <div className="metric-top"><span>Saldo total</span><span className="metric-icon"><Wallet size={17}/></span></div>
-                <div className="metric-value-row"><strong>{balanceVisible ? "R$ 124.580" : "••••••••"}</strong><button className="visibility-button" onClick={() => setBalanceVisible(!balanceVisible)} aria-label="Mostrar ou ocultar saldo">{balanceVisible ? <Eye size={16}/> : <EyeOff size={16}/>}</button></div>
-                <div className="metric-foot"><span className="positive"><TrendingUp size={13}/> 12,8%</span><span>vs. mês anterior</span></div>
-                <div className="balance-spark"><svg viewBox="0 0 160 38" preserveAspectRatio="none"><path d="M0 31 C18 27 20 33 37 22 S59 25 72 15 S95 23 110 12 S136 18 160 2" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M0 31 C18 27 20 33 37 22 S59 25 72 15 S95 23 110 12 S136 18 160 2 L160 38 L0 38Z" fill="currentColor" opacity=".08"/></svg></div>
-              </article>
-              <StatsCard title="Receitas do período" value="R$ 64.200" change="8,2" icon={ArrowDownLeft} gradient="linear-gradient(135deg, rgba(32,184,137,.18), rgba(32,184,137,.03))" detail="72% da meta mensal" />
-              <StatsCard title="Despesas do período" value="R$ 38.200" change="3,4" icon={ArrowUpRight} gradient="linear-gradient(135deg, rgba(241,155,121,.2), rgba(241,155,121,.03))" detail="48% do limite planejado" negative />
-              <StatsCard title="Resultado líquido" value="R$ 26.000" change="18,6" icon={CircleDollarSign} gradient="linear-gradient(135deg, rgba(139,120,245,.18), rgba(139,120,245,.03))" detail="Margem de 40,5%" />
-            </section>
-
-            <section className="charts-grid">
-              <article className="panel cash-panel">
-                <div className="panel-heading"><div><h2>Fluxo de caixa</h2><p>Entradas e saídas ao longo do tempo</p></div><button className="select-like" onClick={() => setPeriod(period === "Últimos 7 meses" ? "Este trimestre" : "Últimos 7 meses")}>{period}<ChevronDown size={14}/></button></div>
-                <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
-                <div className="cash-chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={cashData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}><defs><linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#20b889" stopOpacity={0.17}/><stop offset="95%" stopColor="#20b889" stopOpacity={0}/></linearGradient><linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f19b79" stopOpacity={0.13}/><stop offset="95%" stopColor="#f19b79" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#edf0f3" vertical={false}/><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill:"#929ba8",fontSize:11}} dy={10}/><YAxis axisLine={false} tickLine={false} tick={{fill:"#929ba8",fontSize:11}} tickFormatter={(v) => `R$ ${v/1000}k`}/><Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{border:"1px solid #edf0f3",borderRadius:12,fontSize:12,boxShadow:"0 8px 24px #1b294012"}}/><Area type="monotone" dataKey="entradas" name="Receitas" stroke="#20b889" strokeWidth={2.5} fill="url(#incomeFill)" activeDot={{r:5,strokeWidth:0}}/><Area type="monotone" dataKey="saidas" name="Despesas" stroke="#ee9a78" strokeWidth={2.5} fill="url(#expenseFill)" activeDot={{r:5,strokeWidth:0}}/></AreaChart></ResponsiveContainer></div>
-              </article>
-              <article className="panel summary-panel">
-                <div className="panel-heading"><div><h2>Resumo financeiro</h2><p>Visão consolidada do mês</p></div><button className="more-button" aria-label="Mais opções" onClick={() => showNotice("Mais opções em breve.")}><MoreHorizontal size={19}/></button></div>
-                <div className="summary-total"><strong>R$ 26.000,00</strong><span className="positive"><TrendingUp size={13}/> 18,6%</span></div>
-                <p className="summary-subtitle">Resultado líquido neste mês</p>
-                <div className="summary-bar"><span/><span/><span/></div>
-                <div className="summary-line"><span><i className="dot-income"/> Receitas</span><strong>R$ 64.200,00</strong></div>
-                <div className="summary-line"><span><i className="dot-expense"/> Despesas</span><strong>R$ 38.200,00</strong></div>
-                <div className="summary-divider"/>
-                <div className="summary-footer"><span>Margem operacional</span><strong>40,5%</strong></div>
-              </article>
-            </section>
-
-            <section className="bottom-grid">
-              <article className="panel transactions-panel">
-                <div className="panel-heading"><div><h2>Transações recentes</h2><p>Últimas movimentações da sua empresa</p></div><button className="text-link" onClick={() => setActive("Transações")}>Ver todas <ArrowUpRight size={14}/></button></div>
-                <div className="transaction-table">
-                  <div className="table-head"><span>DESCRIÇÃO</span><span>CATEGORIA</span><span>DATA</span><span>VALOR</span></div>
-                  {filteredTransactions.map((item) => <div className="transaction-row" key={item.name}><div className="transaction-name"><div className={`transaction-avatar ${item.color}`}>{item.initials}</div><div><strong>{item.name}</strong><small>{item.detail}</small></div></div><span className="category-cell">{item.category}</span><span className="date-cell">{item.date}</span><strong className={item.type === "in" ? "amount-in" : "amount-out"}>{item.amount}</strong></div>)}
-                  {filteredTransactions.length === 0 && <div className="empty-search">Nenhuma transação encontrada para “{search}”.</div>}
-                </div>
-              </article>
-              <article className="panel payables-panel">
-                <div className="panel-heading"><div><h2>Próximos vencimentos</h2><p>Contas que merecem atenção</p></div><button className="more-button" aria-label="Mais opções" onClick={() => setActive("Contas a pagar")}><MoreHorizontal size={19}/></button></div>
-                <div className="due-item"><div className="due-icon due-red"><CreditCard size={16}/></div><div className="due-copy"><strong>Aluguel comercial</strong><small>Imobiliária Horizonte</small></div><div className="due-value"><strong>R$ 3.200,00</strong><small>24 nov, 2026</small></div></div>
-                <div className="due-item"><div className="due-icon due-purple"><FileText size={16}/></div><div className="due-copy"><strong>Serviços contábeis</strong><small>Contábil Prime</small></div><div className="due-value"><strong>R$ 850,00</strong><small>28 nov, 2026</small></div></div>
-                <div className="due-item"><div className="due-icon due-blue"><Landmark size={16}/></div><div className="due-copy"><strong>Internet empresarial</strong><small>Conecta Fibra</small></div><div className="due-value"><strong>R$ 189,90</strong><small>30 nov, 2026</small></div></div>
-                <button className="view-payables" onClick={() => setActive("Contas a pagar")}>Ver contas a pagar <ChevronRight size={15}/></button>
-              </article>
-            </section>
-            <div className="demo-disclaimer"><ShieldCheck size={14}/> Ambiente de demonstração · Os valores exibidos são ilustrativos.</div>
-          </> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          {active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/>> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
