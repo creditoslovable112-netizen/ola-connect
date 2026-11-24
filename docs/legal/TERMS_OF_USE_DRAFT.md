@@ -1,57 +1,71 @@
-# Termos de Uso — NEXUS FINANCE (RASCUNHO)
+# Termos de Uso — NEXUS FINANCE
 
-**Status:** documento preliminar; não publicar antes de revisão jurídica e preenchimento dos campos pendentes.  
-**Operador:** [RAZÃO SOCIAL E CNPJ PENDENTES] · **Contato:** [E-MAIL PENDENTE].
+**Versão:** 1.0-2026-11-24  
+**Status:** RASCUNHO — exige identificação do fornecedor e revisão jurídica antes da publicação.
 
-## 1. Aceitação
+**Fornecedor/operador:** [RAZÃO SOCIAL PENDENTE] · **CNPJ:** [PENDENTE]  
+**Endereço:** [PENDENTE] · **Contato:** [E-MAIL OFICIAL PENDENTE]
 
-O acesso ao serviço dependerá da apresentação destes Termos e da Política de Privacidade em versão identificada. No cadastro, o aceite dos Termos e da Política deverá ser obrigatório, separado de qualquer consentimento de marketing, desmarcado por padrão e registrado com usuário, versão, data/hora e contexto no servidor. A interface atual ainda não autentica nem registra aceite de forma persistente.
+## 1. Aceitação e documentos aplicáveis
 
-## 2. Serviço e fase de demonstração
+O cadastro exige aceite afirmativo dos Termos de Uso e ciência/aceite da Política de Privacidade apresentada no fluxo de cadastro. O aceite é separado e obrigatório para contratar o serviço; consentimento de marketing e cookies opcionais são escolhas independentes e não pré-selecionadas. A versão e data/hora do aceite são registradas no servidor.
 
-O NEXUS FINANCE encontra-se em fase demonstrativa. Valores, empresas, nomes, transações, relatórios e insights exibidos podem ser fictícios. Não utilizar a demonstração para decisões financeiras, fiscais, contábeis ou operacionais reais. Funcionalidades não conectadas não devem ser anunciadas como disponíveis.
+## 2. Serviço e funcionalidades
 
-## 3. Conta e uso permitido
+O NEXUS FINANCE oferece ferramentas de gestão financeira conforme as funcionalidades efetivamente disponibilizadas. Não se deve presumir que módulos, integrações, exportações, automações, suporte ou disponibilidade estejam ativos sem teste e comunicação expressa. Dados ilustrativos ou telas de demonstração devem estar claramente identificados e nunca podem ser confundidos com informações reais.
 
-O usuário deve fornecer informações corretas, proteger suas credenciais e usar o serviço conforme a lei. É proibido tentar acessar contas alheias, interferir na segurança, inserir conteúdo ilícito ou violar direitos de terceiros. O titular da conta deve administrar permissões de sua equipe.
+## 3. Conta, segurança e uso permitido
 
-## 4. Dados inseridos pelo cliente
+O usuário deve fornecer dados corretos, manter credenciais seguras, restringir acessos da equipe e comunicar suspeitas de uso indevido. É proibido acessar contas de terceiros, contornar controles, explorar vulnerabilidades, inserir conteúdo ilícito ou violar direitos de terceiros.
 
-O cliente mantém responsabilidade por possuir base legal para inserir dados pessoais de colaboradores, clientes, fornecedores e terceiros. A relação controlador-operador, instruções, medidas de segurança, suboperadores, incidentes, auditoria e eliminação devem ser detalhadas em Acordo de Tratamento de Dados (DPA) antes do uso produtivo.
+## 4. Dados pessoais e obrigações do cliente
 
-## 5. IA e conteúdo automatizado
+O cliente é responsável por possuir base legal e cumprir deveres de transparência ao inserir dados de clientes, fornecedores, colaboradores e terceiros. Quando o cliente atuar como controlador e o NEXUS como operador, as instruções documentadas e o Acordo de Tratamento de Dados (DPA) devem regular finalidades, duração, segurança, confidencialidade, suboperadores, incidentes, assistência a direitos e eliminação/devolução. O DPA deve estar concluído antes do uso produtivo de dados de terceiros.
 
-Conteúdo produzido ou auxiliado por IA será identificado. Resultados podem conter erros, não substituem análise profissional e exigem revisão humana. Dados dos clientes não serão usados para treinamento de IA por padrão. Integrações externas só poderão ser ativadas após avaliação, transparência e base legal adequadas.
+## 5. Crianças e adolescentes
 
-## 6. Planos, renovação e cancelamento
+O serviço não é direcionado a crianças. O cliente não deve inserir dados de crianças sem avaliação do melhor interesse e da hipótese legal aplicável. Quando o consentimento for a hipótese utilizada para dados de crianças, deve ser específico e em destaque, dado por pelo menos um dos pais ou responsável legal, conforme a LGPD. Tratamentos de dados de adolescentes também exigem avaliação de melhor interesse e base legal adequada.
 
-Nenhum preço, plano, teste gratuito ou renovação exibidos na demonstração constitui oferta de cobrança ativa. Antes de contratar, informar preço total, tributos, periodicidade, renovação automática, data de cobrança, regras de reajuste e condições de cancelamento. O cancelamento deverá ser acessível, sem obstáculos artificiais, e confirmar a data efetiva e eventual acesso remanescente. Não cobrar taxa não informada previamente.
+## 6. Propriedade intelectual e licenças
 
-## 7. Reembolso
+Marcas, imagens, fontes, bibliotecas e código de terceiros permanecem sujeitos às respectivas licenças e avisos. O fornecedor deverá manter inventário de dependências e licenças e cumprir atribuições e obrigações de distribuição. Logotipos, marcas, nomes, depoimentos, avaliações, estudos de caso e referências de clientes só podem ser publicados com autorização documentada. Não utilizar avaliações falsas, cronômetros artificiais de última chance, escassez falsa ou promessas sem evidência.
 
-A política de reembolso deve ser exibida antes do pagamento e respeitar direitos legais aplicáveis, inclusive o Código de Defesa do Consumidor quando incidente. Não limitar direitos obrigatórios. Regras específicas de prazo, canal e processamento dependem da modalidade de contratação e precisam de revisão jurídica antes da ativação do checkout.
+## 7. Planos, preço, checkout e renovação
 
-## 8. Disponibilidade e suporte
+Nesta versão não há checkout, cobrança, assinatura recorrente ou renovação automática ativos. Nenhum valor exibido em tela demonstrativa constitui cobrança real. Antes de qualquer contratação, o checkout deve mostrar de forma clara o preço total, moeda, tributos, periodicidade, taxas, data de cobrança, condições de reajuste, duração, renovação automática e forma de cancelamento. Não pode haver taxa escondida ou opção pré-selecionada que induza a contratação.
 
-Não há compromisso de disponibilidade (SLA) definido nesta fase. Não anunciar uptime, suporte 24/7 ou garantias sem capacidade operacional, métricas e contrato aprovados.
+Se houver renovação automática, ela deve ser informada de forma destacada antes do pagamento e aceita expressamente. O consumidor deve receber confirmação e acesso ao contrato/recibo.
 
-## 9. Propriedade intelectual e licenças
+## 8. Cancelamento e arrependimento
 
-Marcas e conteúdos de terceiros pertencem a seus titulares. Não usar logotipos, depoimentos, avaliações, nomes de clientes ou estudos de caso sem autorização verificável. Componentes de código aberto devem manter avisos de copyright, licenças e atribuições exigidos. O inventário de dependências e licenças deve ser revisado antes da distribuição.
+O cancelamento de assinatura deverá ser simples, acessível e disponível no mesmo ambiente em que a contratação foi realizada, com confirmação do pedido e da data efetiva. Não criar obstáculos artificiais, exigir contato desnecessário ou ocultar o cancelamento.
 
-## 10. Suspensão e encerramento
+Nas contratações realizadas fora do estabelecimento comercial às quais se aplique o art. 49 do Código de Defesa do Consumidor, será respeitado o prazo legal de arrependimento de 7 (sete) dias, contado conforme a legislação, com restituição dos valores pagos na forma legal. A política comercial não limita direitos obrigatórios. O fluxo de arrependimento e reembolso deve estar testado antes de ativar pagamentos.
 
-Regras de suspensão, exportação de dados, retenção legal e exclusão após encerramento devem ser transparentes e aplicadas de forma proporcional. Não reter dados sem finalidade ou obrigação documentada.
+## 9. Comunicações e marketing
 
-## 11. Limitação e responsabilidade
+Comunicações operacionais necessárias devem ser distinguidas de mensagens promocionais. Marketing por e-mail depende de consentimento opcional, específico e revogável. Cada mensagem promocional deverá conter link funcional e visível de descadastro. Até que o provedor de e-mail, lista de supressão e fluxo de descadastro estejam implementados e testados, não enviar campanhas promocionais.
 
-Qualquer limitação de responsabilidade deverá respeitar normas obrigatórias e não excluir direitos indisponíveis do consumidor ou titular de dados. Texto definitivo depende de revisão jurídica.
+## 10. Disponibilidade, suporte e promessas
 
-## 12. Lei aplicável e contato
+Não existe SLA, uptime garantido, suporte 24 horas ou garantia de resultado definida nesta versão. Nenhuma dessas promessas deve ser anunciada sem capacidade operacional, evidência, métrica e contrato. Recursos em desenvolvimento devem ser identificados como indisponíveis ou em demonstração.
 
-Lei aplicável e foro: definir conforme sede e legislação pertinente, sem restringir direitos obrigatórios.  
-Operador: **[RAZÃO SOCIAL, CNPJ, ENDEREÇO E CONTATO PENDENTES]**.
+## 11. Privacidade, segurança e incidentes
 
-## 13. Registro de aceite
+O tratamento de dados é descrito na Política de Privacidade. O fornecedor deverá manter controles proporcionais, plano de resposta a incidentes e contratos adequados com operadores. Limitações contratuais não afastam direitos indisponíveis previstos em lei.
 
-Produção deverá registrar versão do documento, identificador do usuário, data/hora, origem e prova do consentimento. Não armazenar apenas um booleano no navegador como prova suficiente.
+## 12. Encerramento e retenção
+
+O encerramento deve permitir exportação de dados quando aplicável, informar efeitos sobre acesso e executar descarte ou anonimização conforme a Política de Privacidade, preservando apenas dados necessários por obrigação legal ou exercício regular de direitos.
+
+## 13. Identificação e contato
+
+Razão social, CNPJ, endereço físico e canal de atendimento: **[PENDENTES DE CONFIRMAÇÃO PELO RESPONSÁVEL LEGAL]**. Não publicar estes Termos comercialmente antes de preencher e validar esses dados.
+
+## 14. Lei aplicável e revisão
+
+A legislação brasileira aplicável será observada, inclusive normas de proteção de dados e defesa do consumidor. Foro e disposições específicas devem ser definidos por revisão jurídica, sem restringir direitos obrigatórios.
+
+---
+
+**Nota de publicação:** este documento é um rascunho operacional. Exige revisão por advogado(a), validação das práticas reais, identificação do fornecedor e adequação ao modelo comercial efetivamente contratado.
