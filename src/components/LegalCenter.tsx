@@ -47,7 +47,7 @@ export function LegalCenter({ onNotice, onAccepted, onManageCookies }: Props) {
       await recordMyConsent("terms", true, TERMS_VERSION, "privacy_center");
       await recordMyConsent("privacy", true, PRIVACY_VERSION, "privacy_center");
       await refresh();
-      onNotice("Aceite dos Termos e da Política registrado no servidor.");
+      onNotice("Aceite dos Termos e ciência da Política registrados no servidor.");
       onAccepted?.();
     } catch (error) { onNotice(error instanceof Error ? error.message : "Não foi possível registrar o aceite."); }
     finally { setSaving(false); }
@@ -135,8 +135,8 @@ export function LegalCenter({ onNotice, onAccepted, onManageCookies }: Props) {
     <article className="panel legal-controls">
       <div className="panel-heading"><div><h2>Registros e preferências</h2><p>Consentimentos separados e histórico armazenado no servidor.</p></div><ShieldCheck size={20}/></div>
       {loading ? <p>Carregando registros…</p> : <div className="legal-consent-status"><div><span>Termos de Uso</span><strong>{status("terms")}</strong></div><div><span>Política de Privacidade</span><strong>{status("privacy")}</strong></div><div><span>Marketing</span><strong>{status("marketing")}</strong></div><div><span>Cookies opcionais</span><strong>{status("cookies")}</strong></div></div>}
-      <label className="legal-toggle"><input type="checkbox" checked={confirmDocuments} onChange={(event) => setConfirmDocuments(event.target.checked)}/> Li e aceito a versão atual dos Termos de Uso e da Política de Privacidade.</label>
-      <button className="button-secondary" disabled={saving || !confirmDocuments} onClick={() => void acceptCurrentDocuments()}><CheckCircle2 size={16}/> Registrar meu aceite</button>
+      <label className="legal-toggle"><input type="checkbox" checked={confirmDocuments} onChange={(event) => setConfirmDocuments(event.target.checked)}/> Li e aceito os Termos de Uso e declaro ciência da versão atual da Política de Privacidade.</label>
+      <button className="button-secondary" disabled={saving || !confirmDocuments} onClick={() => void acceptCurrentDocuments()}><CheckCircle2 size={16}/> Registrar meu aceite e ciência</button>
       <label className="legal-toggle"><input type="checkbox" checked={marketing} disabled={saving} onChange={(event) => void updateMarketing(event.target.checked)}/> Aceito receber novidades e ofertas por e-mail (opcional).</label>
       <p className="legal-muted">A opção de marketing não é condição para usar o serviço. Não há campanhas configuradas; nenhum e-mail promocional será enviado até existir um mecanismo de descadastro funcional em cada mensagem.</p>
     </article>
