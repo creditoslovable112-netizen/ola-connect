@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LegalCenter } from "../components/LegalCenter";
+import { SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -372,7 +373,7 @@ function DashboardPage() {
               </article>
             </section>
             <div className="demo-disclaimer"><ShieldCheck size={14}/> Ambiente de demonstração · Os valores exibidos são ilustrativos.</div>
-          </> : active === "Contas a pagar" ? <AccountsPayable showNotice={showNotice}/> : active === "Contas a receber" ? <AccountsReceivable showNotice={showNotice}/> : active === "Fluxo de caixa" ? <CashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <FinancialAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <CategoriesCostCenters showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          </> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
