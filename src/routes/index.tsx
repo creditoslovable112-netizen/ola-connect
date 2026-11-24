@@ -33,7 +33,7 @@ const navGroups = [
   ]},
   { title: "GESTÃO", items: [
     { label: "Relatórios", icon: FileBarChart },
-    { label: "Categorias", icon: Receipt },
+    { label: "Categorias e centros de custo", icon: Receipt },
     { label: "Equipe", icon: Users },
   ]},
 ];
