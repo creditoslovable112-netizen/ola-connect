@@ -71,7 +71,7 @@ Ao término da finalidade, os dados devem ser eliminados, anonimizados ou bloque
 
 O titular pode solicitar confirmação de tratamento, acesso, correção, anonimização, bloqueio, eliminação quando cabível, portabilidade nos termos aplicáveis, informação sobre compartilhamentos e revogação de consentimento.
 
-Pedidos podem ser enviados pela área **Privacidade e termos** autenticada. O formulário registra o pedido, mas não executa automaticamente a exportação ou exclusão. A equipe responsável deve verificar identidade proporcionalmente, avaliar exceções legais, responder, executar o que for cabível e manter trilha de atendimento. Canal alternativo do Encarregado: **[E-MAIL PENDENTE]**.
+Pedidos podem ser enviados pelo formulário disponível na área autenticada **Privacidade e termos**. Esse é o canal interno disponível nesta versão; o e-mail externo e a identidade do Encarregado ainda precisam ser indicados. O formulário registra o pedido, mas não executa automaticamente a exportação ou exclusão. A equipe responsável deve verificar identidade proporcionalmente, avaliar exceções legais, responder, executar o que for cabível e manter trilha de atendimento. Canal alternativo do Encarregado: **[E-MAIL PENDENTE]**.
 
 ## 10. Segurança e incidentes
 
