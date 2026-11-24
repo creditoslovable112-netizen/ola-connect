@@ -286,7 +286,7 @@ function DashboardPage() {
           <button className="nav-item" onClick={() => setActive("Configurações")}><Settings2 size={17}/><span>Configurações</span></button>
           <div className="profile">
             <div className="profile-avatar">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
-            <div className="profile-copy"><strong>{String(session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Minha conta")}</strong><small>{session.user.email}</small></div>
+            <div className="profile-copy"><strong>{String(session.user.user_metadata?.["full_name"] || session.user.email?.split("@")[0] || "Minha conta")}</strong><small>{session.user.email}</small></div>
             <button className="profile-signout" title="Sair da conta" aria-label="Sair da conta" onClick={() => { void supabase.auth.signOut().then(({ error }) => { if (error) showNotice(error.message); }); }}><LogOut size={16}/></button>
           </div>
         </div>
