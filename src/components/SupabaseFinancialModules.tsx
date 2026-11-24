@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet } from "lucide-react";
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction,
@@ -19,7 +19,7 @@ function useFinanceData(notice: Notice) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const reload = async () => {
+  const reload = useCallback(async () => {
     setLoading(true); setError("");
     try {
       const [a, c, cc, t] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions()]);
@@ -28,8 +28,8 @@ function useFinanceData(notice: Notice) {
       const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
       setError(message); notice(message);
     } finally { setLoading(false); }
-  };
-  useEffect(() => { void reload(); }, []);
+  }, [notice]);
+  useEffect(() => { void reload(); }, [reload]);
   return { accounts, setAccounts, categories, setCategories, centers, setCenters, transactions, setTransactions, loading, error, reload };
 }
 
