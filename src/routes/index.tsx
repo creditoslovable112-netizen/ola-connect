@@ -230,6 +230,10 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [cookieBanner, setCookieBanner] = useState(false);
+  const showNotice = useCallback((message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 2600);
+  }, []);
   useEffect(() => {
     let mounted = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -269,10 +273,6 @@ function DashboardPage() {
   };
   const filteredTransactions = useMemo(() => transactions.filter((item) => (item.name + item.detail + item.category).toLowerCase().includes(search.toLowerCase())), [search]);
 
-  const showNotice = useCallback((message: string) => {
-    setNotice(message);
-    window.setTimeout(() => setNotice(""), 2600);
-  }, []);
 
   if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
   if (!session || recoveryMode) return <><AuthScreen recoveryMode={recoveryMode}/>{cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Você controla os cookies</strong><p>O NEXUS usa armazenamento estritamente necessário para autenticação e funcionamento. Não carregamos analytics, pixels ou publicidade nesta versão. Rejeitar opcionais mantém qualquer tecnologia não essencial bloqueada.</p><a className="cookie-link" href="#privacy-signup">Saiba mais sobre privacidade</a></div><div className="cookie-actions"><button className="button-secondary" onClick={() => void saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => void saveCookieChoice("all")}>Aceitar todos</button></div></section>}</>;
