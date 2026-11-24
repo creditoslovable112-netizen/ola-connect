@@ -9,8 +9,7 @@ import {
   ArrowLeftRight, Check, Clock3, Eye, EyeOff
 } from "lucide-react";
 import {
-  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-  Bar, BarChart
+  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from "recharts";
 
 export const Route = createFileRoute("/")({
