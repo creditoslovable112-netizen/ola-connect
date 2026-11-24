@@ -29,7 +29,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Instalar dependências travadas
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Verificar TypeScript
         run: bunx tsc --noEmit
