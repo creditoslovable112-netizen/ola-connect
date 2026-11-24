@@ -1,20 +1,28 @@
-# Política de Cookies — NEXUS FINANCE (RASCUNHO)
+# Política de Cookies — NEXUS FINANCE
 
-**Status:** rascunho sujeito a inventário técnico. Nenhum rastreador não essencial deve ser ativado antes do consentimento.
+**Versão:** 1.0-2026-11-24  
+**Status:** rascunho sujeito à auditoria técnica do ambiente de publicação.
 
-## Categorias
+## 1. O que são
 
-- **Estritamente necessários:** sessão, autenticação, segurança e preferências indispensáveis. Explicar finalidade e duração por cookie real.
-- **Preferências:** lembrar idioma ou escolhas não essenciais somente conforme base legal aplicável.
-- **Analytics:** medir uso e desempenho. Bloqueado até consentimento.
-- **Publicidade/rastreamento:** pixels e publicidade comportamental. Bloqueados até consentimento.
+Cookies e tecnologias semelhantes podem armazenar ou acessar informações no navegador. A classificação deve considerar finalidade, duração, fornecedor e dados tratados.
 
-## Escolha
+## 2. Tecnologias estritamente necessárias
 
-O banner deve oferecer “Aceitar opcionais”, “Rejeitar opcionais” e “Personalizar” com destaque equivalente, sem caixas pré-marcadas. Recusar deve ser tão simples quanto aceitar. Permitir alterar ou retirar a escolha em qualquer momento por link persistente “Preferências de cookies”.
+O produto pode utilizar armazenamento local necessário à autenticação, persistência de sessão, segurança e funcionamento solicitado. A biblioteca de autenticação Supabase pode manter tokens de sessão no armazenamento do navegador. Esse armazenamento não deve ser reutilizado para publicidade ou perfilamento.
 
-## Inventário obrigatório antes da publicação
+## 3. Tecnologias não essenciais
 
-Registrar nome, fornecedor, finalidade, categoria, domínio, duração, dados coletados, país e link da política de cada cookie, SDK, pixel, local storage ou identificador. Auditar requisições de rede para comprovar que analytics e marketing não carregam antes do consentimento.
+Analytics, medição de desempenho, pixels de publicidade, rastreamento comportamental e conteúdo incorporado não essencial não devem ser carregados antes de uma escolha válida. Na branch atual não foram encontrados imports ou chamadas conhecidas de Google Analytics/gtag, PostHog, Hotjar, Microsoft Clarity ou Meta Pixel; a inspeção do código não substitui teste de rede no preview e no domínio de produção.
 
-**Atenção:** a implementação visual do banner não bloqueia automaticamente scripts de terceiros. Isso exige integração técnica com um gerenciador de consentimento e auditoria de cada SDK.
+## 4. Escolhas
+
+O banner permite rejeitar os opcionais ou aceitar todos. A recusa deve ser tão fácil quanto aceitar. A escolha é armazenada no navegador e, quando autenticado, registrada no histórico de consentimentos da conta. O usuário pode limpar a preferência do navegador para escolher novamente. Consentimento para marketing é separado.
+
+## 5. Auditoria antes do lançamento
+
+- Inspecionar cookies, localStorage, sessionStorage, IndexedDB, service workers e requests de rede.
+- Testar em janela anônima, antes e depois de aceitar/rejeitar.
+- Inspecionar scripts e integrações adicionados pelo Lovable e pelo domínio publicado.
+- Garantir que nenhum fornecedor opcional receba dados antes do consentimento.
+- Registrar finalidade, base legal, duração e fornecedor de cada tecnologia.
