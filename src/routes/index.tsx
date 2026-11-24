@@ -3,6 +3,7 @@ import { LegalCenter } from "../components/LegalCenter";
 import { SupabaseDashboard, SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories, SupabaseTransactions, SupabaseReports, SupabaseContacts, SupabaseCompanies } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
+import { recordMyConsent, COOKIE_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
 import { createFileRoute } from "@tanstack/react-router";
@@ -246,8 +247,12 @@ function DashboardPage() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
-  const saveCookieChoice = (choice: "necessary" | "all") => {
+  const saveCookieChoice = async (choice: "necessary" | "all") => {
     window.localStorage.setItem("nexus-cookie-choice", choice);
+    if (session?.user.id) {
+      try { await recordMyConsent("cookies", choice === "all", COOKIE_VERSION, "cookie_banner"); }
+      catch (error) { showNotice(error instanceof Error ? error.message : "Não foi possível registrar a preferência de cookies."); }
+    }
     setCookieBanner(false);
   };
   const filteredTransactions = useMemo(() => transactions.filter((item) => (item.name + item.detail + item.category).toLowerCase().includes(search.toLowerCase())), [search]);
@@ -258,7 +263,7 @@ function DashboardPage() {
   };
 
   if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
-  if (!session || recoveryMode) return <AuthScreen recoveryMode={recoveryMode}/>;
+  if (!session || recoveryMode) return <><AuthScreen recoveryMode={recoveryMode}/>{cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Você controla os cookies</strong><p>O NEXUS usa armazenamento estritamente necessário para autenticação e funcionamento. Não carregamos analytics, pixels ou publicidade nesta versão. Rejeitar opcionais mantém qualquer tecnologia não essencial bloqueada.</p><a className="cookie-link" href="#privacy-signup">Saiba mais sobre privacidade</a></div><div className="cookie-actions"><button className="button-secondary" onClick={() => void saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => void saveCookieChoice("all")}>Aceitar todos</button></div></section>}</>;
 
   return (
     <div className="nexus-app">
@@ -321,7 +326,7 @@ function DashboardPage() {
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
-      {cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Suas escolhas de privacidade</strong><p>Usamos apenas armazenamento necessário para esta demonstração. Não ativamos analytics ou publicidade nesta interface. Você pode aceitar apenas o necessário ou salvar a escolha de todos os cookies opcionais, caso venham a ser ativados no futuro.</p><button className="cookie-link" onClick={() => { setActive("Privacidade e termos"); setCookieBanner(false); }}>Ler política de cookies</button></div><div className="cookie-actions"><button className="button-secondary" onClick={() => saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => saveCookieChoice("all")}>Aceitar opcionais</button></div></section>}
+      {cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Suas escolhas de privacidade</strong><p>O armazenamento necessário mantém a sessão e a segurança. Não carregamos analytics, pixels ou publicidade nesta versão. Você pode rejeitar tecnologias opcionais ou aceitar todas; marketing é uma escolha separada.</p><button className="cookie-link" onClick={() => { setActive("Privacidade e termos"); setCookieBanner(false); }}>Ler política de cookies</button></div><div className="cookie-actions"><button className="button-secondary" onClick={() => saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => saveCookieChoice("all")}>Aceitar todos</button></div></section>}
     </div>
   );
 }
