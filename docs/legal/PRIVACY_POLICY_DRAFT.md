@@ -61,9 +61,9 @@ Os prazos abaixo são **metas iniciais propostas**, sujeitas à validação jur�
 | Dados financeiros e contatos inseridos | Enquanto necessários ao serviço; iniciar exclusão em até 30 dias após encerramento | Cliente deve poder exportar antes do encerramento; retenção legal específica deve ser documentada. |
 | Backups | Expiração em até 90 dias | Validar ciclo de backup e impedir retorno de dados eliminados ao ambiente ativo. |
 | Logs de segurança | Até 6 meses como meta | Validar aplicabilidade legal e necessidade; acesso restrito. |
-| Solicitações de suporte/privacidade | Até 12 meses após conclusão como meta | Preservar evidência necessária, removendo dados excessivos. |
+| Solicitações de suporte | Até 12 meses após conclusão como meta | Preservar evidência necessária, removendo dados excessivos. |\n| Solicitações de titulares | Até 5 anos após conclusão como meta | Restringir acesso e revisar necessidade ao fim do prazo. |
 | Documentos fiscais/contábeis | Prazo legal específico de cada documento | Definir com contador e jurídico, sem retenção genérica. |
-| Evidências de consentimento | Enquanto necessárias para comprovar conformidade e exercício de direitos | Definir prazo final, acesso restrito e descarte/anonymização com jurídico. |
+| Evidências de consentimento | Até 5 anos após encerramento da conta ou revogação como meta | Prazo proposto, não prazo legal geral; validar com jurídico. |\n| Registros de incidentes | Pelo menos 5 anos | Prazo mínimo previsto no Regulamento de Comunicação de Incidente da ANPD. |
 
 Ao término da finalidade, os dados devem ser eliminados, anonimizados ou bloqueados, salvo hipótese legal de conservação. Os prazos precisam ser convertidos em rotinas automáticas e auditáveis antes da produção.
 
