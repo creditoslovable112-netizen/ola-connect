@@ -705,3 +705,5 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .legal-consent-status > div { display:grid;gap:3px; }
   .legal-consent-status strong { text-align:left; }
 }
+
+.legal-gate { width:min(100%,1100px);max-height:calc(100vh - 36px);overflow:auto;padding:10px; }
