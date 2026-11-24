@@ -595,3 +595,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(prefers-reduced-motion:reduce) {
   .legal-tabs button,.cookie-banner { transition:none!important; }
 }
+
+/* Route-level loading skeleton: respects reduced-motion and keeps layout stable. */
+.nexus-skeleton { min-height:100vh;padding:clamp(18px,3vw,38px);background:#f4f7fa;color:#263443; }
+.skeleton-heading { display:flex;justify-content:space-between;align-items:center;gap:18px;margin:8px 0 28px; }
+.skeleton-line,.skeleton-block { display:block;position:relative;overflow:hidden;border-radius:9px;background:#e4ebf1; }
+.skeleton-line::after,.skeleton-block::after { content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,#ffffff99,transparent);animation:skeleton-shimmer 1.35s ease-in-out infinite; }
+.skeleton-eyebrow { width:100px;height:9px;margin-bottom:14px; }
+.skeleton-title { width:min(310px,60vw);height:30px;margin-bottom:11px; }
+.skeleton-subtitle { width:min(390px,72vw);height:11px; }
+.skeleton-action { width:138px;height:42px; }
+.skeleton-metrics { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px; }
+.skeleton-card { min-width:0;padding:20px;border:1px solid #e8edf2;border-radius:15px;background:#fff;box-shadow:0 5px 20px #1b294008; }
+.skeleton-label { width:42%;height:10px;margin-bottom:22px; }
+.skeleton-value { width:68%;height:26px;margin-bottom:15px; }
+.skeleton-foot { width:53%;height:9px; }
+.skeleton-panels { display:grid;grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr);gap:14px;margin-top:15px; }
+.skeleton-chart { min-height:280px; }
+.skeleton-chart-area { width:100%;height:190px;margin-top:18px; }
+.skeleton-row { width:100%;height:28px;margin-top:15px; }
+.skeleton-status { display:block;margin-top:18px;color:#748397;font-size:12px; }
+@keyframes skeleton-shimmer { 100% { transform:translateX(100%); } }
+@media(max-width:850px) { .skeleton-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .skeleton-panels { grid-template-columns:1fr; } }
+@media(max-width:480px) { .nexus-skeleton { padding:16px; } .skeleton-action { width:92px; } .skeleton-card { padding:15px; } }
+@media(prefers-reduced-motion:reduce) { .skeleton-line::after,.skeleton-block::after { animation:none; } }
