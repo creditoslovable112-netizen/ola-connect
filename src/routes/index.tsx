@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LegalCenter } from "../components/LegalCenter";
+import { StatsCard } from "../components/StatsCard";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, Building2, CalendarDays,
@@ -305,9 +306,9 @@ function DashboardPage() {
                 <div className="metric-foot"><span className="positive"><TrendingUp size={13}/> 12,8%</span><span>vs. mês anterior</span></div>
                 <div className="balance-spark"><svg viewBox="0 0 160 38" preserveAspectRatio="none"><path d="M0 31 C18 27 20 33 37 22 S59 25 72 15 S95 23 110 12 S136 18 160 2" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M0 31 C18 27 20 33 37 22 S59 25 72 15 S95 23 110 12 S136 18 160 2 L160 38 L0 38Z" fill="currentColor" opacity=".08"/></svg></div>
               </article>
-              <article className="metric-card"><div className="metric-top"><span>Receitas do período</span><span className="metric-icon mint-icon"><ArrowDownLeft size={17}/></span></div><div className="metric-value">R$ 64.200</div><div className="metric-foot"><span className="positive"><TrendingUp size={13}/> 8,2%</span><span>vs. mês anterior</span></div><div className="metric-progress"><i style={{width:"72%"}}/></div><small className="metric-caption">72% da meta mensal</small></article>
-              <article className="metric-card"><div className="metric-top"><span>Despesas do período</span><span className="metric-icon coral-icon"><ArrowUpRight size={17}/></span></div><div className="metric-value">R$ 38.200</div><div className="metric-foot"><span className="negative"><TrendingUp size={13}/> 3,4%</span><span>vs. mês anterior</span></div><div className="metric-progress expense-progress"><i style={{width:"48%"}}/></div><small className="metric-caption">48% do limite planejado</small></article>
-              <article className="metric-card"><div className="metric-top"><span>Resultado líquido</span><span className="metric-icon violet-icon"><CircleDollarSign size={17}/></span></div><div className="metric-value">R$ 26.000</div><div className="metric-foot"><span className="positive"><TrendingUp size={13}/> 18,6%</span><span>vs. mês anterior</span></div><div className="result-note"><span className="result-dot"/> Margem de 40,5%</div></article>
+              <StatsCard title="Receitas do período" value="R$ 64.200" change="8,2" icon={ArrowDownLeft} gradient="linear-gradient(135deg, rgba(32,184,137,.18), rgba(32,184,137,.03))" detail="72% da meta mensal" />
+              <StatsCard title="Despesas do período" value="R$ 38.200" change="3,4" icon={ArrowUpRight} gradient="linear-gradient(135deg, rgba(241,155,121,.2), rgba(241,155,121,.03))" detail="48% do limite planejado" negative />
+              <StatsCard title="Resultado líquido" value="R$ 26.000" change="18,6" icon={CircleDollarSign} gradient="linear-gradient(135deg, rgba(139,120,245,.18), rgba(139,120,245,.03))" detail="Margem de 40,5%" />
             </section>
 
             <section className="charts-grid">
