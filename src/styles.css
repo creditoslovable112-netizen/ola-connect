@@ -707,3 +707,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 
 .legal-gate { width:min(100%,1100px);max-height:calc(100vh - 36px);overflow:auto;padding:10px; }
+
+
+.auth-footer { display:grid;gap:9px;text-align:center;color:#9fb6cc;font-size:11px; }
+.auth-footer nav { display:flex;justify-content:center;gap:16px;flex-wrap:wrap; }
+.auth-footer a { color:#8bdcff;text-decoration:underline;text-underline-offset:3px; }
+.auth-footer small { max-width:540px;margin:0 auto;color:#829bb4;line-height:1.5; }
