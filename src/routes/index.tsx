@@ -261,7 +261,8 @@ function DashboardPage() {
       const latest = items.find((item) => item.purpose === "cookies");
       const granted = choice === "all";
       if (!latest || latest.granted !== granted) {
-        return recordMyConsent("cookies", granted, COOKIE_VERSION, "cookie_banner_sync");
+        void recordMyConsent("cookies", granted, COOKIE_VERSION, "cookie_banner_sync")
+          .catch(() => showNotice("Não foi possível salvar a preferência de cookies."));
       }
     }).catch(() => showNotice("Não foi possível sincronizar a preferência de cookies com sua conta."));
   }, [session?.user.id, showNotice]);
