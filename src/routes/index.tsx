@@ -1,4 +1,5 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { LegalCenter } from "../components/LegalCenter";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, Building2, CalendarDays,
@@ -44,6 +45,7 @@ const navGroups = [
     { label: "Assinatura", icon: CreditCard },
     { label: "Administração", icon: ShieldCheck },
     { label: "Configurações", icon: Settings2 },
+    { label: "Privacidade e termos", icon: ShieldCheck },
   ]},
 ];
 
@@ -196,6 +198,12 @@ function DashboardPage() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
+  const [cookieBanner, setCookieBanner] = useState(false);
+  useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
+  const saveCookieChoice = (choice: "necessary" | "all") => {
+    window.localStorage.setItem("nexus-cookie-choice", choice);
+    setCookieBanner(false);
+  };
   const filteredTransactions = useMemo(() => transactions.filter((item) => (item.name + item.detail + item.category).toLowerCase().includes(search.toLowerCase())), [search]);
 
   const showNotice = (message: string) => {
@@ -224,7 +232,7 @@ function DashboardPage() {
           {navGroups.map((group) => <div className="nav-group" key={group.title}>
             <p className="nav-label">{group.title}</p>
             {group.items.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${active === label ? "nav-active" : ""}`} onClick={() => { setActive(label); setMobileOpen(false); }}>
-              <Icon size={17} strokeWidth={1.8}/><span>{label}</span>{label === "Contas a pagar" && <em>8</em>}
+              <Icon size={17} strokeWidth={1.8}/><span>{label}</span>
             </button>)}
           </div>)}
           <div className="sidebar-promo">
@@ -274,7 +282,7 @@ function DashboardPage() {
               <select value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Selecionar período">
                 <option>Últimos 7 meses</option><option>Este mês</option><option>Últimos 30 dias</option><option>Este trimestre</option>
               </select>
-              <span className="updated-label"><span/> Atualizado agora</span>
+              <span className="updated-label">Dados demonstrativos</span>
             </div>
 
             <section className="metrics-grid">
@@ -325,10 +333,11 @@ function DashboardPage() {
               </article>
             </section>
             <div className="demo-disclaimer"><ShieldCheck size={14}/> Ambiente de demonstração · Os valores exibidos são ilustrativos.</div>
-          </> : active === "Contas a pagar" ? <AccountsPayable showNotice={showNotice}/> : active === "Contas a receber" ? <AccountsReceivable showNotice={showNotice}/> : active === "Fluxo de caixa" ? <CashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <FinancialAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <CategoriesCostCenters showNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          </> : active === "Contas a pagar" ? <AccountsPayable showNotice={showNotice}/> : active === "Contas a receber" ? <AccountsReceivable showNotice={showNotice}/> : active === "Fluxo de caixa" ? <CashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <FinancialAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <CategoriesCostCenters showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
-      {notice && <div className="toast"><Check size={16}/>{notice}</div>}
+      {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
+      {cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Suas escolhas de privacidade</strong><p>Usamos apenas armazenamento necessário para esta demonstração. Não ativamos analytics ou publicidade nesta interface. Você pode aceitar apenas o necessário ou salvar a escolha de todos os cookies opcionais, caso venham a ser ativados no futuro.</p><button className="cookie-link" onClick={() => { setActive("Privacidade e termos"); setCookieBanner(false); }}>Ler política de cookies</button></div><div className="cookie-actions"><button className="button-secondary" onClick={() => saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => saveCookieChoice("all")}>Aceitar opcionais</button></div></section>}
     </div>
   );
 }
