@@ -21,7 +21,20 @@ export const Route = createFileRoute("/")({
     ],
   }),
   component: DashboardPage,
+  pendingMs: 150,
+  pendingComponent: DashboardSkeleton,
 });
+
+function DashboardSkeleton() {
+  return (
+    <main className="nexus-skeleton" aria-label="Carregando painel" aria-busy="true">
+      <div className="skeleton-heading"><div><i className="skeleton-line skeleton-eyebrow"/><i className="skeleton-line skeleton-title"/><i className="skeleton-line skeleton-subtitle"/></div><i className="skeleton-block skeleton-action"/></div>
+      <div className="skeleton-metrics">{Array.from({ length: 4 }, (_, index) => <div className="skeleton-card" key={index}><i className="skeleton-line skeleton-label"/><i className="skeleton-line skeleton-value"/><i className="skeleton-line skeleton-foot"/></div>)}</div>
+      <div className="skeleton-panels"><div className="skeleton-card skeleton-chart"><i className="skeleton-line skeleton-label"/><i className="skeleton-block skeleton-chart-area"/></div><div className="skeleton-card skeleton-chart"><i className="skeleton-line skeleton-label"/>{Array.from({ length: 4 }, (_, index) => <i className="skeleton-line skeleton-row" key={index}/>)}</div></div>
+      <span className="skeleton-status">Preparando seu painel…</span>
+    </main>
+  );
+}
 
 const navGroups = [
   { title: "VISÃO GERAL", items: [{ label: "Dashboard", icon: LayoutDashboard }] },
