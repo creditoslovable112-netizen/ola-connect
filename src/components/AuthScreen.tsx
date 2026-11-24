@@ -114,7 +114,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
         </div>
         <div className="auth-security"><LockKeyhole size={13}/> Seus dados financeiros são protegidos por acesso individual.</div>
       </section>
-      <p className="auth-footer">NEXUS FINANCE · Gestão financeira inteligente</p>
+      <footer className="auth-footer"><span>NEXUS FINANCE · Gestão financeira inteligente</span><nav aria-label="Documentos legais"><a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/TERMS_OF_USE_DRAFT.md" target="_blank" rel="noreferrer">Termos de Uso</a><a href="https://github.com/creditoslovable112-netizen/ola-connect/blob/feat/nexus-finance-foundation/docs/legal/PRIVACY_POLICY_DRAFT.md" target="_blank" rel="noreferrer">Política de Privacidade</a></nav><small>Identificação do fornecedor e canal de privacidade serão publicados após confirmação dos dados empresariais.</small></footer>
     </main>
   );
 }
