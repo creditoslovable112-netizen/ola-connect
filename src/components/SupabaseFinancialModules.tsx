@@ -140,3 +140,36 @@ export function SupabaseCashFlow({ showNotice }: { showNotice: Notice }) {
     {!data.loading && !data.error && <><section className="payable-summary-grid cashflow-metrics"><article className="metric-card"><div className="metric-top">Saldo de abertura <Wallet size={17}/></div><div className="metric-value">{money(opening)}</div></article><article className="metric-card"><div className="metric-top">Entradas pagas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div></article><article className="metric-card"><div className="metric-top">Saídas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div></article><article className="metric-card"><div className="metric-top">Saldo calculado <Activity size={17}/></div><div className="metric-value">{money(opening + income - expense)}</div></article></section><section className="panel payable-list-panel"><h2>Projeção pendente</h2><div className="summary-line"><span>Entradas previstas</span><strong>{money(forecastIncome)}</strong></div><div className="summary-line"><span>Saídas previstas</span><strong>{money(forecastExpense)}</strong></div><div className="summary-footer"><span>Saldo projetado</span><strong>{money(opening + income - expense + forecastIncome - forecastExpense)}</strong></div><h2>Movimentações</h2>{data.transactions.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span></div>)}{data.transactions.length === 0 && <p>Nenhuma movimentação registrada.</p>}</section></>}
   </>;
 }
+
+
+export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const paid = data.transactions.filter((item) => item.status === "paid");
+  const month = today().slice(0, 7);
+  const monthPaid = paid.filter((item) => item.transaction_date.startsWith(month));
+  const income = monthPaid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const expense = monthPaid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const balance = data.accounts.reduce((sum, item) => sum + Number(item.opening_balance), 0) +
+    paid.reduce((sum, item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)), 0);
+  const upcoming = data.transactions.filter((item) => item.status !== "paid" && item.status !== "cancelled")
+    .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
+  return <><div className="welcome-row"><div><div className="eyebrow">VISÃO GERAL · SUPABASE</div><h1>Bem-vindo ao NEXUS</h1><p>Resumo financeiro calculado a partir dos seus registros.</p></div><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar dados</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <>
+      <section className="metrics-grid">
+        <article className="metric-card balance-card"><div className="metric-top">Saldo consolidado <Wallet size={17}/></div><div className="metric-value">{money(balance)}</div><div className="metric-foot">{data.accounts.length} contas financeiras</div></article>
+        <article className="metric-card"><div className="metric-top">Receitas pagas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card"><div className="metric-top">Despesas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card"><div className="metric-top">Resultado do mês <Activity size={17}/></div><div className="metric-value">{money(income - expense)}</div><div className="metric-foot">Receitas menos despesas pagas</div></article>
+      </section>
+      <section className="bottom-grid"><article className="panel transactions-panel"><div className="panel-heading"><div><h2>Transações recentes</h2><p>Últimos lançamentos cadastrados</p></div><button className="text-link" onClick={() => showNotice("Abra a seção Transações para consultar os lançamentos.")}>Ver todas</button></div>
+        {data.transactions.slice(0, 8).map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong className={item.type === "income" ? "amount-in" : "amount-out"}>{money(Number(item.amount))}</strong></div>)}
+        {data.transactions.length === 0 && <p>Nenhuma movimentação cadastrada. Comece criando uma conta financeira e depois registre suas receitas e despesas.</p>}
+      </article><article className="panel payables-panel"><div className="panel-heading"><div><h2>Próximos vencimentos</h2><p>Compromissos ainda em aberto</p></div></div>
+        {upcoming.map((item) => <div className="due-item" key={item.id}><div className="due-copy"><strong>{item.description}</strong><small>{dateLabel(item.due_date)} · {statusLabel(item)}</small></div><div className="due-value"><strong>{money(Number(item.amount))}</strong></div></div>)}
+        {upcoming.length === 0 && <p>Nenhum vencimento pendente.</p>}
+      </article></section>
+      <p className="demo-disclaimer"><ShieldCheck size={14}/> Indicadores calculados exclusivamente com os dados da sua conta no Supabase. Sem números de demonstração.</p>
+    </>}
+  </>;
+}
