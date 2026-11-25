@@ -92,10 +92,7 @@ export function parseCsv(text: string): ParsedBankStatementRow[] {
   return rows;
 }
 
-export function statementFingerprint(accountId: string, row: ParsedBankStatementRow): string {
+export function statementFingerprint(_accountId: string, row: ParsedBankStatementRow): string {
   const normalized = row.description.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-  const source = row.fitId ? `fitid:${row.fitId}` : `${row.date}| ${row.amount.toFixed(2)}|${normalized}`;
-  let hash = 2166136261;
-  for (const char of `${accountId}|${source}`) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); }
-  return (hash >>> 0).toString(16).padStart(8, "0") + source.length.toString(16);
+  return row.fitId ? `fitid:${row.fitId}` : `${row.date}|${row.amount.toFixed(2)}|${normalized}`;
 }
