@@ -156,7 +156,9 @@ export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
   const [parsedRows, setParsedRows] = useState<ParsedBankStatementRow[]>([]);
   const [savingImport, setSavingImport] = useState(false); const [imports, setImports] = useState<any[]>([]);
   const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter(item => item.account_id === account.id && item.status === "paid" && (!account.opening_date || item.transaction_date >= account.opening_date)).reduce((sum,item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)),0);
-  useEffect(() => { if (!data.accounts.length) { setImports([]); return; } void listBankStatementImports().then(setImports).catch(() => setImports([])); }, [data.accounts.length, data.transactions.length]);
+  const accountScopeKey = data.accounts.map(item => item.id).join("|");
+  const visibleImports = imports.filter(item => data.accounts.some(account => account.id === item.account_id));
+  useEffect(() => { if (!accountScopeKey) { setImports([]); return; } void listBankStatementImports().then(setImports).catch(() => setImports([])); }, [accountScopeKey, data.transactions.length]);
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (data.companies.length > 0 && (!companyId || companyId === "all")) { showNotice("Selecione uma empresa para vincular esta conta."); return; }
@@ -198,7 +200,7 @@ export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
         <button className="button-secondary" onClick={() => { setImportAccount(item); setParsedRows([]); setFileName(""); }}><FileUp size={15}/> Importar extrato</button>
       </article>)}</section>
       {data.accounts.length === 0 && <div className="panel">Nenhuma conta cadastrada ainda. Cadastre sua primeira conta para começar.</div>}
-      <section className="panel payable-list-panel"><h2>Histórico de importações</h2>{imports.length ? imports.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.file_name}</strong><small>{data.accounts.find(a => a.id === item.account_id)?.name || "Conta"} · {new Date(item.created_at).toLocaleString("pt-BR")}</small></div><span>{item.file_format.toUpperCase()}</span><span>{item.imported_rows} importadas</span><span>{item.duplicate_rows} duplicadas</span></div>) : <p>Nenhum extrato importado ainda.</p>}</section>
+      <section className="panel payable-list-panel"><h2>Histórico de importações</h2>{visibleImports.length ? visibleImports.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.file_name}</strong><small>{data.accounts.find(a => a.id === item.account_id)?.name || "Conta"} · {new Date(item.created_at).toLocaleString("pt-BR")}</small></div><span>{item.file_format.toUpperCase()}</span><span>{item.imported_rows} importadas</span><span>{item.duplicate_rows} duplicadas</span></div>) : <p>Nenhum extrato importado ainda.</p>}</section>
     </>}
     {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={e => e.stopPropagation()} onSubmit={save}>
       <div className="modal-heading"><h2>Nova conta bancária</h2><button type="button" onClick={() => setModal(false)}>×</button></div>
