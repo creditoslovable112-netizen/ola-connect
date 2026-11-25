@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 export type FinancialAccount = Tables<"financial_accounts"> & { company_id?: string | null };
 export type Category = Tables<"categories">;
 export type CostCenter = Tables<"cost_centers">;
-export type Transaction = Tables<"transactions"> & { company_id?: string | null; supplier_id?: string | null };
+export type Transaction = Tables<"transactions"> & { company_id?: string | null; supplier_id?: string | null; customer_id?: string | null };
 export type BusinessContact = Tables<"business_contacts"> & { company_id?: string | null; contact_person?: string | null; state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; website?: string | null; };
 export type Company = Tables<"companies"> & { state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; logo_url?: string | null; };
 
@@ -173,5 +173,53 @@ export async function uploadSupplierDocument(supplierId: string, file: File) {
 }
 export async function createSupplierDocumentUrl(storagePath: string) {
   const { data, error } = await supabase.storage.from("supplier-documents").createSignedUrl(storagePath, 60);
+  if (error) throw error; return data.signedUrl;
+}
+
+export async function listCustomerCompanyLinks() {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("company_customers").select("customer_id,company_id").eq("workspace_id", workspace_id);
+  if (error) throw error; return data as { customer_id: string; company_id: string }[];
+}
+export async function saveCustomerCompanyLinks(customerId: string, companyIds: string[]) {
+  const workspace_id = await requireWorkspaceId();
+  const { error: deleteError } = await (supabase as any).from("company_customers").delete().eq("workspace_id", workspace_id).eq("customer_id", customerId);
+  if (deleteError) throw deleteError;
+  if (companyIds.length) {
+    const { error } = await (supabase as any).from("company_customers").insert(companyIds.map(company_id => ({ workspace_id, customer_id: customerId, company_id })));
+    if (error) throw error;
+  }
+}
+export async function listCustomerTransactions(customerId: string) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("transactions")
+    .select("id,description,amount,status,due_date,paid_at,transaction_date,company_id,type")
+    .eq("workspace_id", workspace_id).eq("customer_id", customerId).eq("type", "income")
+    .order("transaction_date", { ascending: false });
+  if (error) throw error; return data ?? [];
+}
+export async function listCustomerDocuments(customerId: string) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("customer_documents").select("id,file_name,storage_path,created_at")
+    .eq("workspace_id", workspace_id).eq("customer_id", customerId).order("created_at", { ascending: false });
+  if (error) throw error; return data ?? [];
+}
+export async function uploadCustomerDocument(customerId: string, file: File) {
+  if (file.size > 10 * 1024 * 1024) throw new Error("O arquivo deve ter no máximo 10 MB.");
+  const allowed = ["application/pdf","image/jpeg","image/png","image/webp","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if (!allowed.includes(file.type)) throw new Error("Formato não permitido. Envie PDF, imagem, XLSX ou DOCX.");
+  const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storage_path = `${workspace_id}/${customerId}/${Date.now()}-${safeName}`;
+  const { error: uploadError } = await supabase.storage.from("customer-documents").upload(storage_path, file, { contentType: file.type, upsert: false });
+  if (uploadError) throw uploadError;
+  const { data, error } = await (supabase as any).from("customer_documents").insert({
+    workspace_id, customer_id: customerId, file_name: file.name, storage_path, uploaded_by: user_id
+  }).select("id,file_name,storage_path,created_at").single();
+  if (error) { await supabase.storage.from("customer-documents").remove([storage_path]); throw error; }
+  return data;
+}
+export async function createCustomerDocumentUrl(storagePath: string) {
+  const { data, error } = await supabase.storage.from("customer-documents").createSignedUrl(storagePath, 60);
   if (error) throw error; return data.signedUrl;
 }
