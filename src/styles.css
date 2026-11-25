@@ -1053,3 +1053,107 @@ button:disabled { cursor:not-allowed; opacity:.58; }
  .dashboard-extra-metrics .summary-card strong { font-size:18px;overflow-wrap:anywhere; }
  .dashboard-main-chart { height:220px; }
 }
+
+
+/* NEXUS FINANCE — mobile layout refinement */
+@media (max-width: 760px) {
+  .metrics-grid,
+  .cashflow-metrics,
+  .payable-summary-grid,
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .charts-grid,
+  .cashflow-chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .financial-account-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cash-panel,
+  .summary-panel,
+  .account-transfer-panel {
+    min-width: 0;
+  }
+
+  .account-transfer-panel .panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-transfer-panel .panel-heading > button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .payable-table {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-table-head,
+  .category-table-row {
+    min-width: 620px;
+  }
+
+  .center-table-head,
+  .center-table-row {
+    min-width: 760px;
+  }
+
+  .cashflow-table-head,
+  .cashflow-table-row {
+    min-width: 680px;
+  }
+
+  .button-primary,
+  .button-secondary,
+  .pay-action {
+    min-height: 46px;
+  }
+
+  .dashboard-main-chart,
+  .cash-chart {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .metrics-grid,
+  .cashflow-metrics {
+    gap: 9px;
+  }
+
+  .metrics-grid .metric-card,
+  .cashflow-metrics .metric-card {
+    padding: 13px 11px;
+  }
+
+  .financial-account-grid {
+    gap: 11px;
+  }
+
+  .financial-account-card {
+    min-width: 0;
+  }
+
+  .cashflow-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .cashflow-toolbar > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .cashflow-filter {
+    min-height: 44px;
+  }
+}
