@@ -51,7 +51,7 @@ export function TeamManager({ showNotice }: Props) {
     try{const {data,error}=await supabase.functions.invoke("team-management",{body:{action:"invite",workspace_id:workspaceId,email,role}});
       if(error)throw error;if(data?.error)throw new Error(data.error);
       showNotice(data.message??"Convite registrado.");setEmail("");await load(workspaceId);
-    }catch(err){showNotice(err instanceof Error?err.message:"Falha ao convidar membro.");}finally{setSaving(false);}
+    }catch(err){const msg=err instanceof Error?err.message:"";showNotice(/database error saving new user|non-2xx|500/i.test(msg)?"Não foi possível enviar o convite por e-mail agora. Peça para a pessoa criar a conta no NEXUS com esse e-mail e tente convidar de novo.":(msg||"Falha ao convidar membro."));}finally{setSaving(false);}
   };
   const manage=async(action:string,payload:Record<string,string>)=>{if(!workspaceId)return;
     try{const {data,error}=await supabase.functions.invoke("team-management",{body:{action,workspace_id:workspaceId,...payload}});
