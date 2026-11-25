@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
@@ -147,36 +148,81 @@ export function SupabaseCashFlow({ showNotice }: { showNotice: Notice }) {
 
 export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice);
+  const [period, setPeriod] = useState("6");
+  const [chartMode, setChartMode] = useState<"both" | "income" | "expense">("both");
   const paid = data.transactions.filter((item) => item.status === "paid");
+  const now = new Date();
   const month = today().slice(0, 7);
   const monthPaid = paid.filter((item) => (item.paid_at ?? item.transaction_date).startsWith(month));
   const income = monthPaid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
   const expense = monthPaid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
   const balance = data.accounts.reduce((sum, item) => sum + Number(item.opening_balance), 0) +
     paid.reduce((sum, item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)), 0);
-  const upcoming = data.transactions.filter((item) => item.status !== "paid" && item.status !== "cancelled")
-    .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
-  return <><div className="welcome-row"><div><div className="eyebrow">VISÃO GERAL · SUPABASE</div><h1>Bem-vindo ao NEXUS</h1><p>Resumo financeiro calculado a partir dos seus registros.</p></div><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar dados</button></div>
+  const pending = data.transactions.filter((item) => item.status !== "paid" && item.status !== "cancelled");
+  const pendingIncome = pending.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const pendingExpense = pending.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const overdue = pending.filter((item) => item.due_date && item.due_date < today());
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - Number(period) + 1, 1);
+  const periodTransactions = paid.filter((item) => {
+    const date = new Date((item.paid_at ?? item.transaction_date) + "T12:00:00");
+    return date >= cutoff;
+  });
+  const chartData = Array.from({ length: Number(period) }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - Number(period) + 1 + index, 1);
+    const key = date.toISOString().slice(0, 7);
+    const monthItems = periodTransactions.filter((item) => (item.paid_at ?? item.transaction_date).startsWith(key));
+    return {
+      month: date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+      receitas: monthItems.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0),
+      despesas: monthItems.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0),
+    };
+  });
+  const categoryTotals = data.categories.map((category) => ({
+    name: category.name,
+    value: periodTransactions.filter((item) => item.category_id === category.id)
+      .reduce((sum, item) => sum + Number(item.amount), 0),
+  })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
+  const upcoming = pending.sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
+  const colors = ["#159b78", "#4b91c8", "#e6a34b", "#8d75c7", "#d87878", "#6b9caa"];
+  return <><div className="welcome-row"><div><div className="eyebrow">VISÃO GERAL · DADOS REAIS</div><h1>Bem-vindo ao NEXUS</h1><p>Indicadores, tendências e compromissos da sua gestão financeira.</p></div><div className="welcome-actions"><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar dados</button></div></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <>
       <section className="metrics-grid">
         <article className="metric-card balance-card"><div className="metric-top">Saldo consolidado <Wallet size={17}/></div><div className="metric-value">{money(balance)}</div><div className="metric-foot">{data.accounts.length} contas financeiras</div></article>
-        <article className="metric-card"><div className="metric-top">Receitas pagas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card"><div className="metric-top">Receitas recebidas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div><div className="metric-foot">Neste mês</div></article>
         <article className="metric-card"><div className="metric-top">Despesas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div><div className="metric-foot">Neste mês</div></article>
         <article className="metric-card"><div className="metric-top">Resultado do mês <Activity size={17}/></div><div className="metric-value">{money(income - expense)}</div><div className="metric-foot">Receitas menos despesas pagas</div></article>
       </section>
-      <section className="bottom-grid"><article className="panel transactions-panel"><div className="panel-heading"><div><h2>Transações recentes</h2><p>Últimos lançamentos cadastrados</p></div><button className="text-link" onClick={() => showNotice("Abra a seção Transações para consultar os lançamentos.")}>Ver todas</button></div>
-        {data.transactions.slice(0, 8).map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong className={item.type === "income" ? "amount-in" : "amount-out"}>{money(Number(item.amount))}</strong></div>)}
+      <section className="summary-grid dashboard-extra-metrics">
+        <div className="summary-card"><span>A receber</span><strong>{money(pendingIncome)}</strong><small><TrendingUp size={13}/> {pending.filter((item) => item.type === "income").length} cobranças em aberto</small></div>
+        <div className="summary-card"><span>A pagar</span><strong>{money(pendingExpense)}</strong><small><TrendingDown size={13}/> {pending.filter((item) => item.type === "expense").length} contas em aberto</small></div>
+        <div className="summary-card"><span>Contas vencidas</span><strong>{overdue.length}</strong><small>Precisam de atenção</small></div>
+        <div className="summary-card"><span>Movimentações</span><strong>{data.transactions.length}</strong><small>Registros na sua conta</small></div>
+      </section>
+      <section className="panel dashboard-chart-panel">
+        <div className="panel-heading dashboard-chart-heading"><div><h2>Evolução financeira</h2><p>Comparativo de receitas e despesas pagas</p></div>
+          <div className="dashboard-chart-controls"><select aria-label="Período do gráfico" value={period} onChange={(event) => setPeriod(event.target.value)}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select><select aria-label="Séries exibidas" value={chartMode} onChange={(event) => setChartMode(event.target.value as typeof chartMode)}><option value="both">Receitas e despesas</option><option value="income">Só receitas</option><option value="expense">Só despesas</option></select></div>
+        </div>
+        <div className="dashboard-main-chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}><defs><linearGradient id="nexusIncomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#159b78" stopOpacity={0.25}/><stop offset="95%" stopColor="#159b78" stopOpacity={0.01}/></linearGradient><linearGradient id="nexusExpenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e6a34b" stopOpacity={0.22}/><stop offset="95%" stopColor="#e6a34b" stopOpacity={0.01}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dce7e5"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis tickLine={false} axisLine={false} width={66} tickFormatter={(value) => value >= 1000 ? "R$ " + (value / 1000).toFixed(0) + "k" : String(value)}/><Tooltip formatter={(value) => money(Number(value))}/>{chartMode !== "expense" && <Area type="monotone" dataKey="receitas" name="Receitas" stroke="#159b78" strokeWidth={2.5} fill="url(#nexusIncomeFill)" activeDot={{ r: 5 }}/ >}{chartMode !== "income" && <Area type="monotone" dataKey="despesas" name="Despesas" stroke="#e6a34b" strokeWidth={2.5} fill="url(#nexusExpenseFill)" activeDot={{ r: 5 }}/>}</AreaChart></ResponsiveContainer></div>
+        <div className="dashboard-chart-foot"><span><i className="chart-dot chart-dot-income"/> Receitas pagas</span><span><i className="chart-dot chart-dot-expense"/> Despesas pagas</span><small>Somente lançamentos com status pago.</small></div>
+      </section>
+      <section className="bottom-grid dashboard-insights-grid">
+        <article className="panel"><div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição no período selecionado</p></div></div>
+          {categoryTotals.length ? <><div className="dashboard-donut"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={categoryTotals} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={3}>{categoryTotals.map((item, index) => <Cell key={item.name} fill={colors[index % colors.length]}/>)}</Pie><Tooltip formatter={(value) => money(Number(value))}/><Legend verticalAlign="bottom" height={38}/></PieChart></ResponsiveContainer></div><div className="dashboard-category-list">{categoryTotals.map((item, index) => <div key={item.name}><i style={{ background: colors[index % colors.length] }}/><span>{item.name}</span><strong>{money(item.value)}</strong></div>)}</div></> : <p className="dashboard-empty">Ainda não há despesas pagas com categoria no período.</p>}
+        </article>
+        <article className="panel payables-panel"><div className="panel-heading"><div><h2>Próximos vencimentos</h2><p>Compromissos ainda em aberto</p></div></div>
+          {upcoming.map((item) => <div className="due-item" key={item.id}><div className="due-copy"><strong>{item.description}</strong><small>{dateLabel(item.due_date)} · {statusLabel(item)}</small></div><div className="due-value"><strong>{money(Number(item.amount))}</strong></div></div>)}
+          {upcoming.length === 0 && <p>Nenhum vencimento pendente.</p>}
+        </article>
+      </section>
+      <section className="panel transactions-panel dashboard-recent-panel"><div className="panel-heading"><div><h2>Transações recentes</h2><p>Últimos lançamentos cadastrados</p></div></div>
+        {data.transactions.slice(0, 6).map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong className={item.type === "income" ? "amount-in" : "amount-out"}>{money(Number(item.amount))}</strong></div>)}
         {data.transactions.length === 0 && <p>Nenhuma movimentação cadastrada. Comece criando uma conta financeira e depois registre suas receitas e despesas.</p>}
-      </article><article className="panel payables-panel"><div className="panel-heading"><div><h2>Próximos vencimentos</h2><p>Compromissos ainda em aberto</p></div></div>
-        {upcoming.map((item) => <div className="due-item" key={item.id}><div className="due-copy"><strong>{item.description}</strong><small>{dateLabel(item.due_date)} · {statusLabel(item)}</small></div><div className="due-value"><strong>{money(Number(item.amount))}</strong></div></div>)}
-        {upcoming.length === 0 && <p>Nenhum vencimento pendente.</p>}
-      </article></section>
+      </section>
       <p className="demo-disclaimer"><ShieldCheck size={14}/> Indicadores calculados exclusivamente com os dados da sua conta no Supabase. Sem números de demonstração.</p>
     </>}
   </>;
 }
-
 
 export function SupabaseTransactions({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice);
