@@ -54,6 +54,7 @@ export async function listCategories(type?: "income" | "expense", includeInactiv
   const workspace_id = await requireWorkspaceId();
   let query = (supabase as any).from("categories").select("*").eq("workspace_id", workspace_id).order("name");
   if (type) query = query.eq("type", type);
+  if (!includeInactive) query = query.eq("is_active", true);
   const { data, error } = await query; if (error) throw error; return data as Category[];
 }
 export async function createCategory(category: Omit<TablesInsert<"categories">, "user_id"> & { company_id?: string | null; description?: string | null; parent_id?: string | null }) {
@@ -63,7 +64,9 @@ export async function createCategory(category: Omit<TablesInsert<"categories">, 
 }
 export async function listCostCenters(includeInactive = true) {
   const workspace_id = await requireWorkspaceId();
-  let query = (supabase as any).from("cost_centers").select("*").eq("workspace_id", workspace_id);\n  if (!includeInactive) query = query.eq("is_active", true);\n  const { data, error } = await query.order("name");
+  let query = (supabase as any).from("cost_centers").select("*").eq("workspace_id", workspace_id);
+  if (!includeInactive) query = query.eq("is_active", true);
+  const { data, error } = await query.order("name");
   if (error) throw error; return data as CostCenter[];
 }
 export async function createCostCenter(costCenter: Omit<TablesInsert<"cost_centers">, "user_id"> & { company_id?: string | null; monthly_budget?: number | null; manager_name?: string | null }) {
