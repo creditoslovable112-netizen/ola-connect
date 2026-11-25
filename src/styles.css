@@ -1213,3 +1213,9 @@ button:disabled { cursor:not-allowed; opacity:.58; }
  .nexus-ai-composer { margin:0 12px;padding:9px; }
  .nexus-ai-privacy { margin:12px 13px 15px;font-size:9px; }
 }
+
+.nexus-ai-setup { display:grid;gap:6px;margin:14px 20px 0;padding:13px 15px;border:1px solid #e9d9b8;border-radius:13px;background:#fffaf0;color:#795c2f;font-size:12px;line-height:1.5; }
+.nexus-ai-setup strong { color:#67491f;font-size:13px; }
+.nexus-ai-setup code { padding:2px 5px;border-radius:5px;background:#f3ead8;font-size:11px; }
+.nexus-ai-setup a { color:#287c68;font-weight:700;text-decoration:underline; }
+@media(max-width:650px) { .nexus-ai-setup { margin:12px 12px 0;font-size:11px; } }
