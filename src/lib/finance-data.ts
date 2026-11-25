@@ -123,7 +123,7 @@ export async function listSupplierTransactions(supplierId: string) {
 }
 export async function createBusinessContact(contact: Omit<TablesInsert<"business_contacts">, "user_id"> & { company_id?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
-  const { data, error } = await (supabase as any).from("business_contacts").insert({ ...contact, company_id: contact.company_id ?? getActiveCompanyId(), user_id, workspace_id }).select().single();
+  const { data, error } = await (supabase as any).from("business_contacts").insert({ ...contact, company_id: contact.company_id !== undefined ? contact.company_id : getActiveCompanyId(), user_id, workspace_id }).select().single();
   if (error) throw error; return data as BusinessContact;
 }
 export async function deleteBusinessContact(id: string) {
