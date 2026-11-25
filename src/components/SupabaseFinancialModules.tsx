@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, FileUp, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "../lib/supabase";
 import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
 import {
-  createCategory, createCostCenter, updateCategory, updateCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
+  createCategory, createCostCenter, updateCategory, updateCostCenter, createFinancialAccount, createTransaction, importBankStatementRows, listBankStatementImports, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
   listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
@@ -13,6 +13,7 @@ import {
   listCustomerDocuments, uploadCustomerDocument, createCustomerDocumentUrl,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
+import { parseCsv, parseOfx, type ParsedBankStatementRow } from "../lib/bank-statements";
 
 type Notice = (message: string) => void;
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -143,14 +144,81 @@ export function SupabaseReceivables({ showNotice }: { showNotice: Notice }) {
 }
 
 export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
-  const data = useFinanceData(showNotice); const [modal, setModal] = useState(false);
-  const [name, setName] = useState(""); const [institution, setInstitution] = useState(""); const [kind, setKind] = useState("checking"); const [balance, setBalance] = useState("0"); const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
-  const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter((item) => item.account_id === account.id && item.status === "paid").reduce((sum, item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)), 0);
-  const save = async (event: FormEvent) => { event.preventDefault(); if (data.companies.length > 0 && (!companyId || companyId === "all")) { showNotice("Selecione uma empresa para vincular esta conta."); return; } try { await createFinancialAccount({ name, institution: institution || null, company_id: companyId && companyId !== "all" ? companyId : null, account_type: kind, opening_balance: Number(balance), color: "#238bd2", is_active: true }); await data.reload(); setModal(false); setName(""); setInstitution(""); showNotice("Conta financeira salva no Supabase."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar conta."); } };
-  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Contas financeiras</h1><p>Contas e saldos calculados a partir dos lançamentos efetivados.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova conta</button></div>
+  const data = useFinanceData(showNotice);
+  const [modal, setModal] = useState(false);
+  const [name, setName] = useState(""); const [institution, setInstitution] = useState("");
+  const [kind, setKind] = useState("checking"); const [balance, setBalance] = useState("0");
+  const [branchCode, setBranchCode] = useState(""); const [accountNumber, setAccountNumber] = useState("");
+  const [openingDate, setOpeningDate] = useState(today());
+  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
+  const [importAccount, setImportAccount] = useState<FinancialAccount | null>(null);
+  const [fileName, setFileName] = useState(""); const [fileFormat, setFileFormat] = useState<"ofx" | "csv">("ofx");
+  const [parsedRows, setParsedRows] = useState<ParsedBankStatementRow[]>([]);
+  const [savingImport, setSavingImport] = useState(false); const [imports, setImports] = useState<any[]>([]);
+  const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter(item => item.account_id === account.id && item.status === "paid").reduce((sum,item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)),0);
+  useEffect(() => { if (!data.accounts.length) { setImports([]); return; } void listBankStatementImports().then(setImports).catch(() => setImports([])); }, [data.accounts.length, data.transactions.length]);
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    if (data.companies.length > 0 && (!companyId || companyId === "all")) { showNotice("Selecione uma empresa para vincular esta conta."); return; }
+    try {
+      await createFinancialAccount({ name: name.trim(), institution: institution.trim() || null, company_id: companyId && companyId !== "all" ? companyId : null, account_type: kind, opening_balance: Number(balance), color: "#238bd2", is_active: true, branch_code: branchCode.trim() || null, account_number: accountNumber.trim() || null, opening_date: openingDate || null } as any);
+      await data.reload(); setModal(false); setName(""); setInstitution(""); setBranchCode(""); setAccountNumber(""); setBalance("0"); showNotice("Conta bancária cadastrada com sucesso.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar conta."); }
+  };
+  const readStatement = async (file?: File) => {
+    if (!file) return;
+    try {
+      const extension = file.name.toLowerCase().split(".").pop();
+      if (extension !== "ofx" && extension !== "csv") throw new Error("Selecione um arquivo OFX ou CSV.");
+      if (file.size > 15 * 1024 * 1024) throw new Error("O extrato deve ter no máximo 15 MB.");
+      const raw = await file.text(); const rows = extension === "ofx" ? parseOfx(raw) : parseCsv(raw);
+      setFileName(file.name); setFileFormat(extension); setParsedRows(rows); showNotice(`${rows.length} movimentações encontradas. Revise antes de importar.`);
+    } catch (e) { setParsedRows([]); showNotice(e instanceof Error ? e.message : "Não foi possível ler o extrato."); }
+  };
+  const confirmImport = async () => {
+    if (!importAccount || !parsedRows.length) return;
+    setSavingImport(true);
+    try {
+      const result = await importBankStatementRows(importAccount, fileName, fileFormat, parsedRows);
+      await data.reload(); setImports(await listBankStatementImports()); setImportAccount(null); setParsedRows([]); setFileName("");
+      showNotice(`Importação concluída: ${result.imported} novas movimentações e ${result.duplicates} duplicadas ignoradas.`);
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao importar extrato."); }
+    finally { setSavingImport(false); }
+  };
+  return <>
+    <div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · DADOS REAIS</div><h1>Contas bancárias</h1><p>Cadastre suas contas e importe extratos OFX ou CSV para registrar movimentações reais.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova conta</button></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
-    {!data.loading && !data.error && <><section className="account-total-card"><div><span>Saldo consolidado</span><strong>{money(data.accounts.reduce((sum, item) => sum + balances(item), 0))}</strong><small>Soma dos saldos das contas ativas</small></div><Landmark size={28}/></section><section className="financial-account-grid">{data.accounts.map((item) => <article className="financial-account-card" key={item.id}><div className="financial-account-top"><span className="account-bank-icon"><Landmark size={19}/></span><span className="account-kind">{item.account_type}</span></div><div className="account-bank-name">{item.institution || "Instituição não informada"}</div><h3>{item.name}</h3><div className="account-balance-label">Saldo calculado</div><strong className="account-balance">{money(balances(item))}</strong></article>)}</section>{data.accounts.length === 0 && <div className="panel">Nenhuma conta cadastrada ainda.</div>}</>}
-    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Nova conta financeira</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Empresa<select required={data.companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{data.companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Nome<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>Banco / instituição<input value={institution} onChange={(e) => setInstitution(e.target.value)}/></label><label>Tipo<select value={kind} onChange={(e) => setKind(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro em caixa</option><option value="credit_card">Cartão de crédito</option><option value="investment">Investimento</option><option value="other">Outra</option></select></label><label>Saldo inicial<input required type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button className="button-primary" type="submit">Salvar conta</button></div></form></div>}
+    {!data.loading && !data.error && <>
+      <section className="account-total-card"><div><span>Saldo consolidado</span><strong>{money(data.accounts.reduce((sum,item) => sum + balances(item),0))}</strong><small>Saldos iniciais + movimentações efetivadas</small></div><Landmark size={28}/></section>
+      <section className="financial-account-grid">{data.accounts.map(item => <article className="financial-account-card" key={item.id}>
+        <div className="financial-account-top"><span className="account-bank-icon"><Landmark size={19}/></span><span className="account-kind">{item.account_type}</span></div>
+        <div className="account-bank-name">{item.institution || "Instituição não informada"}</div><h3>{item.name}</h3>
+        <div className="account-kind">{item.branch_code ? `Ag. ${item.branch_code}` : ""}{item.account_number ? ` · Conta ${item.account_number}` : ""}</div>
+        <div className="account-balance-label">Saldo calculado</div><strong className="account-balance">{money(balances(item))}</strong>
+        <button className="button-secondary" onClick={() => { setImportAccount(item); setParsedRows([]); setFileName(""); }}><FileUp size={15}/> Importar extrato</button>
+      </article>)}</section>
+      {data.accounts.length === 0 && <div className="panel">Nenhuma conta cadastrada ainda. Cadastre sua primeira conta para começar.</div>}
+      <section className="panel payable-list-panel"><h2>Histórico de importações</h2>{imports.length ? imports.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.file_name}</strong><small>{data.accounts.find(a => a.id === item.account_id)?.name || "Conta"} · {new Date(item.created_at).toLocaleString("pt-BR")}</small></div><span>{item.file_format.toUpperCase()}</span><span>{item.imported_rows} importadas</span><span>{item.duplicate_rows} duplicadas</span></div>) : <p>Nenhum extrato importado ainda.</p>}</section>
+    </>}
+    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={e => e.stopPropagation()} onSubmit={save}>
+      <div className="modal-heading"><h2>Nova conta bancária</h2><button type="button" onClick={() => setModal(false)}>×</button></div>
+      <label>Empresa<select required={data.companies.length > 0} value={companyId} onChange={e => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{data.companies.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Nome da conta<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Conta principal"/></label>
+      <label>Banco / instituição<input value={institution} onChange={e => setInstitution(e.target.value)} placeholder="Ex.: Banco do Brasil"/></label>
+      <label>Tipo<select value={kind} onChange={e => setKind(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro em caixa</option><option value="credit_card">Cartão de crédito</option><option value="investment">Investimento</option><option value="other">Outra</option></select></label>
+      <label>Agência (opcional)<input value={branchCode} onChange={e => setBranchCode(e.target.value)} maxLength={20}/></label>
+      <label>Número da conta (opcional)<input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} maxLength={30}/></label>
+      <label>Saldo inicial (R$)<input required type="number" step="0.01" value={balance} onChange={e => setBalance(e.target.value)}/></label>
+      <label>Data do saldo inicial<input required type="date" value={openingDate} onChange={e => setOpeningDate(e.target.value)}/></label>
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button className="button-primary" type="submit">Salvar conta</button></div>
+    </form></div>}
+    {importAccount && <div className="modal-backdrop" onClick={() => !savingImport && setImportAccount(null)}><section className="payable-modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-heading"><div><h2>Importar extrato</h2><p>{importAccount.institution || importAccount.name} · {importAccount.name}</p></div><button type="button" disabled={savingImport} onClick={() => setImportAccount(null)}>×</button></div>
+      <div className="panel"><strong>Arquivos aceitos: OFX e CSV</strong><p>O arquivo será lido para uma prévia. Nada será gravado até você confirmar.</p></div>
+      <label>Selecionar extrato<input type="file" accept=".ofx,.csv,application/x-ofx,text/csv" onChange={e => void readStatement(e.target.files?.[0])}/></label>
+      {parsedRows.length > 0 && <><div className="summary-line"><span>Arquivo</span><strong>{fileName}</strong></div><div className="summary-line"><span>Movimentações encontradas</span><strong>{parsedRows.length}</strong></div><div className="payable-list-panel"><h3>Prévia (até 5 lançamentos)</h3>{parsedRows.slice(0,5).map((row,i) => <div className="payable-table-row" key={i}><div><strong>{row.description}</strong><small>{dateLabel(row.date)}</small></div><strong>{money(row.amount)}</strong></div>)}</div><p>Duplicidades são identificadas e ignoradas. As movimentações importadas entram como efetivadas e alteram o saldo.</p></>}
+      <div className="modal-actions"><button type="button" className="button-secondary" disabled={savingImport} onClick={() => setImportAccount(null)}>Cancelar</button><button type="button" className="button-primary" disabled={savingImport || !parsedRows.length} onClick={() => void confirmImport()}>{savingImport ? "Importando…" : "Confirmar importação"}</button></div>
+    </section></div>}
   </>;
 }
 
