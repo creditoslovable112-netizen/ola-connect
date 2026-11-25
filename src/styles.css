@@ -792,6 +792,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 .panel {
   border-radius: 17px;
+  overflow: visible;
 }
 .stats-card:not(.balance-card) {
   background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(246,251,252,.56));
