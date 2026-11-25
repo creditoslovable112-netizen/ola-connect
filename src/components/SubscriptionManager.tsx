@@ -32,6 +32,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -79,6 +80,19 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
     }
   };
 
+  const cancelSubscription = async () => {
+    if (!subscription || !window.confirm("Deseja realmente cancelar sua assinatura?")) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase.functions.invoke("manage-subscription", { body: { action: "cancel" } });
+      if (error) throw error;
+      setSubscription({ ...subscription, status: "cancelled" });
+      showNotice("Solicitação de cancelamento enviada ao Mercado Pago.");
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Não foi possível cancelar a assinatura.");
+    } finally { setCancelling(false); }
+  };
+
   const formatPrice = (value: number) =>
     Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -96,6 +110,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
               {subscription.current_period_end ? " · Próxima renovação: " + new Date(subscription.current_period_end).toLocaleDateString("pt-BR") : ""}
             </p></div>
           {subscription.status === "pending" && subscription.checkout_url && <a className="button-primary" href={subscription.checkout_url}>Continuar pagamento</a>}
+          {subscription.status === "authorized" && <button className="button-secondary" disabled={cancelling} onClick={() => void cancelSubscription()}>{cancelling ? "Cancelando..." : "Cancelar assinatura"}</button>}
         </section>
       )}
       <div className="subscription-plans">
