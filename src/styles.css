@@ -1012,3 +1012,44 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .subscription-current h2 { margin: 5px 0; }
 .subscription-current p { margin: 0; color: var(--muted-foreground, #8a8a9b); font-size: 13px; }
 @media (max-width: 900px) { .subscription-plans { grid-template-columns: 1fr; } .subscription-current { align-items: flex-start; flex-direction: column; } }
+
+
+/* Dashboard analytics — charts, insights and responsive controls */
+.dashboard-extra-metrics { margin: 14px 0 20px; }
+.dashboard-extra-metrics .summary-card { min-width: 0; }
+.dashboard-extra-metrics .summary-card small { display:flex;align-items:center;gap:5px; }
+.dashboard-chart-panel { margin: 0 0 20px; }
+.dashboard-chart-heading { align-items:center; }
+.dashboard-chart-controls { display:flex;gap:8px;flex-wrap:wrap; }
+.dashboard-chart-controls select { min-height:38px;padding:0 11px;border:1px solid rgba(120,155,160,.24);border-radius:9px;background:rgba(255,255,255,.72);color:#35515b;font:inherit;font-size:11px; }
+.dashboard-main-chart { width:100%;height:290px;margin-top:12px; }
+.dashboard-chart-foot { display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:7px;color:#6b858c;font-size:11px; }
+.dashboard-chart-foot span { display:flex;align-items:center;gap:6px; }
+.dashboard-chart-foot small { margin-left:auto; }
+.chart-dot { width:8px;height:8px;border-radius:50%;display:inline-block; }
+.chart-dot-income { background:#159b78; }
+.chart-dot-expense { background:#e6a34b; }
+.dashboard-insights-grid { align-items:stretch; }
+.dashboard-donut { width:100%;height:245px; }
+.dashboard-category-list { display:grid;gap:9px;margin-top:8px; }
+.dashboard-category-list > div { display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:9px;color:#647b83;font-size:12px; }
+.dashboard-category-list i { width:8px;height:8px;border-radius:50%; }
+.dashboard-category-list strong { color:#27444c;font-size:12px;font-variant-numeric:tabular-nums; }
+.dashboard-empty { padding:22px 4px;color:#748a90;font-size:12px;line-height:1.6; }
+.dashboard-recent-panel { margin-top:20px; }
+@media(max-width:760px) {
+ .dashboard-chart-heading { align-items:flex-start;flex-direction:column; }
+ .dashboard-chart-controls { width:100%; }
+ .dashboard-chart-controls select { flex:1;min-width:0;min-height:42px; }
+ .dashboard-main-chart { height:245px; }
+ .dashboard-chart-foot { gap:10px; }
+ .dashboard-chart-foot small { flex-basis:100%;margin-left:0; }
+ .dashboard-donut { height:225px; }
+ .dashboard-category-list > div { font-size:11px; }
+}
+@media(max-width:420px) {
+ .dashboard-extra-metrics { gap:9px; }
+ .dashboard-extra-metrics .summary-card { padding:12px 10px; }
+ .dashboard-extra-metrics .summary-card strong { font-size:18px;overflow-wrap:anywhere; }
+ .dashboard-main-chart { height:220px; }
+}
