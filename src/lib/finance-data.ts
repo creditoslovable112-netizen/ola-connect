@@ -5,7 +5,7 @@ export type FinancialAccount = Tables<"financial_accounts"> & { company_id?: str
 export type Category = Tables<"categories">;
 export type CostCenter = Tables<"cost_centers">;
 export type Transaction = Tables<"transactions"> & { company_id?: string | null };
-export type BusinessContact = Tables<"business_contacts"> & { company_id?: string | null };
+export type BusinessContact = Tables<"business_contacts"> & { company_id?: string | null; contact_person?: string | null; state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; website?: string | null; };
 export type Company = Tables<"companies"> & { state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; logo_url?: string | null; };
 
 export function getActiveCompanyId(): string | null {
