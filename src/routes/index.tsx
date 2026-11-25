@@ -134,8 +134,11 @@ function DashboardPage() {
   useEffect(() => {
     if (!session?.user.id) { setCompany("Workspace"); return; }
     let active = true;
-    void (supabase as any).from("workspace_members").select("workspaces(name)")
-      .eq("user_id", session.user.id).eq("status", "active").eq("workspace_id", window.localStorage.getItem("nexus-active-workspace") || undefined).order("joined_at", { ascending: false }).limit(1).maybeSingle()
+    const preferredWorkspace = window.localStorage.getItem("nexus-active-workspace");
+    let workspaceQuery = (supabase as any).from("workspace_members").select("workspaces(name)")
+      .eq("user_id", session.user.id).eq("status", "active");
+    if (preferredWorkspace) workspaceQuery = workspaceQuery.eq("workspace_id", preferredWorkspace);
+    void workspaceQuery.order("joined_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data, error }: any) => { if (active && !error && data?.workspaces?.name) setCompany(data.workspaces.name); });
     return () => { active = false; };
   }, [session?.user.id]);
