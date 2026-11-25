@@ -71,7 +71,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, onClo
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [categoryId, setCategoryId] = useState("");
   const [centerId, setCenterId] = useState("");
-  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
+  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? ((window.localStorage.getItem("nexus-active-company") || "") === "all" ? "" : window.localStorage.getItem("nexus-active-company") || "") : "");
   const [saving, setSaving] = useState(false);
   const options = categories.filter((item) => item.type === type);
   const submit = async (event: FormEvent) => {
@@ -125,7 +125,7 @@ export function SupabaseReceivables({ showNotice }: { showNotice: Notice }) {
     <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total a receber <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Cobranças cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Em atraso <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou cliente…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>COBRANÇA / CLIENTE</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem cliente"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markReceived(item)}>{item.status === "paid" ? "Recebido" : "Marcar recebido"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a receber cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
-    {modal && <TransactionForm type="income" accounts={data.accounts} categories={data.categories} centers={data.centers} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+    {modal && <TransactionForm type="income" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
   </>;
 }
 
@@ -327,7 +327,7 @@ export function SupabaseCompanies({ showNotice }: { showNotice: Notice }) {
         address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null,
         city: city.trim() || null, state: state.trim().toUpperCase() || null,
         status: "active", is_default: items.length === 0 } as any);
-      await load(); setModal(false); reset(); showNotice("Empresa cadastrada com CNPJ validado e salva no Supabase.");
+      await load(); window.dispatchEvent(new Event("nexus-companies-updated")); setModal(false); reset(); showNotice("Empresa cadastrada com CNPJ validado e salva no Supabase.");
     } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar empresa."); }
     finally { setSaving(false); }
   };
