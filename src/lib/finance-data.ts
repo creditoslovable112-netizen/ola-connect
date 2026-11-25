@@ -1,7 +1,8 @@
 import type { Tables, TablesInsert, TablesUpdate } from "./database.types";
+import type { ParsedBankStatementRow } from "./bank-statements";
 import { supabase } from "./supabase";
 
-export type FinancialAccount = Tables<"financial_accounts"> & { company_id?: string | null };
+export type FinancialAccount = Tables<"financial_accounts"> & { company_id?: string | null; branch_code?: string | null; account_number?: string | null; opening_date?: string | null };
 export type Category = Tables<"categories"> & { company_id?: string | null; description?: string | null; parent_id?: string | null; is_active?: boolean };
 export type CostCenter = Tables<"cost_centers"> & { company_id?: string | null; monthly_budget?: number | null; manager_name?: string | null; is_active?: boolean };
 export type Transaction = Tables<"transactions"> & { company_id?: string | null; supplier_id?: string | null; customer_id?: string | null };
@@ -45,7 +46,7 @@ export async function listFinancialAccounts() {
   query = scopedToCompany(query).order("created_at", { ascending: false });
   const { data, error } = await query; if (error) throw error; return data as FinancialAccount[];
 }
-export async function createFinancialAccount(account: Omit<TablesInsert<"financial_accounts">, "user_id"> & { company_id?: string | null }) {
+export async function createFinancialAccount(account: Omit<TablesInsert<"financial_accounts">, "user_id"> & { company_id?: string | null; branch_code?: string | null; account_number?: string | null; opening_date?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("financial_accounts").insert({ ...account, company_id: account.company_id ?? getActiveCompanyId(), user_id, workspace_id }).select().single();
   if (error) throw error; return data as FinancialAccount;
@@ -235,4 +236,62 @@ export async function uploadCustomerDocument(customerId: string, file: File) {
 export async function createCustomerDocumentUrl(storagePath: string) {
   const { data, error } = await supabase.storage.from("customer-documents").createSignedUrl(storagePath, 60);
   if (error) throw error; return data.signedUrl;
+}
+
+export type BankStatementImport = {
+  id: string; file_name: string; file_format: "ofx" | "csv"; total_rows: number;
+  imported_rows: number; duplicate_rows: number; created_at: string; account_id: string;
+};
+export async function listBankStatementImports(accountId?: string) {
+  const workspace_id = await requireWorkspaceId();
+  let query = (supabase as any).from("bank_statement_imports").select("*").eq("workspace_id", workspace_id);
+  if (accountId) query = query.eq("account_id", accountId);
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(20);
+  if (error) throw error;
+  return (data ?? []) as BankStatementImport[];
+}
+export async function importBankStatementRows(
+  account: FinancialAccount,
+  fileName: string,
+  fileFormat: "ofx" | "csv",
+  rows: ParsedBankStatementRow[],
+) {
+  const user_id = await requireUserId();
+  const workspace_id = await requireWorkspaceId();
+  const { data: batch, error: batchError } = await (supabase as any).from("bank_statement_imports").insert({
+    workspace_id, user_id, account_id: account.id, company_id: account.company_id ?? null,
+    file_name: fileName, file_format: fileFormat, total_rows: rows.length,
+    imported_rows: 0, duplicate_rows: 0,
+  }).select().single();
+  if (batchError) throw batchError;
+  let imported = 0;
+  let duplicates = 0;
+  try {
+    const { statementFingerprint } = await import("./bank-statements");
+    for (const row of rows) {
+      const fingerprint = statementFingerprint(account.id, row);
+      const signedAmount = Number(row.amount);
+      const { error } = await (supabase as any).from("transactions").insert({
+        workspace_id, user_id, account_id: account.id, company_id: account.company_id ?? null,
+        type: signedAmount > 0 ? "income" : "expense",
+        description: row.description, amount: Math.abs(signedAmount), status: "paid",
+        transaction_date: row.date, paid_at: new Date(row.date + "T12:00:00.000Z").toISOString(),
+        counterparty: null, notes: "Importado de extrato bancário",
+        bank_statement_fingerprint: fingerprint, bank_statement_import_id: batch.id,
+      });
+      if (error) {
+        if (error.code === "23505") { duplicates += 1; continue; }
+        throw error;
+      }
+      imported += 1;
+    }
+  } catch (error) {
+    await (supabase as any).from("bank_statement_imports").update({ imported_rows: imported, duplicate_rows: duplicates }).eq("id", batch.id).eq("workspace_id", workspace_id);
+    throw error;
+  }
+  const { error: updateError } = await (supabase as any).from("bank_statement_imports")
+    .update({ imported_rows: imported, duplicate_rows: duplicates })
+    .eq("id", batch.id).eq("workspace_id", workspace_id);
+  if (updateError) throw updateError;
+  return { imported, duplicates, total: rows.length, importId: batch.id };
 }
