@@ -3,6 +3,7 @@ import { LegalCenter } from "../components/LegalCenter";
 import { SupabaseDashboard, SupabasePayables, SupabaseReceivables, SupabaseCashFlow, SupabaseAccounts, SupabaseCategories, SupabaseTransactions, SupabaseReports, SupabaseContacts, SupabaseCompanies } from "../components/SupabaseFinancialModules";
 import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
+import { SubscriptionManager } from "../components/SubscriptionManager";
 import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
@@ -184,11 +185,11 @@ function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:st
  }, [title]);
  const [period,setPeriod]=useState("Este mês");
  const descriptions:Record<string,string>={"Transações":"Controle entradas, saídas e transferências","Relatórios":"Indicadores gerenciais e demonstrativos financeiros","Clientes":"Relacionamento e dados comerciais","Fornecedores":"Contatos, pagamentos e condições comerciais","Empresas":"Organizações e unidades de negócio","Equipe":"Módulo ainda não disponível","NEXUS AI":"Integração de IA ainda não ativa","Assinatura":"Sem contratação ou cobrança ativa","Administração":"Painel administrativo ainda não disponível","Configurações":"Preferências do seu ambiente"};
- if (["Equipe", "NEXUS AI", "Assinatura", "Administração"].includes(title)) {
+ if (title === "Assinatura") return <SubscriptionManager showNotice={showNotice}/>;
+ if (["Equipe", "NEXUS AI", "Administração"].includes(title)) {
   const explanations: Record<string, string> = {
    "Equipe": "Convites, perfis e permissões de colaboradores ainda não estão disponíveis.",
    "NEXUS AI": "A integração com provedores de IA ainda não está ativa. Nenhum dado financeiro é enviado a modelos externos por este módulo.",
-   "Assinatura": "Não existe checkout, plano pago, cobrança ou renovação automática ativa nesta versão.",
    "Administração": "O painel administrativo e as ferramentas de operação ainda não estão disponíveis."
   };
   return <section className="workspace-unavailable" aria-labelledby="module-unavailable-title"><div className="eyebrow">MÓDULO NÃO DISPONÍVEL</div><h1 id="module-unavailable-title">{title}</h1><p>{explanations[title]}</p><span>Em preparação · Nenhuma ação ou cobrança será executada aqui.</span></section>;
