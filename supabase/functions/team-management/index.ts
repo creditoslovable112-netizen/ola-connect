@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
         const configured = new URL(configuredAppUrl);
         if (parsed.origin === configured.origin) return true;
       }
-      return /^ola-connect-[a-z0-9-]+\\.vercel\\.app$/i.test(parsed.hostname);
+      return /^ola-connect-[a-z0-9-]+\.vercel\.app$/i.test(parsed.hostname);
     } catch { return false; }
   };
   const appRedirectUrl = isTrustedAppOrigin(configuredAppUrl)
