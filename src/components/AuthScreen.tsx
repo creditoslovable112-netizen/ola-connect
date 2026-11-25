@@ -65,7 +65,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
       } else {
         if (password.length < 8) throw new Error("A nova senha precisa ter pelo menos 8 caracteres.");
         if (password !== confirmPassword) throw new Error("As senhas não conferem.");
-        const { error: authError } = await supabase.auth.updateUser({ password });
+        const { error: authError } = await supabase.auth.updateUser({ password, data: { password_set: true } });
         if (authError) throw authError;
         setMessage("Senha atualizada com sucesso. Você já pode continuar.");
       }
