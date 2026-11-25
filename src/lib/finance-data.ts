@@ -6,7 +6,7 @@ export type Category = Tables<"categories">;
 export type CostCenter = Tables<"cost_centers">;
 export type Transaction = Tables<"transactions">;
 export type BusinessContact = Tables<"business_contacts">;
-export type Company = Tables<"companies">;
+export type Company = Tables<"companies"> & { state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; logo_url?: string | null; };\n\nexport function getActiveCompanyId(): string | null {\n  if (typeof window === "undefined") return null;\n  const value = window.localStorage.getItem("nexus-active-company");\n  return value && value !== "all" ? value : null;\n}\n\nfunction scopedToCompany(query: any) {\n  const companyId = getActiveCompanyId();\n  return companyId ? query.eq("company_id", companyId) : query;\n}
 
 export async function requireUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser();
@@ -39,7 +39,7 @@ export async function requireWorkspaceId(): Promise<string> {
 export async function listFinancialAccounts() {
   const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("financial_accounts").select("*")
-    .eq("workspace_id", workspace_id).eq("is_active", true).order("created_at", { ascending: false });
+    .eq("workspace_id", workspace_id).eq("is_active", true);\n  const scoped = scopedToCompany(query).order("created_at", { ascending: false });\n  const { data, error } = await scoped;\n  if (error) throw error;\n  return data as FinancialAccount[];\n}\nexport async function createFinancialAccount(account: Omit<TablesInsert<"financial_accounts">, "user_id"> & { company_id?: string | null }) {\n  const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();\n  const { data, error } = await (supabase as any).from("financial_accounts")\n    .insert({ ...account, company_id: account.company_id ?? getActiveCompanyId(), user_id, workspace_id }).select().single();\n  if (error) throw error; return data as FinancialAccount;\n}\n/*COMPANY_ACCOUNTS_REPLACED*/
   if (error) throw error;
   return data as FinancialAccount[];
 }
@@ -114,7 +114,7 @@ export async function listCompanies() {
   const { data, error } = await (supabase as any).from("companies").select("*").eq("workspace_id", workspace_id).order("name");
   if (error) throw error; return data as Company[];
 }
-export async function createCompany(company: Omit<TablesInsert<"companies">, "user_id">) {
+export async function createCompany(company: Omit<TablesInsert<"companies">, "user_id"> & Record<string, unknown>) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("companies").insert({ ...company, user_id, workspace_id }).select().single();
   if (error) throw error; return data as Company;
