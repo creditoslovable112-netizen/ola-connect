@@ -171,13 +171,13 @@ export type Database = {
         Row: { id: string; slug: string; name: string; price_brl: number; currency: string; billing_interval: string; features: Json; limits: Json; is_active: boolean; display_order: number; created_at: string; updated_at: string }
         Insert: { id?: string; slug: string; name: string; price_brl: number; currency?: string; billing_interval?: string; features?: Json; limits?: Json; is_active?: boolean; display_order?: number; created_at?: string; updated_at?: string }
         Update: { id?: string; slug?: string; name?: string; price_brl?: number; currency?: string; billing_interval?: string; features?: Json; limits?: Json; is_active?: boolean; display_order?: number; created_at?: string; updated_at?: string }
-        Relationships: []
+        Relationships: [{ foreignKeyName: "user_subscriptions_plan_id_fkey"; columns: ["id"]; isOneToOne: false; referencedRelation: "user_subscriptions"; referencedColumns: ["plan_id"] }]
       }
       user_subscriptions: {
         Row: { id: string; user_id: string; plan_id: string; status: string; provider: string; provider_subscription_id: string | null; payer_email: string | null; checkout_url: string | null; current_period_start: string | null; current_period_end: string | null; cancel_at_period_end: boolean; metadata: Json; created_at: string; updated_at: string }
         Insert: { id?: string; user_id: string; plan_id: string; status?: string; provider?: string; provider_subscription_id?: string | null; payer_email?: string | null; checkout_url?: string | null; current_period_start?: string | null; current_period_end?: string | null; cancel_at_period_end?: boolean; metadata?: Json; created_at?: string; updated_at?: string }
         Update: { id?: string; user_id?: string; plan_id?: string; status?: string; provider?: string; provider_subscription_id?: string | null; payer_email?: string | null; checkout_url?: string | null; current_period_start?: string | null; current_period_end?: string | null; cancel_at_period_end?: boolean; metadata?: Json; created_at?: string; updated_at?: string }
-        Relationships: []
+        Relationships: [{ foreignKeyName: "user_subscriptions_plan_id_fkey"; columns: ["plan_id"]; isOneToOne: false; referencedRelation: "subscription_plans"; referencedColumns: ["id"] }]
       }
       transactions: {
         Row: {
