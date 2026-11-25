@@ -303,17 +303,49 @@ export function SupabaseCompanies({ showNotice }: { showNotice: Notice }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState(""); const [legalName, setLegalName] = useState("");
-  const [document, setDocument] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const [document, setDocument] = useState(""); const [stateRegistration, setStateRegistration] = useState("");
+  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const [postalCode, setPostalCode] = useState(""); const [street, setStreet] = useState("");
+  const [number, setNumber] = useState(""); const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState(""); const [city, setCity] = useState(""); const [state, setState] = useState("");
+  const [cnpjError, setCnpjError] = useState("");
   const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(await listCompanies()); } catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar empresas."); } finally { setLoading(false); } }, []);
   useEffect(() => { void load(); }, [load]);
+  const reset = () => { setName(""); setLegalName(""); setDocument(""); setStateRegistration(""); setEmail(""); setPhone(""); setPostalCode(""); setStreet(""); setNumber(""); setComplement(""); setNeighborhood(""); setCity(""); setState(""); setCnpjError(""); };
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    try { await createCompany({ name, legal_name: legalName || null, document: document || null, email: email || null, phone: phone || null, status: "active", is_default: items.length === 0 }); await load(); setModal(false); setName(""); setLegalName(""); setDocument(""); setEmail(""); setPhone(""); showNotice("Empresa salva no Supabase."); }
-    catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar empresa."); }
+    const normalized = normalizeCnpj(document);
+    if (normalized && !isValidCnpj(normalized)) { setCnpjError("CNPJ inválido. Confira os 14 caracteres e os dígitos verificadores."); return; }
+    if (normalized && items.some((item) => normalizeCnpj(item.document ?? "") === normalized)) { setCnpjError("Este CNPJ já está cadastrado neste workspace."); return; }
+    setSaving(true);
+    try {
+      await createCompany({ name: name.trim(), legal_name: legalName.trim() || null, document: normalized || null,
+        state_registration: stateRegistration.trim() || null, email: email.trim() || null, phone: phone.trim() || null,
+        postal_code: postalCode.trim() || null, street_address: street.trim() || null, address_number: number.trim() || null,
+        address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null,
+        city: city.trim() || null, state: state.trim().toUpperCase() || null,
+        status: "active", is_default: items.length === 0 } as any);
+      await load(); setModal(false); reset(); showNotice("Empresa cadastrada com CNPJ validado e salva no Supabase.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar empresa."); }
+    finally { setSaving(false); }
   };
-  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Empresas</h1><p>Organizações cadastradas no seu workspace.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova empresa</button></div>
-    {loading ? <div className="panel">Carregando empresas…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{items.length} empresa(s)</h2>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{[item.legal_name, item.document, item.email].filter(Boolean).join(" · ")}</small></div><span>{item.is_default ? "Principal" : "Empresa"}</span></div>)}{items.length === 0 && <p>Nenhuma empresa cadastrada.</p>}</section>}
-    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Nova empresa</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Nome fantasia<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>Razão social<input value={legalName} onChange={(e) => setLegalName(e.target.value)}/></label><label>CNPJ<input value={document} onChange={(e) => setDocument(e.target.value)}/></label><label>E-mail<input type="email" value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input value={phone} onChange={(e) => setPhone(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="button-primary">Salvar empresa</button></div></form></div>}
+  const selected = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>Empresas</h1><p>Cadastre várias empresas no mesmo workspace e mantenha os lançamentos separados.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova empresa</button></div>
+    <section className="summary-grid"><div className="summary-card"><span>Empresas cadastradas</span><strong>{items.length}</strong><small>Registros reais deste workspace</small></div><div className="summary-card"><span>Visão financeira</span><strong>Consolidada</strong><small>Use o seletor no topo para filtrar uma empresa</small></div></section>
+    {loading ? <div className="panel">Carregando empresas…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{items.length} empresa(s)</h2>{items.map((item) => <div className="payable-table-row company-record-row" key={item.id}><div><strong>{item.name}</strong><small>{[item.legal_name, item.document ? formatCnpj(item.document) : null, item.city, item.state, item.email].filter(Boolean).join(" · ")}</small></div><span>{selected === item.id ? "Selecionada" : item.is_default ? "Principal" : "Ativa"}</span></div>)}{items.length === 0 && <p>Nenhuma empresa cadastrada. Cadastre a primeira para começar.</p>}</section>}
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal company-form-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Nova empresa</h2><p>Dados cadastrais e endereço</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+      <label>Nome fantasia<input required maxLength={160} value={name} onChange={(e) => setName(e.target.value)}/></label>
+      <label>Razão social<input maxLength={200} value={legalName} onChange={(e) => setLegalName(e.target.value)}/></label>
+      <label>CNPJ<input value={formatCnpj(document)} onChange={(e) => { const value = normalizeCnpj(e.target.value); setDocument(value); setCnpjError(value && value.length === 14 && !isValidCnpj(value) ? "CNPJ inválido: dígitos verificadores não conferem." : ""); }} placeholder="00.000.000/0000-00" maxLength={18} autoComplete="off"/>{cnpjError && <small className="field-error" role="alert">{cnpjError}</small>}<small>Compatível com CNPJ numérico e alfanumérico.</small></label>
+      <label>Inscrição estadual<input maxLength={40} value={stateRegistration} onChange={(e) => setStateRegistration(e.target.value)}/></label>
+      <div className="modal-fields"><label>E-mail<input type="email" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input type="tel" maxLength={30} value={phone} onChange={(e) => setPhone(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>CEP<input maxLength={9} value={postalCode} onChange={(e) => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={(e) => setState(e.target.value.toUpperCase())}/></label></div>
+      <label>Logradouro<input maxLength={180} value={street} onChange={(e) => setStreet(e.target.value)}/></label>
+      <div className="modal-fields"><label>Número<input maxLength={20} value={number} onChange={(e) => setNumber(e.target.value)}/></label><label>Complemento<input maxLength={80} value={complement} onChange={(e) => setComplement(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>Bairro<input maxLength={100} value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}/></label><label>Cidade<input maxLength={100} value={city} onChange={(e) => setCity(e.target.value)}/></label></div>
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving || Boolean(cnpjError)}>{saving ? "Salvando…" : "Salvar empresa"}</button></div>
+    </form></div>}
   </>;
 }
