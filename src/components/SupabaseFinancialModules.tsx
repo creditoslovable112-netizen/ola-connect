@@ -21,13 +21,14 @@ function useFinanceData(notice: Notice) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [centers, setCenters] = useState<CostCenter[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [a, c, cc, t] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions()]);
-      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t);
+      const [a, c, cc, t, co] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies()]);
+      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
       setError(message);
@@ -37,11 +38,9 @@ function useFinanceData(notice: Notice) {
     void reload();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
-
     void requireWorkspaceId().then((workspaceId) => {
       if (cancelled) return;
-      channel = supabase
-        .channel("nexus-finance-" + workspaceId)
+      channel = supabase.channel("nexus-finance-" + workspaceId)
         .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: "workspace_id=eq." + workspaceId }, () => void reload())
         .on("postgres_changes", { event: "*", schema: "public", table: "financial_accounts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
         .on("postgres_changes", { event: "*", schema: "public", table: "categories", filter: "workspace_id=eq." + workspaceId }, () => void reload())
@@ -50,13 +49,9 @@ function useFinanceData(notice: Notice) {
         .on("postgres_changes", { event: "*", schema: "public", table: "business_contacts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
         .subscribe();
     }).catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-      if (channel) void supabase.removeChannel(channel);
-    };
+    return () => { cancelled = true; if (channel) void supabase.removeChannel(channel); };
   }, [reload]);
-  return { accounts, setAccounts, categories, setCategories, centers, setCenters, transactions, setTransactions, loading, error, reload };
+  return { accounts, categories, centers, transactions, companies, loading, error, reload };
 }
 
 function DataState({ loading, error, retry }: { loading: boolean; error: string; retry: () => void }) {
@@ -65,8 +60,8 @@ function DataState({ loading, error, retry }: { loading: boolean; error: string;
   return null;
 }
 
-function TransactionForm({ type, accounts, categories, centers, onClose, onSaved, notice }: {
-  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[];
+function TransactionForm({ type, accounts, categories, centers, companies, onClose, onSaved, notice }: {
+  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[];
   onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
 }) {
   const [description, setDescription] = useState("");
@@ -76,16 +71,19 @@ function TransactionForm({ type, accounts, categories, centers, onClose, onSaved
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [categoryId, setCategoryId] = useState("");
   const [centerId, setCenterId] = useState("");
+  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
   const [saving, setSaving] = useState(false);
   const options = categories.filter((item) => item.type === type);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (companies.length > 0 && (!companyId || companyId === "all")) { notice("Selecione uma empresa para vincular este lançamento."); return; }
     if (!accountId) { notice("Cadastre uma conta financeira antes de lançar movimentações."); return; }
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) { notice("Informe um valor maior que zero."); return; }
     setSaving(true);
     try {
       await createTransaction({ account_id: accountId, category_id: categoryId || null, cost_center_id: centerId || null,
+        company_id: companyId && companyId !== "all" ? companyId : null,
         type, description: description.trim(), counterparty: counterparty.trim() || null, amount: value,
         status: "pending", transaction_date: today(), due_date: due, notes: null });
       await onSaved(); onClose(); notice(type === "expense" ? "Conta a pagar salva no Supabase." : "Conta a receber salva no Supabase.");
@@ -94,6 +92,7 @@ function TransactionForm({ type, accounts, categories, centers, onClose, onSaved
   };
   return <div className="modal-backdrop" onClick={onClose}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
     <div className="modal-heading"><div><h2>{type === "expense" ? "Nova conta a pagar" : "Nova conta a receber"}</h2><p>O registro será salvo na sua conta do Supabase</p></div><button type="button" className="icon-button" onClick={onClose}>×</button></div>
+    <label>Empresa<select required={companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Descrição<input required value={description} onChange={(e) => setDescription(e.target.value)} maxLength={160}/></label>
     <label>{type === "expense" ? "Fornecedor" : "Cliente"}<input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} maxLength={120}/></label>
     <div className="modal-fields"><label>Valor (R$)<input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}/></label><label>Vencimento<input required type="date" value={due} onChange={(e) => setDue(e.target.value)}/></label></div>
@@ -113,7 +112,7 @@ export function SupabasePayables({ showNotice }: { showNotice: Notice }) {
     <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total em aberto <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Contas cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Vencidas <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou fornecedor…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>DESCRIÇÃO / FORNECEDOR</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem fornecedor"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markPaid(item)}>{item.status === "paid" ? "Pago" : "Marcar pago"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a pagar cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
-    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
   </>;
 }
 
@@ -132,13 +131,13 @@ export function SupabaseReceivables({ showNotice }: { showNotice: Notice }) {
 
 export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice); const [modal, setModal] = useState(false);
-  const [name, setName] = useState(""); const [institution, setInstitution] = useState(""); const [kind, setKind] = useState("checking"); const [balance, setBalance] = useState("0");
+  const [name, setName] = useState(""); const [institution, setInstitution] = useState(""); const [kind, setKind] = useState("checking"); const [balance, setBalance] = useState("0"); const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
   const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter((item) => item.account_id === account.id && item.status === "paid").reduce((sum, item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)), 0);
-  const save = async (event: FormEvent) => { event.preventDefault(); try { await createFinancialAccount({ name, institution: institution || null, account_type: kind, opening_balance: Number(balance), color: "#238bd2", is_active: true }); await data.reload(); setModal(false); setName(""); setInstitution(""); showNotice("Conta financeira salva no Supabase."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar conta."); } };
+  const save = async (event: FormEvent) => { event.preventDefault(); if (data.companies.length > 0 && (!companyId || companyId === "all")) { showNotice("Selecione uma empresa para vincular esta conta."); return; } try { await createFinancialAccount({ name, institution: institution || null, company_id: companyId && companyId !== "all" ? companyId : null, account_type: kind, opening_balance: Number(balance), color: "#238bd2", is_active: true }); await data.reload(); setModal(false); setName(""); setInstitution(""); showNotice("Conta financeira salva no Supabase."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar conta."); } };
   return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Contas financeiras</h1><p>Contas e saldos calculados a partir dos lançamentos efetivados.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova conta</button></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <><section className="account-total-card"><div><span>Saldo consolidado</span><strong>{money(data.accounts.reduce((sum, item) => sum + balances(item), 0))}</strong><small>Soma dos saldos das contas ativas</small></div><Landmark size={28}/></section><section className="financial-account-grid">{data.accounts.map((item) => <article className="financial-account-card" key={item.id}><div className="financial-account-top"><span className="account-bank-icon"><Landmark size={19}/></span><span className="account-kind">{item.account_type}</span></div><div className="account-bank-name">{item.institution || "Instituição não informada"}</div><h3>{item.name}</h3><div className="account-balance-label">Saldo calculado</div><strong className="account-balance">{money(balances(item))}</strong></article>)}</section>{data.accounts.length === 0 && <div className="panel">Nenhuma conta cadastrada ainda.</div>}</>}
-    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Nova conta financeira</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Nome<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>Banco / instituição<input value={institution} onChange={(e) => setInstitution(e.target.value)}/></label><label>Tipo<select value={kind} onChange={(e) => setKind(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro em caixa</option><option value="credit_card">Cartão de crédito</option><option value="investment">Investimento</option><option value="other">Outra</option></select></label><label>Saldo inicial<input required type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button className="button-primary" type="submit">Salvar conta</button></div></form></div>}
+    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>Nova conta financeira</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Empresa<select required={data.companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{data.companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Nome<input required value={name} onChange={(e) => setName(e.target.value)}/></label><label>Banco / instituição<input value={institution} onChange={(e) => setInstitution(e.target.value)}/></label><label>Tipo<select value={kind} onChange={(e) => setKind(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro em caixa</option><option value="credit_card">Cartão de crédito</option><option value="investment">Investimento</option><option value="other">Outra</option></select></label><label>Saldo inicial<input required type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)}/></label><div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button className="button-primary" type="submit">Salvar conta</button></div></form></div>}
   </>;
 }
 
