@@ -1273,3 +1273,13 @@ button:disabled { cursor:not-allowed; opacity:.58; }
  .team-member-row .button-secondary{margin-left:auto}
  .team-invite-panel,.team-list-panel{padding:16px}
 }
+
+
+/* Company management and financial scope */
+.company-scope-control{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 10px;border:1px solid var(--border-color);border-radius:11px;background:var(--surface);color:var(--text-secondary)}
+.company-scope-control select{max-width:220px;min-width:120px;border:0;outline:0;background:transparent;color:var(--text-primary);font:inherit;font-size:12px}
+.company-form-modal{max-height:min(88dvh,900px);overflow-y:auto}
+.company-form-modal .modal-heading p{margin:4px 0 0;color:var(--text-secondary);font-size:12px}
+.company-form-modal .field-error{color:#d34e58;font-size:11px;font-weight:600}
+.company-record-row{gap:12px}
+@media(max-width:760px){.company-scope-control{max-width:100%;width:100%;}.company-scope-control select{max-width:none;flex:1}.company-form-modal{width:min(100%,560px);padding:18px}}
