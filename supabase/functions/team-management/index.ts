@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const { data: invites, error: inviteError } = await admin.from("workspace_invites")
         .select("id,email,role,status,expires_at,created_at").eq("workspace_id", workspaceId)
-        .eq("status", "pending").order("created_at", { ascending: false });
+        .eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false });
       if (inviteError) throw inviteError;
       const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (usersError) throw usersError;
