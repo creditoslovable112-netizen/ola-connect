@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Bot, Send, Sparkles, UserRound, LoaderCircle, ShieldCheck, RotateCcw } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { askNexusAI } from "../lib/nexus-ai.functions";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
@@ -16,20 +17,8 @@ export function NexusAI() {
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [configured, setConfigured] = useState<boolean | null>(null);
   const [notice, setNotice] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    void supabase.functions.invoke("nexus-ai", { body: { action: "status" } })
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) { setConfigured(false); return; }
-        setConfigured(Boolean(data?.configured));
-      });
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, sending]);
 
@@ -37,25 +26,21 @@ export function NexusAI() {
     event?.preventDefault();
     const prompt = input.trim();
     if (!prompt || sending) return;
-    if (configured === false) { setNotice("Para ativar, crie uma chave gratuita no Google AI Studio e salve-a no Supabase como secret GEMINI_API_KEY. Depois atualize esta página."); return; }
     if (prompt.length > 1200) { setNotice("Sua mensagem deve ter até 1.200 caracteres."); return; }
     setNotice("");
-    setMessages((current) => [...current, { role: "user", text: prompt }]);
+    const history = [...messages, { role: "user" as const, text: prompt }];
+    setMessages(history);
     setInput("");
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("nexus-ai", { body: { message: prompt } });
-      if (error) throw error;
-      if (!data?.reply) throw new Error("O assistente não retornou uma resposta.");
-      setMessages((current) => [...current, { role: "assistant", text: String(data.reply) }]);
-      setConfigured(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível conectar ao NEXUS AI.";
-      setNotice(message.includes("GEMINI_API_KEY") || message.includes("not configured")
-        ? "O NEXUS AI está quase pronto. Falta adicionar a chave gratuita do Google AI Studio como secret no Supabase."
-        : message.includes("429") ? "Limite temporário atingido. Aguarde um pouco e tente novamente."
-        : "Não consegui responder agora. Verifique se a chave do assistente foi configurada e tente novamente.");
-      setConfigured(false);
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) { setNotice("Entre na sua conta para usar o NEXUS AI."); return; }
+      const res = await askNexusAI({ data: { accessToken: token, messages: history.slice(1) } });
+      if (res.ok) setMessages((current) => [...current, { role: "assistant", text: res.reply }]);
+      else setNotice(res.error);
+    } catch {
+      setNotice("Não consegui responder agora. Tente novamente em instantes.");
     } finally {
       setSending(false);
     }
@@ -70,18 +55,15 @@ export function NexusAI() {
           <h1>NEXUS AI</h1>
           <p>Seu assistente inteligente para aprender e tomar decisões com mais clareza.</p>
         </div>
-        <span className={configured ? "nexus-ai-status is-online" : "nexus-ai-status"}>
-          <i/> {configured === null ? "Verificando" : configured ? "Conectado" : "Aguardando chave"}
-        </span>
+        <span className="nexus-ai-status is-online"><i/> Conectado</span>
       </header>
 
       <div className="nexus-ai-chat panel">
         <div className="nexus-ai-chat-head">
           <div className="nexus-ai-avatar"><Bot size={20}/></div>
-          <div><strong>Assistente NEXUS</strong><small>Gemini Flash · camada gratuita</small></div>
+          <div><strong>Assistente NEXUS</strong><small>Google Gemini</small></div>
           <button type="button" className="icon-button" aria-label="Limpar conversa" onClick={() => { setMessages([{ role: "assistant", text: "Conversa reiniciada! Como posso ajudar?" }]); setNotice(""); }}><RotateCcw size={16}/></button>
         </div>
-        {configured === false && <div className="nexus-ai-setup"><strong>Falta só uma configuração</strong><span>O chat já está instalado. Adicione a chave gratuita do Google AI Studio no secret <code>GEMINI_API_KEY</code> do Supabase e recarregue esta tela.</span><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noreferrer">Criar chave gratuita no Google AI Studio</a></div>}
         <div className="nexus-ai-messages" aria-live="polite">
           {messages.map((message, index) => (
             <div className={`nexus-ai-message ${message.role}`} key={index}>
@@ -95,12 +77,12 @@ export function NexusAI() {
         {messages.length === 1 && <div className="nexus-ai-suggestions">{suggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => setInput(suggestion)}>{suggestion}</button>)}</div>}
         <form className="nexus-ai-composer" onSubmit={send}>
           <textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void send(); } }} placeholder="Pergunte ao NEXUS AI..." rows={2} maxLength={1200} disabled={sending}/>
-          <button type="submit" className="button-primary" disabled={sending || !input.trim() || configured === false} aria-label="Enviar mensagem"><Send size={17}/></button>
+          <button type="submit" className="button-primary" disabled={sending || !input.trim()} aria-label="Enviar mensagem"><Send size={17}/></button>
         </form>
         {notice && <p className="nexus-ai-notice" role="alert">{notice}</p>}
-        <div className="nexus-ai-privacy"><ShieldCheck size={15}/><span>Privacidade: não envie senhas, números de cartão, CPF ou dados bancários. No plano gratuito do Google, os prompts podem ser usados para melhoria dos produtos do Google.</span></div>
+        <div className="nexus-ai-privacy"><ShieldCheck size={15}/><span>Privacidade: não envie senhas, números de cartão, CPF ou dados bancários.</span></div>
       </div>
-      <div className="nexus-ai-footnote">Uso sujeito aos limites gratuitos do provedor. O NEXUS AI não substitui orientação contábil, jurídica ou financeira profissional.</div>
+      <div className="nexus-ai-footnote">O NEXUS AI não substitui orientação contábil, jurídica ou financeira profissional.</div>
     </section>
   );
 }

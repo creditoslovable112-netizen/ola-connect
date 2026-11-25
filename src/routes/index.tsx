@@ -185,7 +185,7 @@ function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:st
   return () => { active = false; };
  }, [title]);
  const [period,setPeriod]=useState("Este mês");
- const descriptions:Record<string,string>={"Transações":"Controle entradas, saídas e transferências","Relatórios":"Indicadores gerenciais e demonstrativos financeiros","Clientes":"Relacionamento e dados comerciais","Fornecedores":"Contatos, pagamentos e condições comerciais","Empresas":"Organizações e unidades de negócio","Equipe":"Módulo ainda não disponível","NEXUS AI":"Integração de IA ainda não ativa","Assinatura":"Sem contratação ou cobrança ativa","Administração":"Painel administrativo ainda não disponível","Configurações":"Preferências do seu ambiente"};
+ const descriptions:Record<string,string>={"Transações":"Controle entradas, saídas e transferências","Relatórios":"Indicadores gerenciais e demonstrativos financeiros","Clientes":"Relacionamento e dados comerciais","Fornecedores":"Contatos, pagamentos e condições comerciais","Empresas":"Organizações e unidades de negócio","Equipe":"Módulo ainda não disponível","NEXUS AI":"Assistente financeiro com Google Gemini","Assinatura":"Sem contratação ou cobrança ativa","Administração":"Painel administrativo ainda não disponível","Configurações":"Preferências do seu ambiente"};
  if (title === "Assinatura") return <SubscriptionManager showNotice={showNotice}/>;
  if (["Equipe", "Administração"].includes(title)) {
   const explanations: Record<string, string> = {
