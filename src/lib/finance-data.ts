@@ -20,7 +20,7 @@ export async function requireWorkspaceId(): Promise<string> {
   const userId = await requireUserId();
   const { data, error } = await (supabase as any).from("workspace_members")
     .select("workspace_id").eq("user_id", userId).eq("status", "active")
-    .order("joined_at", { ascending: true }).limit(1).maybeSingle();
+    .order("joined_at", { ascending: false }).limit(1).maybeSingle();
   if (error) throw error;
   if (!data?.workspace_id) throw new Error("Sua conta ainda não possui um workspace ativo. Entre em contato com o administrador.");
   return data.workspace_id as string;
