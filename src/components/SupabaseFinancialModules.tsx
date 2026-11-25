@@ -8,7 +8,9 @@ import {
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
   listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
-  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,\n  listCustomerCompanyLinks, saveCustomerCompanyLinks, listCustomerTransactions,\n  listCustomerDocuments, uploadCustomerDocument, createCustomerDocumentUrl,
+  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,
+  listCustomerCompanyLinks, saveCustomerCompanyLinks, listCustomerTransactions,
+  listCustomerDocuments, uploadCustomerDocument, createCustomerDocumentUrl,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
 
@@ -70,7 +72,8 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
 }) {
   const [description, setDescription] = useState("");
   const [counterparty, setCounterparty] = useState("");
-  const [supplierId, setSupplierId] = useState("");\n  const [customerId, setCustomerId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [due, setDue] = useState(today());
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
@@ -78,7 +81,9 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
   const [centerId, setCenterId] = useState("");
   const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? ((window.localStorage.getItem("nexus-active-company") || "") === "all" ? "" : window.localStorage.getItem("nexus-active-company") || "") : "");
   const [saving, setSaving] = useState(false);
-  const options = categories.filter((item) => item.type === type);\n  const availableSuppliers = suppliers.filter(item => !companyId || supplierCompanyLinks.some(link => link.supplier_id === item.id && link.company_id === companyId));\n  const availableCustomers = customers.filter(item => !companyId || customerCompanyLinks.some(link => link.customer_id === item.id && link.company_id === companyId));
+  const options = categories.filter((item) => item.type === type);
+  const availableSuppliers = suppliers.filter(item => !companyId || supplierCompanyLinks.some(link => link.supplier_id === item.id && link.company_id === companyId));
+  const availableCustomers = customers.filter(item => !companyId || customerCompanyLinks.some(link => link.customer_id === item.id && link.company_id === companyId));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (companies.length > 0 && (!companyId || companyId === "all")) { notice("Selecione uma empresa para vincular este lançamento."); return; }
@@ -99,7 +104,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
     <div className="modal-heading"><div><h2>{type === "expense" ? "Nova conta a pagar" : "Nova conta a receber"}</h2><p>O registro será salvo na sua conta do Supabase</p></div><button type="button" className="icon-button" onClick={onClose}>×</button></div>
     <label>Empresa<select required={companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Descrição<input required value={description} onChange={(e) => setDescription(e.target.value)} maxLength={160}/></label>
-    <label>{type === "expense" ? "Fornecedor cadastrado" : "Cliente"}{type === "expense" ? <select value={supplierId} onChange={(e) => { setSupplierId(e.target.value); const selected = suppliers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{suppliers.filter((item) => !companyId || supplierCompanyLinks.some((link) => link.supplier_id === item.id && link.company_id === companyId)).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} maxLength={120}/>}</label>
+    <label>{type === "expense" ? "Fornecedor cadastrado" : "Cliente"}{type === "expense" ? <select value={supplierId} onChange={(e) => { setSupplierId(e.target.value); const selected = suppliers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{suppliers.filter((item) => !companyId || supplierCompanyLinks.some((link) => link.supplier_id === item.id && link.company_id === companyId)).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <select value={customerId} onChange={(e) => { setCustomerId(e.target.value); const selected = customers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{availableCustomers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}</label>
     <div className="modal-fields"><label>Valor (R$)<input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}/></label><label>Vencimento<input required type="date" value={due} onChange={(e) => setDue(e.target.value)}/></label></div>
     <label>Conta financeira<select required value={accountId} onChange={(e) => setAccountId(e.target.value)}>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Sem categoria</option>{options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -117,7 +122,7 @@ export function SupabasePayables({ showNotice }: { showNotice: Notice }) {
     <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total em aberto <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Contas cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Vencidas <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou fornecedor…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>DESCRIÇÃO / FORNECEDOR</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem fornecedor"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markPaid(item)}>{item.status === "paid" ? "Pago" : "Marcar pago"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a pagar cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
-    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} customers={data.customers} customerCompanyLinks={data.customerCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
   </>;
 }
 
@@ -280,7 +285,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
 export function SupabaseContacts({ contactType, showNotice }: { contactType: "customer" | "supplier"; showNotice: Notice }) {
   const [items, setItems] = useState<BusinessContact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [links, setLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
+  const [links, setLinks] = useState<{ supplier_id?: string; customer_id?: string; company_id: string }[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadingDocument, setUploadingDocument] = useState(false);
@@ -298,25 +303,30 @@ export function SupabaseContacts({ contactType, showNotice }: { contactType: "cu
   const [website, setWebsite] = useState(""); const [notes, setNotes] = useState("");
   const [companyIds, setCompanyIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
-  const title = contactType === "customer" ? "Clientes" : "Fornecedores";
+  const isCustomer = contactType === "customer";
+  const title = isCustomer ? "Clientes" : "Fornecedores";
+  const contactLinks = (id: string) => links.filter(link => (isCustomer ? link.customer_id : link.supplier_id) === id);
+  const companyNames = (id: string) => contactLinks(id).map(link => companies.find(company => company.id === link.company_id)?.name).filter(Boolean);
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      if (contactType === "supplier") {
-        const [contacts, companyList, companyLinks] = await Promise.all([listBusinessContacts("supplier", true), listCompanies(), listSupplierCompanyLinks()]);
-        setItems(contacts); setCompanies(companyList); setLinks(companyLinks);
-      } else setItems(await listBusinessContacts("customer"));
+      const [contacts, companyList, companyLinks] = isCustomer
+        ? await Promise.all([listBusinessContacts("customer", true), listCompanies(), listCustomerCompanyLinks()])
+        : await Promise.all([listBusinessContacts("supplier", true), listCompanies(), listSupplierCompanyLinks()]);
+      setItems(contacts); setCompanies(companyList); setLinks(companyLinks);
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar contatos."); }
     finally { setLoading(false); }
-  }, [contactType]);
+  }, [isCustomer]);
   useEffect(() => { void load(); }, [load]);
   const reset = () => { setName(""); setDocument(""); setEmail(""); setPhone(""); setContactPerson(""); setStateRegistration(""); setPostalCode(""); setStreet(""); setAddressNumber(""); setComplement(""); setNeighborhood(""); setCity(""); setState(""); setWebsite(""); setNotes(""); setCompanyIds([]); };
-  const openSupplier = async (item: BusinessContact) => {
-    setSelected(item); setHistory([]);
-    if (contactType === "supplier") {
-      try { setHistory(await listSupplierTransactions(item.id)); }
-      catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível carregar o histórico."); }
-    }
+  const openContact = async (item: BusinessContact) => {
+    setSelected(item); setHistory([]); setDocuments([]);
+    try {
+      const [transactions, files] = isCustomer
+        ? await Promise.all([listCustomerTransactions(item.id), listCustomerDocuments(item.id)])
+        : await Promise.all([listSupplierTransactions(item.id), listSupplierDocuments(item.id)]);
+      setHistory(transactions); setDocuments(files);
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível carregar a ficha do contato."); }
   };
   const save = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true);
@@ -324,14 +334,15 @@ export function SupabaseContacts({ contactType, showNotice }: { contactType: "cu
       const created = await createBusinessContact({
         contact_type: contactType, name: name.trim(), document: document.trim() || null,
         email: email.trim() || null, phone: phone.trim() || null, status: "active", notes: notes.trim() || null,
-        company_id: contactType === "supplier" ? null : undefined,
-        ...(contactType === "supplier" ? { contact_person: contactPerson.trim() || null, state_registration: stateRegistration.trim() || null,
-          postal_code: postalCode.trim() || null, street_address: street.trim() || null, address_number: addressNumber.trim() || null,
-          address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null, city: city.trim() || null,
-          state: state.trim().toUpperCase() || null, website: website.trim() || null } : {})
+        company_id: null, contact_person: contactPerson.trim() || null, state_registration: stateRegistration.trim() || null,
+        postal_code: postalCode.trim() || null, street_address: street.trim() || null, address_number: addressNumber.trim() || null,
+        address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null, city: city.trim() || null,
+        state: state.trim().toUpperCase() || null, website: website.trim() || null
       } as any);
-      if (contactType === "supplier") await saveSupplierCompanyLinks(created.id, companyIds);
-      await load(); setModal(false); reset(); showNotice(contactType === "supplier" ? "Fornecedor cadastrado e vinculado às empresas no Supabase." : "Contato salvo no Supabase.");
+      if (isCustomer) await saveCustomerCompanyLinks(created.id, companyIds);
+      else await saveSupplierCompanyLinks(created.id, companyIds);
+      await load(); setModal(false); reset();
+      showNotice(isCustomer ? "Cliente cadastrado e vinculado às empresas no Supabase." : "Fornecedor cadastrado e vinculado às empresas no Supabase.");
     } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar contato."); }
     finally { setSaving(false); }
   };
@@ -339,30 +350,49 @@ export function SupabaseContacts({ contactType, showNotice }: { contactType: "cu
   const paidTotal = history.filter(item => item.status === "paid").reduce((sum, item) => sum + Number(item.amount), 0);
   const openTotal = history.filter(item => item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
   const overdue = history.filter(item => item.status !== "paid" && item.status !== "cancelled" && item.due_date && item.due_date < today()).reduce((sum, item) => sum + Number(item.amount), 0);
-  const supplierCompanyNames = (id: string) => links.filter(link => link.supplier_id === id).map(link => companies.find(company => company.id === link.company_id)?.name).filter(Boolean);
-  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>{title}</h1><p>{contactType === "supplier" ? "Cadastro centralizado, compartilhado entre empresas e conectado às contas a pagar." : "Cadastros vinculados à sua conta e protegidos por RLS."}</p></div><button className="button-primary" onClick={() => { reset(); setModal(true); }}><Plus size={16}/> Novo {contactType === "customer" ? "cliente" : "fornecedor"}</button></div>
-    {contactType === "supplier" && <div className="payable-toolbar"><input placeholder="Buscar fornecedor por nome, documento ou e-mail…" value={query} onChange={e => setQuery(e.target.value)}/></div>}
-    {loading ? <div className="panel">Carregando contatos…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{filtered.length} cadastro(s)</h2>{filtered.map(item => <button type="button" className="payable-table-row supplier-list-item" key={item.id} onClick={() => void openSupplier(item)}><div><strong>{item.name}</strong><small>{[item.document, item.email, item.phone].filter(Boolean).join(" · ")}</small>{contactType === "supplier" && <small>Empresas: {supplierCompanyNames(item.id).join(", ") || "Ainda não vinculado"}</small>}</div><span>{item.status === "active" ? "Ativo" : "Inativo"}</span>{contactType === "supplier" && <span>Ver ficha →</span>}</button>)}{filtered.length === 0 && <p>Nenhum cadastro encontrado.</p>}</section>}
-    {selected && contactType === "supplier" && <section className="panel supplier-detail-panel"><div className="modal-heading"><div><h2>{selected.name}</h2><p>Ficha do fornecedor · histórico financeiro real</p></div><button type="button" className="icon-button" onClick={() => setSelected(null)}>×</button></div>
-      <div className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total pago</div><div className="metric-value">{money(paidTotal)}</div></article><article className="metric-card"><div className="metric-top">Em aberto</div><div className="metric-value">{money(openTotal)}</div></article><article className="metric-card"><div className="metric-top">Vencido</div><div className="metric-value">{money(overdue)}</div></article></div>
+  const uploadDocument = async (file: File) => {
+    if (!selected) return;
+    setUploadingDocument(true);
+    try {
+      if (isCustomer) await uploadCustomerDocument(selected.id, file); else await uploadSupplierDocument(selected.id, file);
+      setDocuments(isCustomer ? await listCustomerDocuments(selected.id) : await listSupplierDocuments(selected.id));
+      showNotice("Documento enviado com acesso privado.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao enviar documento."); }
+    finally { setUploadingDocument(false); }
+  };
+  const openDocument = async (storagePath: string) => {
+    try {
+      const url = isCustomer ? await createCustomerDocumentUrl(storagePath) : await createSupplierDocumentUrl(storagePath);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível abrir o documento."); }
+  };
+  return <>
+    <div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>{title}</h1><p>{isCustomer ? "Clientes compartilhados entre empresas, vinculados às contas a receber e ao histórico real de recebimentos." : "Cadastro centralizado, compartilhado entre empresas e conectado às contas a pagar."}</p></div><button className="button-primary" onClick={() => { reset(); setModal(true); }}><Plus size={16}/> Novo {isCustomer ? "cliente" : "fornecedor"}</button></div>
+    <div className="payable-toolbar"><input placeholder={`Buscar ${isCustomer ? "cliente" : "fornecedor"} por nome, documento ou e-mail…`} value={query} onChange={e => setQuery(e.target.value)}/></div>
+    {loading ? <div className="panel">Carregando contatos…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{filtered.length} cadastro(s)</h2>{filtered.map(item => <button type="button" className="payable-table-row supplier-list-item" key={item.id} onClick={() => void openContact(item)}><div><strong>{item.name}</strong><small>{[item.document, item.email, item.phone].filter(Boolean).join(" · ")}</small><small>Empresas: {companyNames(item.id).join(", ") || "Ainda não vinculado"}</small></div><span>{item.status === "active" ? "Ativo" : "Inativo"}</span><span>Ver ficha →</span></button>)}{filtered.length === 0 && <p>Nenhum cadastro encontrado.</p>}</section>}
+    {selected && <section className="panel supplier-detail-panel"><div className="modal-heading"><div><h2>{selected.name}</h2><p>Ficha do {isCustomer ? "cliente" : "fornecedor"} · histórico financeiro real</p></div><button type="button" className="icon-button" onClick={() => setSelected(null)}>×</button></div>
+      <div className="payable-summary-grid"><article className="metric-card"><div className="metric-top">{isCustomer ? "Total recebido" : "Total pago"}</div><div className="metric-value">{money(paidTotal)}</div></article><article className="metric-card"><div className="metric-top">Em aberto</div><div className="metric-value">{money(openTotal)}</div></article><article className="metric-card"><div className="metric-top">Vencido</div><div className="metric-value">{money(overdue)}</div></article></div>
       <p><strong>Documento:</strong> {selected.document || "Não informado"} · <strong>Contato:</strong> {selected.contact_person || "Não informado"}</p>
-      <p><strong>Empresas:</strong> {supplierCompanyNames(selected.id).join(", ") || "Nenhuma empresa vinculada"}</p>
+      <p><strong>E-mail:</strong> {selected.email || "Não informado"} · <strong>Telefone:</strong> {selected.phone || "Não informado"}</p>
+      <p><strong>Empresas:</strong> {companyNames(selected.id).join(", ") || "Nenhuma empresa vinculada"}</p>
       <p><strong>Endereço:</strong> {[selected.street_address, selected.address_number, selected.address_complement, selected.neighborhood, selected.city, selected.state, selected.postal_code].filter(Boolean).join(", ") || "Não informado"}</p>
       <p><strong>Observações:</strong> {selected.notes || "Nenhuma observação"}</p>
-      <h3>Documentos do fornecedor</h3><label className="button-secondary supplier-upload-control">{uploadingDocument ? "Enviando documento…" : "Anexar documento"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.docx" disabled={uploadingDocument} onChange={async event => { const file = event.target.files?.[0]; if (!file || !selected) return; setUploadingDocument(true); try { await uploadSupplierDocument(selected.id, file); setDocuments(await listSupplierDocuments(selected.id)); showNotice("Documento enviado com acesso privado."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao enviar documento."); } finally { setUploadingDocument(false); event.target.value = ""; } }}/></label>{documents.map(file => <div className="payable-table-row" key={file.id}><strong>{file.file_name}</strong><button type="button" className="pay-action" onClick={async () => { try { const url = await createSupplierDocumentUrl(file.storage_path); window.open(url, "_blank", "noopener,noreferrer"); } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível abrir o documento."); } }}>Abrir documento</button></div>)}{documents.length === 0 && <p>Nenhum documento anexado.</p>}
-      <h3>Histórico de contas a pagar</h3>{history.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{companies.find(company => company.id === item.company_id)?.name || "Empresa não informada"} · vencimento {dateLabel(item.due_date)}</small></div><strong>{money(Number(item.amount))}</strong><span>{item.status === "paid" ? "Pago" : item.due_date && item.due_date < today() ? "Vencido" : "Em aberto"}</span></div>)}{history.length === 0 && <p>Nenhuma conta a pagar vinculada a este fornecedor ainda.</p>}
+      <h3>Documentos do {isCustomer ? "cliente" : "fornecedor"}</h3>
+      <label className="button-secondary supplier-upload-control">{uploadingDocument ? "Enviando documento…" : "Anexar documento"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.docx" disabled={uploadingDocument} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadDocument(file); event.target.value = ""; }}/></label>
+      {documents.map(file => <div className="payable-table-row" key={file.id}><strong>{file.file_name}</strong><button type="button" className="pay-action" onClick={() => void openDocument(file.storage_path)}>Abrir documento</button></div>)}{documents.length === 0 && <p>Nenhum documento anexado.</p>}
+      <h3>Histórico de {isCustomer ? "contas a receber" : "contas a pagar"}</h3>
+      {history.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{companies.find(company => company.id === item.company_id)?.name || "Empresa não informada"} · vencimento {dateLabel(item.due_date)}</small></div><strong>{money(Number(item.amount))}</strong><span>{item.status === "paid" ? (isCustomer ? "Recebido" : "Pago") : item.due_date && item.due_date < today() ? "Vencido" : "Em aberto"}</span></div>)}{history.length === 0 && <p>Nenhuma movimentação vinculada a este cadastro ainda.</p>}
     </section>}
-    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal supplier-form-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Novo {contactType === "customer" ? "cliente" : "fornecedor"}</h2><p>{contactType === "supplier" ? "Uma ficha pode atender várias empresas." : "Dados de contato"}</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal supplier-form-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Novo {isCustomer ? "cliente" : "fornecedor"}</h2><p>Uma ficha pode atender várias empresas.</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
       <label>Nome / razão social<input required maxLength={180} value={name} onChange={e => setName(e.target.value)}/></label>
       <label>CPF / CNPJ<input value={document} onChange={e => setDocument(e.target.value)} maxLength={24}/></label>
       <div className="modal-fields"><label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)}/></label><label>Telefone<input value={phone} onChange={e => setPhone(e.target.value)}/></label></div>
-      {contactType === "supplier" && <><label>Responsável / contato<input value={contactPerson} onChange={e => setContactPerson(e.target.value)}/></label><label>Inscrição estadual<input value={stateRegistration} onChange={e => setStateRegistration(e.target.value)}/></label>
-        <div className="modal-fields"><label>CEP<input value={postalCode} onChange={e => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={e => setState(e.target.value.toUpperCase())}/></label></div>
-        <label>Logradouro<input value={street} onChange={e => setStreet(e.target.value)}/></label><div className="modal-fields"><label>Número<input value={addressNumber} onChange={e => setAddressNumber(e.target.value)}/></label><label>Complemento<input value={complement} onChange={e => setComplement(e.target.value)}/></label></div>
-        <div className="modal-fields"><label>Bairro<input value={neighborhood} onChange={e => setNeighborhood(e.target.value)}/></label><label>Cidade<input value={city} onChange={e => setCity(e.target.value)}/></label></div>
-        <label>Site<input type="url" placeholder="https://" value={website} onChange={e => setWebsite(e.target.value)}/></label>
-        <fieldset><legend>Empresas atendidas</legend>{companies.map(company => <label className="supplier-company-option" key={company.id}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={e => setCompanyIds(old => e.target.checked ? [...old, company.id] : old.filter(id => id !== company.id))}/>{company.name}</label>)}{companies.length === 0 && <small>Cadastre uma empresa para vincular fornecedores.</small>}</fieldset>
-      </>}
+      <label>Responsável / contato<input value={contactPerson} onChange={e => setContactPerson(e.target.value)}/></label><label>Inscrição estadual<input value={stateRegistration} onChange={e => setStateRegistration(e.target.value)}/></label>
+      <div className="modal-fields"><label>CEP<input value={postalCode} onChange={e => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={e => setState(e.target.value.toUpperCase())}/></label></div>
+      <label>Logradouro<input value={street} onChange={e => setStreet(e.target.value)}/></label><div className="modal-fields"><label>Número<input value={addressNumber} onChange={e => setAddressNumber(e.target.value)}/></label><label>Complemento<input value={complement} onChange={e => setComplement(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>Bairro<input value={neighborhood} onChange={e => setNeighborhood(e.target.value)}/></label><label>Cidade<input value={city} onChange={e => setCity(e.target.value)}/></label></div>
+      <label>Site<input type="url" placeholder="https://" value={website} onChange={e => setWebsite(e.target.value)}/></label>
+      <fieldset><legend>Empresas {isCustomer ? "atendidas" : "atendidas"}</legend>{companies.map(company => <label className="supplier-company-option" key={company.id}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={e => setCompanyIds(old => e.target.checked ? [...old, company.id] : old.filter(id => id !== company.id))}/>{company.name}</label>)}{companies.length === 0 && <small>Cadastre uma empresa para vincular contatos.</small>}</fieldset>
       <label>Observações<textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)}/></label>
       <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar cadastro"}</button></div>
     </form></div>}
