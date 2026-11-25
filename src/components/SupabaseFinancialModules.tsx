@@ -155,7 +155,7 @@ export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
   const [fileName, setFileName] = useState(""); const [fileFormat, setFileFormat] = useState<"ofx" | "csv">("ofx");
   const [parsedRows, setParsedRows] = useState<ParsedBankStatementRow[]>([]);
   const [savingImport, setSavingImport] = useState(false); const [imports, setImports] = useState<any[]>([]);
-  const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter(item => item.account_id === account.id && item.status === "paid").reduce((sum,item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)),0);
+  const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter(item => item.account_id === account.id && item.status === "paid" && (!account.opening_date || item.transaction_date >= account.opening_date)).reduce((sum,item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)),0);
   useEffect(() => { if (!data.accounts.length) { setImports([]); return; } void listBankStatementImports().then(setImports).catch(() => setImports([])); }, [data.accounts.length, data.transactions.length]);
   const save = async (event: FormEvent) => {
     event.preventDefault();
