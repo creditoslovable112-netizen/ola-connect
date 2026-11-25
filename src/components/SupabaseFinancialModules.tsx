@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "../lib/supabase";
+import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
@@ -338,7 +339,7 @@ export function SupabaseCompanies({ showNotice }: { showNotice: Notice }) {
     {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal company-form-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Nova empresa</h2><p>Dados cadastrais e endereço</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
       <label>Nome fantasia<input required maxLength={160} value={name} onChange={(e) => setName(e.target.value)}/></label>
       <label>Razão social<input maxLength={200} value={legalName} onChange={(e) => setLegalName(e.target.value)}/></label>
-      <label>CNPJ<input value={formatCnpj(document)} onChange={(e) => { const value = normalizeCnpj(e.target.value); setDocument(value); setCnpjError(value && value.length === 14 && !isValidCnpj(value) ? "CNPJ inválido: dígitos verificadores não conferem." : ""); }} placeholder="00.000.000/0000-00" maxLength={18} autoComplete="off"/>{cnpjError && <small className="field-error" role="alert">{cnpjError}</small>}<small>Compatível com CNPJ numérico e alfanumérico.</small></label>
+      <label>CNPJ<input required value={formatCnpj(document)} onChange={(e) => { const value = normalizeCnpj(e.target.value); setDocument(value); setCnpjError(value && value.length === 14 && !isValidCnpj(value) ? "CNPJ inválido: dígitos verificadores não conferem." : ""); }} placeholder="00.000.000/0000-00" maxLength={18} autoComplete="off"/>{cnpjError && <small className="field-error" role="alert">{cnpjError}</small>}<small>Compatível com CNPJ numérico e alfanumérico.</small></label>
       <label>Inscrição estadual<input maxLength={40} value={stateRegistration} onChange={(e) => setStateRegistration(e.target.value)}/></label>
       <div className="modal-fields"><label>E-mail<input type="email" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input type="tel" maxLength={30} value={phone} onChange={(e) => setPhone(e.target.value)}/></label></div>
       <div className="modal-fields"><label>CEP<input maxLength={9} value={postalCode} onChange={(e) => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={(e) => setState(e.target.value.toUpperCase())}/></label></div>
