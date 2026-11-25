@@ -135,7 +135,7 @@ function DashboardPage() {
     if (!session?.user.id) { setCompany("Workspace"); return; }
     let active = true;
     void (supabase as any).from("workspace_members").select("workspaces(name)")
-      .eq("user_id", session.user.id).eq("status", "active").order("joined_at", { ascending: false }).limit(1).maybeSingle()
+      .eq("user_id", session.user.id).eq("status", "active").eq("workspace_id", window.localStorage.getItem("nexus-active-workspace") || undefined).order("joined_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data, error }: any) => { if (active && !error && data?.workspaces?.name) setCompany(data.workspaces.name); });
     return () => { active = false; };
   }, [session?.user.id]);
