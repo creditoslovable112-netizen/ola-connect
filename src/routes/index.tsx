@@ -5,7 +5,7 @@ import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
 import { SubscriptionManager } from "../components/SubscriptionManager";
 import { NexusAI } from "../components/NexusAI";
-import { TeamManager } from "../components/TeamManager";
+import { TeamManager } from "../components/TeamManager";\nimport { listCompanies } from "../lib/finance-data";
 import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
@@ -102,7 +102,7 @@ function DashboardPage() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
   const [period, setPeriod] = useState("Últimos 7 meses");
-  const [company, setCompany] = useState("Workspace");
+  const [company, setCompany] = useState("Workspace");\n  const [companyOptions, setCompanyOptions] = useState<Array<{id:string;name:string}>>([]);\n  const [companyScope, setCompanyScope] = useState("all");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [search, setSearch] = useState("");
@@ -132,7 +132,7 @@ function DashboardPage() {
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
   useEffect(() => {
-    if (!session?.user.id) { setCompany("Workspace"); return; }
+    if (!session?.user.id) { setCompany("Workspace"); setCompanyOptions([]); return; }
     let active = true;
     const preferredWorkspace = window.localStorage.getItem("nexus-active-workspace");
     let workspaceQuery = (supabase as any).from("workspace_members").select("workspaces(name)")
@@ -237,7 +237,7 @@ function DashboardPage() {
           </div>
         </header>
 
-        <div className="page-content">
+        <div className="page-content" key={companyScope}>
           {active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
