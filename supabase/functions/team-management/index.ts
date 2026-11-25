@@ -107,20 +107,26 @@ Deno.serve(async (req) => {
     }
     if (action === "revoke_invite") {
       const { error } = await admin.from("workspace_invites").update({ status: "revoked" }).eq("workspace_id", workspaceId).eq("id", String(body.invite_id)).eq("status", "pending");
-      if (error) throw error; return json({ success: true });
+      if (error) throw error;
+      await recordAudit(workspaceId, "REVOKE_INVITE", "workspace_invites", String(body.invite_id), ["status"]);
+      return json({ success: true });
     }
     if (action === "change_role") {
       const targetId = String(body.user_id ?? ""), role = String(body.role ?? "");
       if (!["admin", "editor", "viewer"].includes(role)) return json({ error: "Permissão inválida." }, 400);
       if (targetId === user.id) return json({ error: "Não é possível alterar sua própria permissão." }, 400);
       const { error } = await admin.from("workspace_members").update({ role }).eq("workspace_id", workspaceId).eq("user_id", targetId).neq("role", "owner");
-      if (error) throw error; return json({ success: true });
+      if (error) throw error;
+      await recordAudit(workspaceId, "ROLE_CHANGED", "workspace_members", targetId, ["role"]);
+      return json({ success: true });
     }
     if (action === "remove_member") {
       const targetId = String(body.user_id ?? "");
       if (targetId === user.id) return json({ error: "Não é possível remover sua própria conta." }, 400);
       const { error } = await admin.from("workspace_members").delete().eq("workspace_id", workspaceId).eq("user_id", targetId).neq("role", "owner");
-      if (error) throw error; return json({ success: true });
+      if (error) throw error;
+      await recordAudit(workspaceId, "MEMBER_REMOVED", "workspace_members", targetId, ["membership"]);
+      return json({ success: true });
     }
     return json({ error: "Ação desconhecida." }, 400);
   } catch (error) {
