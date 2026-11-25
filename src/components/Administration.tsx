@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Activity, Building2, Clock3, KeyRound, RefreshCw, ShieldCheck, Users, LogOut, Save } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -85,7 +85,7 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
 
   useEffect(() => { void load(); }, [load]);
 
-  const saveWorkspace = async (event: React.FormEvent) => {
+  const saveWorkspace = async (event: FormEvent) => {
     event.preventDefault();
     if (!workspaceId || !canAdmin) return;
     setSaving(true);
