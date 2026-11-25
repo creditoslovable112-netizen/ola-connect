@@ -16,48 +16,88 @@ export type Database = {
     Tables: {
       business_contacts: {
         Row: {
+          address_complement: string | null
+          address_number: string | null
+          city: string | null
+          company_id: string | null
+          contact_person: string | null
           contact_type: string
           created_at: string
           document: string | null
           email: string | null
           id: string
           name: string
+          neighborhood: string | null
           notes: string | null
           phone: string | null
+          postal_code: string | null
+          state: string | null
+          state_registration: string | null
           status: string
+          street_address: string | null
           updated_at: string
           user_id: string
+          website: string | null
           workspace_id: string
         }
         Insert: {
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_person?: string | null
           contact_type: string
           created_at?: string
           document?: string | null
           email?: string | null
           id?: string
           name: string
+          neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          state_registration?: string | null
           status?: string
+          street_address?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
           workspace_id: string
         }
         Update: {
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_person?: string | null
           contact_type?: string
           created_at?: string
           document?: string | null
           email?: string | null
           id?: string
           name?: string
+          neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          state_registration?: string | null
           status?: string
+          street_address?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "business_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "business_contacts_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -116,43 +156,70 @@ export type Database = {
       }
       companies: {
         Row: {
+          address_complement: string | null
+          address_number: string | null
+          city: string | null
           created_at: string
           document: string | null
           email: string | null
           id: string
           is_default: boolean
           legal_name: string | null
+          logo_url: string | null
           name: string
+          neighborhood: string | null
           phone: string | null
+          postal_code: string | null
+          state: string | null
+          state_registration: string | null
           status: string
+          street_address: string | null
           updated_at: string
           user_id: string
           workspace_id: string
         }
         Insert: {
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
           id?: string
           is_default?: boolean
           legal_name?: string | null
+          logo_url?: string | null
           name: string
+          neighborhood?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          state_registration?: string | null
           status?: string
+          street_address?: string | null
           updated_at?: string
           user_id: string
           workspace_id: string
         }
         Update: {
+          address_complement?: string | null
+          address_number?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
           id?: string
           is_default?: boolean
           legal_name?: string | null
+          logo_url?: string | null
           name?: string
+          neighborhood?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          state_registration?: string | null
           status?: string
+          street_address?: string | null
           updated_at?: string
           user_id?: string
           workspace_id?: string
@@ -160,6 +227,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "companies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_customers: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_customers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_customers_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_suppliers: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          supplier_id: string
+          workspace_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          supplier_id: string
+          workspace_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          supplier_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_suppliers_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -208,10 +367,56 @@ export type Database = {
           },
         ]
       }
+      customer_documents: {
+        Row: {
+          created_at: string
+          customer_id: string
+          file_name: string
+          id: string
+          storage_path: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          file_name: string
+          id?: string
+          storage_path: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+          uploaded_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_documents_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_accounts: {
         Row: {
           account_type: string
           color: string | null
+          company_id: string | null
           created_at: string
           id: string
           institution: string | null
@@ -225,6 +430,7 @@ export type Database = {
         Insert: {
           account_type: string
           color?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           institution?: string | null
@@ -238,6 +444,7 @@ export type Database = {
         Update: {
           account_type?: string
           color?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           institution?: string | null
@@ -249,6 +456,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "financial_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "financial_accounts_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -408,20 +622,68 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          storage_path: string
+          supplier_id: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          storage_path: string
+          supplier_id: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+          supplier_id?: string
+          uploaded_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_documents_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
           amount: number
           category_id: string | null
+          company_id: string | null
           cost_center_id: string | null
           counterparty: string | null
           created_at: string
+          customer_id: string | null
           description: string
           due_date: string | null
           id: string
           notes: string | null
           paid_at: string | null
           status: string
+          supplier_id: string | null
           transaction_date: string
           type: string
           updated_at: string
@@ -432,15 +694,18 @@ export type Database = {
           account_id: string
           amount: number
           category_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           counterparty?: string | null
           created_at?: string
+          customer_id?: string | null
           description: string
           due_date?: string | null
           id?: string
           notes?: string | null
           paid_at?: string | null
           status?: string
+          supplier_id?: string | null
           transaction_date?: string
           type: string
           updated_at?: string
@@ -451,15 +716,18 @@ export type Database = {
           account_id?: string
           amount?: number
           category_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           counterparty?: string | null
           created_at?: string
+          customer_id?: string | null
           description?: string
           due_date?: string | null
           id?: string
           notes?: string | null
           paid_at?: string | null
           status?: string
+          supplier_id?: string | null
           transaction_date?: string
           type?: string
           updated_at?: string
@@ -482,10 +750,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_cost_center_id_fkey"
             columns: ["cost_center_id"]
             isOneToOne: false
             referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
             referencedColumns: ["id"]
           },
           {
