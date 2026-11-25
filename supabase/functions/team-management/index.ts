@@ -12,6 +12,22 @@ Deno.serve(async (req) => {
   const { data: authData, error: authError } = await caller.auth.getUser();
   if (authError || !authData.user) return json({ error: "Sessão inválida." }, 401);
   const user = authData.user, admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const configuredAppUrl = Deno.env.get("NEXUS_APP_URL") ?? "";
+  const requestOrigin = req.headers.get("origin") ?? "";
+  const isTrustedAppOrigin = (candidate: string) => {
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== "https:") return false;
+      if (configuredAppUrl) {
+        const configured = new URL(configuredAppUrl);
+        if (parsed.origin === configured.origin) return true;
+      }
+      return /^ola-connect-[a-z0-9-]+\\.vercel\\.app$/i.test(parsed.hostname);
+    } catch { return false; }
+  };
+  const appRedirectUrl = isTrustedAppOrigin(configuredAppUrl)
+    ? new URL(configuredAppUrl).origin
+    : (isTrustedAppOrigin(requestOrigin) ? new URL(requestOrigin).origin : "");
   try {
     const body = await req.json(), action = String(body.action ?? "");
     if (action === "accept") {
@@ -62,7 +78,14 @@ Deno.serve(async (req) => {
       const { data: invite, error: insertError } = await admin.from("workspace_invites").insert({ workspace_id: workspaceId, email, role, invited_by: user.id }).select().single();
       if (insertError) throw insertError;
       let emailSent = false, message = "Convite registrado. Se a pessoa já tem conta, entre no NEXUS com esse mesmo e-mail para aceitar.";
-      const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { data: { nexus_workspace_invite_id: invite.id }, redirectTo: Deno.env.get("NEXUS_APP_URL") ?? undefined });
+      if (!appRedirectUrl) {
+        await admin.from("workspace_invites").delete().eq("id", invite.id);
+        return json({ error: "Endereço seguro do aplicativo não configurado. Defina NEXUS_APP_URL no Supabase e tente novamente." }, 500);
+      }
+      const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { nexus_workspace_invite_id: invite.id, password_set: false },
+        redirectTo: appRedirectUrl,
+      });
       if (!inviteError) { emailSent = true; message = "Convite enviado por e-mail."; }
       else {
         const msg = String(inviteError.message).toLowerCase();
