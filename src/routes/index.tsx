@@ -166,7 +166,6 @@ function DashboardPage() {
     }
     setCookieBanner(false);
   };
-  const filteredTransactions = useMemo(() => transactions.filter((item) => (item.name + item.detail + item.category).toLowerCase().includes(search.toLowerCase())), [search]);
 
 
   if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
