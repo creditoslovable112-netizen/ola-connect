@@ -143,7 +143,7 @@ function DashboardPage() {
     if (preferredWorkspace) workspaceQuery = workspaceQuery.eq("workspace_id", preferredWorkspace);
     void workspaceQuery.order("joined_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data, error }: any) => { if (active && !error && data?.workspaces?.name) setCompany(data.workspaces.name); });
-    void listCompanies().then((rows:any[]) => {
+    const refreshCompanyOptions = () => void listCompanies().then((rows:any[]) => {
       if (!active) return;
       setCompanyOptions(rows.map((row:any)=>({id:row.id,name:row.name})));
       const saved = window.localStorage.getItem("nexus-active-company") || "all";
@@ -152,7 +152,8 @@ function DashboardPage() {
       setCompanyScope(scope);
       if (!valid) window.localStorage.setItem("nexus-active-company","all");
     }).catch(() => { if (active) setCompanyOptions([]); });
-    return () => { active = false; };
+    window.addEventListener("nexus-companies-updated", refreshCompanyOptions);
+    return () => { active = false; window.removeEventListener("nexus-companies-updated", refreshCompanyOptions); };
   }, [session?.user.id]);
   useEffect(() => {
     if (!session?.user.id) return;
