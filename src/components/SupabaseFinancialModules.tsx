@@ -6,7 +6,8 @@ import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
-  updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,\n  listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
+  updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
+  listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
 
@@ -21,14 +22,16 @@ function useFinanceData(notice: Notice) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [centers, setCenters] = useState<CostCenter[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);\n  const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);\n  const [supplierCompanyLinks, setSupplierCompanyLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);
+  const [supplierCompanyLinks, setSupplierCompanyLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [a, c, cc, t, co] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies()]);
-      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co);
+      const [a, c, cc, t, co, su, sl] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies(), listBusinessContacts("supplier", true), listSupplierCompanyLinks()]);
+      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co); setSuppliers(su); setSupplierCompanyLinks(sl);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
       setError(message);
@@ -60,12 +63,13 @@ function DataState({ loading, error, retry }: { loading: boolean; error: string;
   return null;
 }
 
-function TransactionForm({ type, accounts, categories, centers, companies, onClose, onSaved, notice }: {
+function TransactionForm({ type, accounts, categories, centers, companies, suppliers, supplierCompanyLinks, onClose, onSaved, notice }: {
   type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[]; supplierCompanyLinks: { supplier_id: string; company_id: string }[];
   onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
 }) {
   const [description, setDescription] = useState("");
-  const [counterparty, setCounterparty] = useState("");\n  const [supplierId, setSupplierId] = useState("");
+  const [counterparty, setCounterparty] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [amount, setAmount] = useState("");
   const [due, setDue] = useState(today());
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
@@ -125,7 +129,7 @@ export function SupabaseReceivables({ showNotice }: { showNotice: Notice }) {
     <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total a receber <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Cobranças cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Em atraso <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou cliente…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>COBRANÇA / CLIENTE</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem cliente"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markReceived(item)}>{item.status === "paid" ? "Recebido" : "Marcar recebido"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a receber cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
-    {modal && <TransactionForm type="income" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+    {modal && <TransactionForm type="income" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
   </>;
 }
 
