@@ -8,7 +8,7 @@ import {
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
   listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
-  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,
+  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,\n  listCustomerCompanyLinks, saveCustomerCompanyLinks, listCustomerTransactions,\n  listCustomerDocuments, uploadCustomerDocument, createCustomerDocumentUrl,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
 
@@ -55,7 +55,7 @@ function useFinanceData(notice: Notice) {
     }).catch(() => undefined);
     return () => { cancelled = true; if (channel) void supabase.removeChannel(channel); };
   }, [reload]);
-  return { accounts, categories, centers, transactions, companies, suppliers, supplierCompanyLinks, loading, error, reload };
+  return { accounts, categories, centers, transactions, companies, suppliers, supplierCompanyLinks, customers, customerCompanyLinks, loading, error, reload };
 }
 
 function DataState({ loading, error, retry }: { loading: boolean; error: string; retry: () => void }) {
@@ -64,13 +64,13 @@ function DataState({ loading, error, retry }: { loading: boolean; error: string;
   return null;
 }
 
-function TransactionForm({ type, accounts, categories, centers, companies, suppliers, supplierCompanyLinks, onClose, onSaved, notice }: {
-  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[]; supplierCompanyLinks: { supplier_id: string; company_id: string }[];
+function TransactionForm({ type, accounts, categories, centers, companies, suppliers, supplierCompanyLinks, customers, customerCompanyLinks, onClose, onSaved, notice }: {
+  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[]; supplierCompanyLinks: { supplier_id: string; company_id: string }[]; customers: BusinessContact[]; customerCompanyLinks: { customer_id: string; company_id: string }[];
   onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
 }) {
   const [description, setDescription] = useState("");
   const [counterparty, setCounterparty] = useState("");
-  const [supplierId, setSupplierId] = useState("");
+  const [supplierId, setSupplierId] = useState("");\n  const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [due, setDue] = useState(today());
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
@@ -78,7 +78,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
   const [centerId, setCenterId] = useState("");
   const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? ((window.localStorage.getItem("nexus-active-company") || "") === "all" ? "" : window.localStorage.getItem("nexus-active-company") || "") : "");
   const [saving, setSaving] = useState(false);
-  const options = categories.filter((item) => item.type === type);
+  const options = categories.filter((item) => item.type === type);\n  const availableSuppliers = suppliers.filter(item => !companyId || supplierCompanyLinks.some(link => link.supplier_id === item.id && link.company_id === companyId));\n  const availableCustomers = customers.filter(item => !companyId || customerCompanyLinks.some(link => link.customer_id === item.id && link.company_id === companyId));
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (companies.length > 0 && (!companyId || companyId === "all")) { notice("Selecione uma empresa para vincular este lançamento."); return; }
@@ -87,7 +87,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
     if (!Number.isFinite(value) || value <= 0) { notice("Informe um valor maior que zero."); return; }
     setSaving(true);
     try {
-      await createTransaction({ account_id: accountId, category_id: categoryId || null, cost_center_id: centerId || null, supplier_id: type === "expense" ? supplierId || null : null,
+      await createTransaction({ account_id: accountId, category_id: categoryId || null, cost_center_id: centerId || null, supplier_id: type === "expense" ? supplierId || null : null, customer_id: type === "income" ? customerId || null : null,
         company_id: companyId && companyId !== "all" ? companyId : null,
         type, description: description.trim(), counterparty: counterparty.trim() || null, amount: value,
         status: "pending", transaction_date: today(), due_date: due, notes: null });
