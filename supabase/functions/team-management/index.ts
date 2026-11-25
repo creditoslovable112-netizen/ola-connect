@@ -36,10 +36,14 @@ Deno.serve(async (req) => {
       const { data: members, error } = await admin.from("workspace_members").select("id,user_id,role,status,joined_at")
         .eq("workspace_id", workspaceId).order("joined_at");
       if (error) throw error;
-      const { data: invites, error: inviteError } = await admin.from("workspace_invites")
-        .select("id,email,role,status,expires_at,created_at").eq("workspace_id", workspaceId)
-        .eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false });
-      if (inviteError) throw inviteError;
+      let invites: any[] = [];
+      if (["owner", "admin"].includes(membership.role)) {
+        const { data, error: inviteError } = await admin.from("workspace_invites")
+          .select("id,email,role,status,expires_at,created_at").eq("workspace_id", workspaceId)
+          .eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false });
+        if (inviteError) throw inviteError;
+        invites = data ?? [];
+      }
       const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (usersError) throw usersError;
       const emailById = new Map((users.users ?? []).map((u) => [u.id, u.email]));
