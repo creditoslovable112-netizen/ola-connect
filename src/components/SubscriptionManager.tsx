@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 
 type Plan = {
   id: string;
-  slug: "starter" | "pro" | "elite";
+  slug: "pro";
   name: string;
   price_brl: number;
   features: string[];
@@ -20,12 +20,10 @@ type Subscription = {
 };
 
 const planDescriptions: Record<string, string> = {
-  starter: "O essencial para organizar suas finanças.",
-  pro: "Mais controle, relatórios e produtividade.",
-  elite: "Inteligência e recursos avançados para crescer.",
+  pro: "Tudo o que você precisa para organizar e acompanhar as finanças do seu negócio, em um único plano.",
 };
 
-const planIcons = { starter: ShieldCheck, pro: Sparkles, elite: Crown };
+const planIcons = { pro: Sparkles };
 
 export function SubscriptionManager({ showNotice }: { showNotice: (message: string) => void }) {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -101,7 +99,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
   return (
     <div className="workspace-module subscription-page">
       <div className="welcome-row">
-        <div><div className="eyebrow">NEXUS MEMBERSHIP</div><h1>Escolha seu plano</h1><p>Uma única plataforma. Recursos liberados conforme sua assinatura.</p></div>
+        <div><div className="eyebrow">NEXUS MEMBERSHIP</div><h1>NEXUS PRO</h1><p>Um plano completo, simples e com preço acessível para sua gestão financeira.</p></div>
       </div>
       {subscription && (
         <section className="panel subscription-current">
@@ -115,17 +113,17 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
       )}
       <div className="subscription-plans">
         {plans.map((plan) => {
-          const Icon = planIcons[plan.slug];
+          const Icon = planIcons.pro;
           const isCurrent = subscription?.plan?.slug === plan.slug && subscription.status === "authorized";
           return (
-            <article className={"summary-card plan-card subscription-plan " + (plan.slug === "pro" ? "subscription-plan-featured" : "")} key={plan.id}>
+            <article className="summary-card plan-card subscription-plan subscription-plan-featured" key={plan.id}>
               <div className="subscription-plan-heading"><span>PLANO {plan.slug.toUpperCase()}</span><Icon size={22}/></div>
               <h2>{plan.name.replace("NEXUS ", "")}</h2>
               <div className="subscription-price">{formatPrice(plan.price_brl)}<small>/mês</small></div>
               <p>{planDescriptions[plan.slug]}</p>
               <ul>{(plan.features || []).map((feature) => <li key={feature}><Check size={15}/>{feature}</li>)}</ul>
               <button
-                className={plan.slug === "pro" ? "button-primary" : "button-secondary"}
+                className="button-primary"
                 disabled={Boolean(checkingOut) || isCurrent || Boolean(subscription?.status === "authorized" && !isCurrent)}
                 onClick={() => void startCheckout(plan)}
               >
@@ -135,7 +133,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
           );
         })}
       </div>
-      <div className="demo-disclaimer"><ShieldCheck size={14}/> Pagamento processado pelo Mercado Pago. O acesso Pro/Elite só será liberado após confirmação do webhook.</div>
+      <div className="demo-disclaimer"><ShieldCheck size={14}/> Pagamento processado pelo Mercado Pago. Seu acesso NEXUS PRO será liberado após a confirmação do pagamento.</div>
     </div>
   );
 }
