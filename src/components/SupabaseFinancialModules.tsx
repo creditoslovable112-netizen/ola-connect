@@ -7,7 +7,7 @@ import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
-  listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
+  listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,\n  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
 } from "../lib/finance-data";
 
@@ -280,7 +280,7 @@ export function SupabaseContacts({ contactType, showNotice }: { contactType: "cu
   const [items, setItems] = useState<BusinessContact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [links, setLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);\n  const [documents, setDocuments] = useState<any[]>([]);\n  const [uploadingDocument, setUploadingDocument] = useState(false);
   const [selected, setSelected] = useState<BusinessContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -346,7 +346,7 @@ export function SupabaseContacts({ contactType, showNotice }: { contactType: "cu
       <p><strong>Empresas:</strong> {supplierCompanyNames(selected.id).join(", ") || "Nenhuma empresa vinculada"}</p>
       <p><strong>Endereço:</strong> {[selected.street_address, selected.address_number, selected.address_complement, selected.neighborhood, selected.city, selected.state, selected.postal_code].filter(Boolean).join(", ") || "Não informado"}</p>
       <p><strong>Observações:</strong> {selected.notes || "Nenhuma observação"}</p>
-      <h3>Histórico de contas a pagar</h3>{history.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{companies.find(company => company.id === item.company_id)?.name || "Empresa não informada"} · vencimento {dateLabel(item.due_date)}</small></div><strong>{money(Number(item.amount))}</strong><span>{item.status === "paid" ? "Pago" : item.due_date && item.due_date < today() ? "Vencido" : "Em aberto"}</span></div>)}{history.length === 0 && <p>Nenhuma conta a pagar vinculada a este fornecedor ainda.</p>}
+      <h3>Documentos do fornecedor</h3><label className="button-secondary supplier-upload-control">{uploadingDocument ? "Enviando documento…" : "Anexar documento"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.docx" disabled={uploadingDocument} onChange={async event => { const file = event.target.files?.[0]; if (!file || !selected) return; setUploadingDocument(true); try { await uploadSupplierDocument(selected.id, file); setDocuments(await listSupplierDocuments(selected.id)); showNotice("Documento enviado com acesso privado."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao enviar documento."); } finally { setUploadingDocument(false); event.target.value = ""; } }}/></label>{documents.map(file => <div className="payable-table-row" key={file.id}><strong>{file.file_name}</strong><button type="button" className="pay-action" onClick={async () => { try { const url = await createSupplierDocumentUrl(file.storage_path); window.open(url, "_blank", "noopener,noreferrer"); } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível abrir o documento."); } }}>Abrir documento</button></div>)}{documents.length === 0 && <p>Nenhum documento anexado.</p>}\n      <h3>Histórico de contas a pagar</h3>{history.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{companies.find(company => company.id === item.company_id)?.name || "Empresa não informada"} · vencimento {dateLabel(item.due_date)}</small></div><strong>{money(Number(item.amount))}</strong><span>{item.status === "paid" ? "Pago" : item.due_date && item.due_date < today() ? "Vencido" : "Em aberto"}</span></div>)}{history.length === 0 && <p>Nenhuma conta a pagar vinculada a este fornecedor ainda.</p>}
     </section>}
     {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal supplier-form-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Novo {contactType === "customer" ? "cliente" : "fornecedor"}</h2><p>{contactType === "supplier" ? "Uma ficha pode atender várias empresas." : "Dados de contato"}</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
       <label>Nome / razão social<input required maxLength={180} value={name} onChange={e => setName(e.target.value)}/></label>
