@@ -102,8 +102,7 @@ function DashboardPage() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
   const [period, setPeriod] = useState("Últimos 7 meses");
-  const [company, setCompany] = useState("Nexus Studio");
-  const [companyOpen, setCompanyOpen] = useState(false);
+  const [company, setCompany] = useState("Workspace");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [search, setSearch] = useState("");
@@ -132,6 +131,14 @@ function DashboardPage() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
+  useEffect(() => {
+    if (!session?.user.id) { setCompany("Workspace"); return; }
+    let active = true;
+    void (supabase as any).from("workspace_members").select("workspaces(name)")
+      .eq("user_id", session.user.id).eq("status", "active").order("joined_at").limit(1).maybeSingle()
+      .then(({ data, error }: any) => { if (active && !error && data?.workspaces?.name) setCompany(data.workspaces.name); });
+    return () => { active = false; };
+  }, [session?.user.id]);
   useEffect(() => {
     if (!session?.user.id) return;
     const choice = window.localStorage.getItem("nexus-cookie-choice");
@@ -183,14 +190,10 @@ function DashboardPage() {
           <div><strong>NEXUS</strong><small>FINANCE</small></div>
           <button className="mobile-close icon-button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X size={18}/></button>
         </div>
-        <button className="workspace-switch" onClick={() => setCompanyOpen(!companyOpen)}>
+        <div className="workspace-switch" aria-label="Workspace atual">
           <span className="workspace-avatar"><Building2 size={17}/></span>
-          <span className="workspace-copy"><strong>{company}</strong><small>Workspace principal</small></span>
-          <ChevronDown size={15} className="muted-icon"/>
-        </button>
-        {companyOpen && <div className="company-menu">
-          {["Nexus Studio", "Nexus Consultoria", "Todas as empresas"].map((name) => <button key={name} onClick={() => { setCompany(name); setCompanyOpen(false); }}><Building2 size={15}/>{name}{company === name && <Check size={14}/>}</button>)}
-        </div>}
+          <span className="workspace-copy"><strong>{company}</strong><small>Workspace compartilhado</small></span>
+        </div>
         <div className="sidebar-scroll">
           {navGroups.map((group) => <div className="nav-group" key={group.title}>
             <p className="nav-label">{group.title}</p>
