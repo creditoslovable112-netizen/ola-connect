@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
       return /^ola-connect-[a-z0-9-]+\.vercel\.app$/i.test(parsed.hostname);
     } catch { return false; }
   };
-  const appRedirectUrl = isTrustedAppOrigin(configuredAppUrl)
-    ? new URL(configuredAppUrl).origin
-    : (isTrustedAppOrigin(requestOrigin) ? new URL(requestOrigin).origin : "");
+  const appRedirectUrl = isTrustedAppOrigin(requestOrigin)
+    ? new URL(requestOrigin).origin
+    : (isTrustedAppOrigin(configuredAppUrl) ? new URL(configuredAppUrl).origin : "");
   try {
     const body = await req.json(), action = String(body.action ?? "");
     if (action === "accept") {
