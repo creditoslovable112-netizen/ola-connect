@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "sdk_version": "3.6.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "ola-hello-horizon",
+      "version": "0.1.0",
+      "title": "Ola Hello Horizon"
+    },
+    "tools": [
+      {
+        "name": "list_plans",
+        "title": "Listar planos",
+        "description": "List the active subscription plans with monthly prices (BRL) and included features.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_plan",
+        "title": "Detalhes do plano",
+        "description": "Get price and features of one subscription plan by slug (e.g. starter, pro, elite).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Plan slug, e.g. starter, pro or elite."
+            }
+          },
+          "required": [
+            "slug"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
