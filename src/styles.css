@@ -1283,3 +1283,15 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .company-form-modal .field-error{color:#d34e58;font-size:11px;font-weight:600}
 .company-record-row{gap:12px}
 @media(max-width:760px){.company-scope-control{max-width:100%;width:100%;}.company-scope-control select{max-width:none;flex:1}.company-form-modal{width:min(100%,560px);padding:18px}}
+
+
+/* Skeleton global durante a validação da sessão e a abertura de cada módulo */
+.nexus-loading-screen{min-height:100dvh;padding:22px clamp(14px,3vw,38px);background:#f4f7fa}
+.nexus-loading-brand{display:flex;align-items:center;gap:10px;max-width:1500px;margin:0 auto 12px;color:#173c47}
+.nexus-loading-brand img{width:38px;height:38px;object-fit:contain}
+.nexus-loading-brand span{display:grid;gap:1px;letter-spacing:.12em}
+.nexus-loading-brand strong{font-size:15px;font-weight:900}
+.nexus-loading-brand small{font-size:9px;font-weight:700;opacity:.7}
+.nexus-loading-screen .nexus-skeleton{min-height:calc(100dvh - 90px);max-width:1500px;margin:0 auto;padding:12px 0;background:transparent}
+.page-content>.nexus-skeleton{min-height:420px;padding:10px 0;background:transparent}
+@media(prefers-reduced-motion:reduce){.skeleton-line::after,.skeleton-block::after{animation:none}}
