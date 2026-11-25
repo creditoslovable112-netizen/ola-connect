@@ -3,7 +3,7 @@ import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, Re
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "../lib/supabase";
 import {
-  createCategory, createCostCenter, createFinancialAccount, createTransaction,
+  createCategory, createCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
   type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
@@ -37,16 +37,18 @@ function useFinanceData(notice: Notice) {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user || cancelled) return;
+    void requireWorkspaceId().then((workspaceId) => {
+      if (cancelled) return;
       channel = supabase
-        .channel("nexus-finance-" + user.id)
-        .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: "user_id=eq." + user.id }, () => void reload())
-        .on("postgres_changes", { event: "*", schema: "public", table: "financial_accounts", filter: "user_id=eq." + user.id }, () => void reload())
-        .on("postgres_changes", { event: "*", schema: "public", table: "categories", filter: "user_id=eq." + user.id }, () => void reload())
-        .on("postgres_changes", { event: "*", schema: "public", table: "cost_centers", filter: "user_id=eq." + user.id }, () => void reload())
+        .channel("nexus-finance-" + workspaceId)
+        .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "financial_accounts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "categories", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "cost_centers", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "companies", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "business_contacts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
         .subscribe();
-    });
+    }).catch(() => undefined);
 
     return () => {
       cancelled = true;
