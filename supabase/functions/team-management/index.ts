@@ -64,8 +64,14 @@ Deno.serve(async (req) => {
       let emailSent = false, message = "Convite registrado. Se a pessoa já tem conta, entre no NEXUS com esse mesmo e-mail para aceitar.";
       const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { data: { nexus_workspace_invite_id: invite.id }, redirectTo: Deno.env.get("NEXUS_APP_URL") ?? undefined });
       if (!inviteError) { emailSent = true; message = "Convite enviado por e-mail."; }
-      else if (!String(inviteError.message).toLowerCase().includes("already") && !String(inviteError.message).toLowerCase().includes("registered")) {
-        await admin.from("workspace_invites").delete().eq("id", invite.id); throw inviteError;
+      else {
+        const msg = String(inviteError.message).toLowerCase();
+        if (msg.includes("database error saving new user")) {
+          console.error("team-management invite email", inviteError);
+          message = "Convite registrado. Peça para a pessoa criar a conta no NEXUS com esse mesmo e-mail; o acesso será liberado automaticamente.";
+        } else if (!msg.includes("already") && !msg.includes("registered")) {
+          await admin.from("workspace_invites").delete().eq("id", invite.id); throw inviteError;
+        }
       }
       return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
     }
