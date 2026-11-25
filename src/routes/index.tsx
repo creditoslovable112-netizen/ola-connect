@@ -72,6 +72,42 @@ const navGroups = [
   ]},
 ];
 
+
+const helpArticles = [
+ { category:"Primeiros passos", question:"Como começar a usar o NEXUS FINANCE?", answer:"Entre na sua conta, cadastre sua empresa (se houver), configure suas categorias e centros de custo e depois cadastre suas contas bancárias. Em seguida, registre contas a pagar e a receber. O painel apresenta os dados que existem no seu workspace." },
+ { category:"Empresas e equipe", question:"Posso gerenciar mais de uma empresa?", answer:"Sim. Cadastre cada empresa no módulo Empresas. Os registros podem ser vinculados a uma empresa específica ou compartilhados no workspace, conforme a função permitir. O seletor superior permite visualizar uma empresa ou o consolidado." },
+ { category:"Empresas e equipe", question:"Como convidar alguém para minha equipe?", answer:"Acesse Equipe, informe o e-mail e escolha o papel de acesso. O convite depende da configuração de autenticação e do e-mail do projeto. Usuários existentes podem precisar entrar com o mesmo e-mail para aceitar o convite." },
+ { category:"Financeiro", question:"Como cadastrar uma conta bancária?", answer:"Abra Contas bancárias e escolha Nova conta. Informe nome, banco, tipo, empresa, saldo inicial e data correspondente. Agência e número da conta são opcionais. O cadastro manual não conecta o aplicativo ao banco." },
+ { category:"Financeiro", question:"Como importar um extrato bancário?", answer:"Na conta desejada, escolha Importar extrato e selecione um arquivo OFX ou CSV de até 15 MB. Confira a prévia e só então confirme. O sistema tenta reconhecer data, descrição e valor; no CSV, use cabeçalhos como Data, Descrição e Valor, ou Débito e Crédito." },
+ { category:"Financeiro", question:"A importação altera o saldo da conta?", answer:"Sim. Após confirmar, as movimentações válidas são registradas como efetivadas e entram no saldo calculado. Revise o arquivo antes de confirmar e evite importar um mesmo extrato repetidamente. Lançamentos reconhecidos como duplicados são ignorados." },
+ { category:"Financeiro", question:"O NEXUS conecta automaticamente ao meu banco?", answer:"Não nesta etapa. O módulo atual usa cadastro manual e importação de arquivos OFX/CSV. Conexão automática por Open Finance exigirá integração com um provedor compatível e autorização do titular." },
+ { category:"Financeiro", question:"Quando uma conta a pagar ou receber altera o saldo?", answer:"O saldo considera movimentações efetivadas vinculadas à conta bancária. Um registro pendente não deve ser tratado como dinheiro já movimentado. Confira a conta selecionada ao registrar a baixa ou recebimento." },
+ { category:"Financeiro", question:"Como funcionam categorias e centros de custo?", answer:"Categorias classificam receitas e despesas. Centros de custo ajudam a identificar onde o dinheiro é aplicado. Eles podem ser compartilhados no workspace ou vinculados a uma empresa, conforme o cadastro." },
+ { category:"Cadastros", question:"Como cadastrar clientes e fornecedores?", answer:"Use os módulos Clientes e Fornecedores para registrar os dados de contato e associar o cadastro às empresas atendidas. Depois, selecione o cadastro correspondente nas movimentações financeiras quando aplicável." },
+ { category:"Relatórios", question:"De onde vêm os números do dashboard e relatórios?", answer:"Os indicadores são calculados a partir dos registros financeiros existentes e acessíveis no seu workspace e no filtro de empresa selecionado. O aplicativo não deve preencher indicadores com movimentações de demonstração." },
+ { category:"Conta e segurança", question:"Quem pode acessar os dados da minha empresa?", answer:"O acesso depende do workspace e do papel atribuído a cada membro. Convide somente pessoas autorizadas e revise os acessos da equipe periodicamente. Nunca compartilhe sua senha ou códigos de autenticação." },
+ { category:"Assinatura", question:"Como consultar meu plano?", answer:"Abra Assinatura para consultar as informações do plano disponíveis na sua conta. A cobrança e a ativação de pagamentos dependem da configuração do provedor de pagamento." },
+ { category:"Privacidade", question:"Como consultar os termos e a política de privacidade?", answer:"Acesse Privacidade e termos no menu da plataforma para consultar os documentos e as opções de consentimento disponíveis." },
+];
+function HelpCenter() {
+ const [query,setQuery]=useState("");
+ const [category,setCategory]=useState("Todas");
+ const categories=["Todas",...Array.from(new Set(helpArticles.map(item=>item.category)))];
+ const normalized=query.trim().toLocaleLowerCase("pt-BR");
+ const filtered=helpArticles.filter(item=>(category==="Todas"||item.category===category)&&(!normalized||item.question.toLocaleLowerCase("pt-BR").includes(normalized)||item.answer.toLocaleLowerCase("pt-BR").includes(normalized)));
+ return <section className="help-center">
+  <div className="welcome-row"><div><div className="eyebrow">SUPORTE E ORIENTAÇÃO</div><h1>Central de ajuda</h1><p>Encontre respostas para usar os recursos do NEXUS FINANCE.</p></div><LifeBuoy size={30}/></div>
+  <div className="panel help-search-panel"><label className="search-box"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Busque por uma dúvida ou assunto..." aria-label="Buscar artigos de ajuda"/></label>
+   <div className="help-categories" aria-label="Filtrar por categoria">{categories.map(item=><button key={item} className={category===item?"help-category-active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
+   <p className="help-result-count">{filtered.length} {filtered.length===1?"resposta encontrada":"respostas encontradas"}</p>
+   <div className="help-articles">{filtered.map((item,index)=><details className="help-article" key={item.question}><summary><span><small>{item.category}</small>{item.question}</span><ChevronDown size={18}/></summary><p>{item.answer}</p></details>)}
+    {!filtered.length&&<div className="help-empty"><CircleHelp size={24}/><strong>Nenhuma resposta encontrada</strong><p>Tente outra palavra ou selecione “Todas” as categorias.</p><button className="button-secondary" onClick={()=>{setQuery("");setCategory("Todas");}}>Limpar busca</button></div>}
+   </div>
+  </div>
+  <div className="panel help-footer"><strong>Não encontrou o que procurava?</strong><p>Consulte também Privacidade e termos ou volte à tela inicial do financeiro. Os canais externos de atendimento ainda não estão configurados nesta versão.</p></div>
+ </section>;
+}
+
 function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:string)=>void}) {
  const [settings,setSettings]=useState({language:"Português (Brasil)",currency:"BRL",timezone:"America/Sao_Paulo",notifications:true});
  useEffect(() => {
@@ -226,7 +262,7 @@ function DashboardPage() {
           </div>
         </div>
         <div className="sidebar-bottom">
-          <button className="nav-item" onClick={() => showNotice("Central de ajuda ainda não está disponível.")}><LifeBuoy size={17}/><span>Central de ajuda</span></button>
+          <button className="nav-item" onClick={() => { setActive("Central de ajuda"); setMobileOpen(false); }}><LifeBuoy size={17}/><span>Central de ajuda</span></button>
           <button className="nav-item" onClick={() => setActive("Configurações")}><Settings2 size={17}/><span>Configurações</span></button>
           <div className="profile">
             <div className="profile-avatar">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
@@ -245,14 +281,14 @@ function DashboardPage() {
           <div className="topbar-actions">
             {companyOptions.length > 0 && <label className="company-scope-control"><Building2 size={15}/><select aria-label="Filtrar dados por empresa" value={companyScope} onChange={(e)=>{const value=e.target.value;setCompanyScope(value);window.localStorage.setItem("nexus-active-company",value);window.location.reload();}}><option value="all">Todas as empresas · Consolidado</option>{companyOptions.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
-            <button className="icon-button help-button" aria-label="Ajuda" onClick={() => showNotice("Central de ajuda em breve.")}><CircleHelp size={18}/></button>
+            <button className="icon-button help-button" aria-label="Ajuda" onClick={() => setActive("Central de ajuda")}><CircleHelp size={18}/></button>
             <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Central de notificações ainda não está disponível.")}><Bell size={18}/><i/></button>
             <div className="top-avatar" aria-label="Perfil da conta">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
 
         <div className="page-content" key={companyScope}>
-          {active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          {active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
