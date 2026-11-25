@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Crown, LoaderCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, LoaderCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 type Plan = {
