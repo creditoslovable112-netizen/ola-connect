@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
+import { supabase } from "../lib/supabase";
 import {
   createCategory, createCostCenter, createFinancialAccount, createTransaction,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
@@ -31,7 +32,27 @@ function useFinanceData(notice: Notice) {
       setError(message);
     } finally { setLoading(false); }
   }, []);
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel("nexus-finance-" + user.id)
+        .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: "user_id=eq." + user.id }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "financial_accounts", filter: "user_id=eq." + user.id }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "categories", filter: "user_id=eq." + user.id }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "cost_centers", filter: "user_id=eq." + user.id }, () => void reload())
+        .subscribe();
+    });
+
+    return () => {
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [reload]);
   return { accounts, setAccounts, categories, setCategories, centers, setCenters, transactions, setTransactions, loading, error, reload };
 }
 
