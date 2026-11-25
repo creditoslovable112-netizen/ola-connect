@@ -18,10 +18,20 @@ export async function requireUserId(): Promise<string> {
 /** The first active membership is the default workspace for financial screens. */
 export async function requireWorkspaceId(): Promise<string> {
   const userId = await requireUserId();
-  const { data, error } = await (supabase as any).from("workspace_members")
-    .select("workspace_id").eq("user_id", userId).eq("status", "active")
-    .order("joined_at", { ascending: false }).limit(1).maybeSingle();
+  const preferred = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-workspace") : null;
+  let query = (supabase as any).from("workspace_members").select("workspace_id")
+    .eq("user_id", userId).eq("status", "active");
+  if (preferred) query = query.eq("workspace_id", preferred);
+  else query = query.order("joined_at", { ascending: false });
+  let { data, error } = await query.limit(1).maybeSingle();
   if (error) throw error;
+  if (!data?.workspace_id && preferred) {
+    window.localStorage.removeItem("nexus-active-workspace");
+    const fallback = await (supabase as any).from("workspace_members").select("workspace_id")
+      .eq("user_id", userId).eq("status", "active").order("joined_at", { ascending: false }).limit(1).maybeSingle();
+    data = fallback.data; error = fallback.error;
+    if (error) throw error;
+  }
   if (!data?.workspace_id) throw new Error("Sua conta ainda não possui um workspace ativo. Entre em contato com o administrador.");
   return data.workspace_id as string;
 }
