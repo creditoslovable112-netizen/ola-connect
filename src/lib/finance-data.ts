@@ -2,8 +2,8 @@ import type { Tables, TablesInsert, TablesUpdate } from "./database.types";
 import { supabase } from "./supabase";
 
 export type FinancialAccount = Tables<"financial_accounts"> & { company_id?: string | null };
-export type Category = Tables<"categories">;
-export type CostCenter = Tables<"cost_centers">;
+export type Category = Tables<"categories"> & { company_id?: string | null; description?: string | null; parent_id?: string | null; is_active?: boolean };
+export type CostCenter = Tables<"cost_centers"> & { company_id?: string | null; monthly_budget?: number | null; manager_name?: string | null; is_active?: boolean };
 export type Transaction = Tables<"transactions"> & { company_id?: string | null; supplier_id?: string | null; customer_id?: string | null };
 export type BusinessContact = Tables<"business_contacts"> & { company_id?: string | null; contact_person?: string | null; state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; website?: string | null; };
 export type Company = Tables<"companies"> & { state_registration?: string | null; postal_code?: string | null; street_address?: string | null; address_number?: string | null; address_complement?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null; logo_url?: string | null; };
@@ -50,25 +50,35 @@ export async function createFinancialAccount(account: Omit<TablesInsert<"financi
   const { data, error } = await (supabase as any).from("financial_accounts").insert({ ...account, company_id: account.company_id ?? getActiveCompanyId(), user_id, workspace_id }).select().single();
   if (error) throw error; return data as FinancialAccount;
 }
-export async function listCategories(type?: "income" | "expense") {
+export async function listCategories(type?: "income" | "expense", includeInactive = true) {
   const workspace_id = await requireWorkspaceId();
   let query = (supabase as any).from("categories").select("*").eq("workspace_id", workspace_id).order("name");
   if (type) query = query.eq("type", type);
   const { data, error } = await query; if (error) throw error; return data as Category[];
 }
-export async function createCategory(category: Omit<TablesInsert<"categories">, "user_id">) {
+export async function createCategory(category: Omit<TablesInsert<"categories">, "user_id"> & { company_id?: string | null; description?: string | null; parent_id?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("categories").insert({ ...category, user_id, workspace_id }).select().single();
   if (error) throw error; return data as Category;
 }
-export async function listCostCenters() {
+export async function listCostCenters(includeInactive = true) {
   const workspace_id = await requireWorkspaceId();
-  const { data, error } = await (supabase as any).from("cost_centers").select("*").eq("workspace_id", workspace_id).order("name");
+  let query = (supabase as any).from("cost_centers").select("*").eq("workspace_id", workspace_id);\n  if (!includeInactive) query = query.eq("is_active", true);\n  const { data, error } = await query.order("name");
   if (error) throw error; return data as CostCenter[];
 }
-export async function createCostCenter(costCenter: Omit<TablesInsert<"cost_centers">, "user_id">) {
+export async function createCostCenter(costCenter: Omit<TablesInsert<"cost_centers">, "user_id"> & { company_id?: string | null; monthly_budget?: number | null; manager_name?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("cost_centers").insert({ ...costCenter, user_id, workspace_id }).select().single();
+  if (error) throw error; return data as CostCenter;
+}
+export async function updateCategory(id: string, updates: { name?: string; description?: string | null; color?: string | null; icon?: string | null; parent_id?: string | null; company_id?: string | null; is_active?: boolean }) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("categories").update(updates).eq("id", id).eq("workspace_id", workspace_id).select().single();
+  if (error) throw error; return data as Category;
+}
+export async function updateCostCenter(id: string, updates: { name?: string; description?: string | null; color?: string | null; company_id?: string | null; monthly_budget?: number | null; manager_name?: string | null; is_active?: boolean }) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("cost_centers").update(updates).eq("id", id).eq("workspace_id", workspace_id).select().single();
   if (error) throw error; return data as CostCenter;
 }
 export async function listTransactions() {
