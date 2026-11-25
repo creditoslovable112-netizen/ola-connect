@@ -21,7 +21,7 @@ function useFinanceData(notice: Notice) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [centers, setCenters] = useState<CostCenter[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);\n  const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);\n  const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);\n  const [supplierCompanyLinks, setSupplierCompanyLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async () => {
@@ -51,7 +51,7 @@ function useFinanceData(notice: Notice) {
     }).catch(() => undefined);
     return () => { cancelled = true; if (channel) void supabase.removeChannel(channel); };
   }, [reload]);
-  return { accounts, categories, centers, transactions, companies, suppliers, loading, error, reload };
+  return { accounts, categories, centers, transactions, companies, suppliers, supplierCompanyLinks, loading, error, reload };
 }
 
 function DataState({ loading, error, retry }: { loading: boolean; error: string; retry: () => void }) {
@@ -61,7 +61,7 @@ function DataState({ loading, error, retry }: { loading: boolean; error: string;
 }
 
 function TransactionForm({ type, accounts, categories, centers, companies, onClose, onSaved, notice }: {
-  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[];
+  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[]; supplierCompanyLinks: { supplier_id: string; company_id: string }[];
   onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
 }) {
   const [description, setDescription] = useState("");
@@ -94,7 +94,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, onClo
     <div className="modal-heading"><div><h2>{type === "expense" ? "Nova conta a pagar" : "Nova conta a receber"}</h2><p>O registro será salvo na sua conta do Supabase</p></div><button type="button" className="icon-button" onClick={onClose}>×</button></div>
     <label>Empresa<select required={companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Descrição<input required value={description} onChange={(e) => setDescription(e.target.value)} maxLength={160}/></label>
-    <label>{type === "expense" ? "Fornecedor cadastrado" : "Cliente"}{type === "expense" ? <select value={supplierId} onChange={(e) => { setSupplierId(e.target.value); const selected = suppliers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{suppliers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} maxLength={120}/>}</label>
+    <label>{type === "expense" ? "Fornecedor cadastrado" : "Cliente"}{type === "expense" ? <select value={supplierId} onChange={(e) => { setSupplierId(e.target.value); const selected = suppliers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{suppliers.filter((item) => !companyId || supplierCompanyLinks.some((link) => link.supplier_id === item.id && link.company_id === companyId)).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} maxLength={120}/>}</label>
     <div className="modal-fields"><label>Valor (R$)<input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}/></label><label>Vencimento<input required type="date" value={due} onChange={(e) => setDue(e.target.value)}/></label></div>
     <label>Conta financeira<select required value={accountId} onChange={(e) => setAccountId(e.target.value)}>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Sem categoria</option>{options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -112,7 +112,7 @@ export function SupabasePayables({ showNotice }: { showNotice: Notice }) {
     <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total em aberto <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Contas cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Vencidas <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou fornecedor…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>DESCRIÇÃO / FORNECEDOR</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem fornecedor"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markPaid(item)}>{item.status === "paid" ? "Pago" : "Marcar pago"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a pagar cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
-    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
   </>;
 }
 
