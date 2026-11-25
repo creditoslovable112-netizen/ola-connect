@@ -146,3 +146,32 @@ export async function deleteCompany(id: string) {
   const { error } = await (supabase as any).from("companies").delete().eq("id", id).eq("workspace_id", workspace_id);
   if (error) throw error;
 }
+
+export async function listSupplierDocuments(supplierId: string) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("supplier_documents").select("id,file_name,storage_path,created_at")
+    .eq("workspace_id", workspace_id).eq("supplier_id", supplierId).order("created_at", { ascending: false });
+  if (error) throw error; return data ?? [];
+}
+export async function uploadSupplierDocument(supplierId: string, file: File) {
+  if (file.size > 10 * 1024 * 1024) throw new Error("O arquivo deve ter no máximo 10 MB.");
+  const allowed = ["application/pdf","image/jpeg","image/png","image/webp","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if (!allowed.includes(file.type)) throw new Error("Formato não permitido. Envie PDF, imagem, XLSX ou DOCX.");
+  const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storage_path = `${workspace_id}/${supplierId}/${Date.now()}-${safeName}`;
+  const { error: uploadError } = await supabase.storage.from("supplier-documents").upload(storage_path, file, { contentType: file.type, upsert: false });
+  if (uploadError) throw uploadError;
+  const { data, error } = await (supabase as any).from("supplier_documents").insert({
+    workspace_id, supplier_id: supplierId, file_name: file.name, storage_path, uploaded_by: user_id
+  }).select("id,file_name,storage_path,created_at").single();
+  if (error) {
+    await supabase.storage.from("supplier-documents").remove([storage_path]);
+    throw error;
+  }
+  return data;
+}
+export async function createSupplierDocumentUrl(storagePath: string) {
+  const { data, error } = await supabase.storage.from("supplier-documents").createSignedUrl(storagePath, 60);
+  if (error) throw error; return data.signedUrl;
+}
