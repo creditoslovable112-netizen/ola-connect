@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
         if (memberError) throw memberError;
         const { error: updateError } = await admin.from("workspace_invites").update({ status: "accepted" }).eq("id", invite.id);
         if (updateError) throw updateError;
+        await recordAudit(invite.workspace_id, "INVITE", "workspace_members", user.id, ["role", "status"]);
       }
       return json({ accepted: invites?.length ?? 0 });
     }
@@ -103,7 +104,8 @@ Deno.serve(async (req) => {
           await admin.from("workspace_invites").delete().eq("id", invite.id); throw inviteError;
         }
       }
-      await recordAudit(workspaceId, "INVITE", "workspace_invites", invite.id, ["email", "role", "status"]);\n      return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
+      await recordAudit(workspaceId, "INVITE", "workspace_invites", invite.id, ["email", "role", "status"]);
+      return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
     }
     if (action === "revoke_invite") {
       const { error } = await admin.from("workspace_invites").update({ status: "revoked" }).eq("workspace_id", workspaceId).eq("id", String(body.invite_id)).eq("status", "pending");
