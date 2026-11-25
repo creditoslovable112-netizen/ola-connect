@@ -8,7 +8,7 @@ export function formatCnpj(value: string): string {
   return v.replace(/^(..)(...)(...)(....)(..)$/, "$1.$2.$3/$4-$5");
 }
 function cnpjDigit(base: string, weights: number[]): number {
-  const sum = [...base].reduce((total, char, index) => total + (char.charCodeAt(0) - 48) * weights[index], 0);
+  const sum = [...base].reduce((total, char, index) => total + (char.charCodeAt(0) - 48) * (weights[index] ?? 0), 0);
   const remainder = sum % 11;
   return remainder < 2 ? 0 : 11 - remainder;
 }
