@@ -4,7 +4,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { supabase } from "../lib/supabase";
 import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
 import {
-  createCategory, createCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
+  createCategory, createCostCenter, updateCategory, updateCostCenter, createFinancialAccount, createTransaction, requireWorkspaceId,
   listCategories, listCostCenters, listFinancialAccounts, listTransactions,
   updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
   listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
@@ -83,7 +83,8 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
   const [centerId, setCenterId] = useState("");
   const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? ((window.localStorage.getItem("nexus-active-company") || "") === "all" ? "" : window.localStorage.getItem("nexus-active-company") || "") : "");
   const [saving, setSaving] = useState(false);
-  const options = categories.filter((item) => item.type === type);
+  const options = categories.filter((item) => item.type === type && item.is_active !== false && (!item.company_id || item.company_id === companyId));
+  const availableCenters = centers.filter((item) => item.is_active !== false && (!item.company_id || item.company_id === companyId));
   const availableSuppliers = suppliers.filter(item => !companyId || supplierCompanyLinks.some(link => link.supplier_id === item.id && link.company_id === companyId));
   const availableCustomers = customers.filter(item => !companyId || customerCompanyLinks.some(link => link.customer_id === item.id && link.company_id === companyId));
   const submit = async (event: FormEvent) => {
@@ -110,7 +111,7 @@ function TransactionForm({ type, accounts, categories, centers, companies, suppl
     <div className="modal-fields"><label>Valor (R$)<input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}/></label><label>Vencimento<input required type="date" value={due} onChange={(e) => setDue(e.target.value)}/></label></div>
     <label>Conta financeira<select required value={accountId} onChange={(e) => setAccountId(e.target.value)}>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Sem categoria</option>{options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-    <label>Centro de custo<select value={centerId} onChange={(e) => setCenterId(e.target.value)}><option value="">Sem centro de custo</option>{centers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label>Centro de custo<select value={centerId} onChange={(e) => setCenterId(e.target.value)}><option value="">Sem centro de custo</option>{availableCenters.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <div className="modal-actions"><button type="button" className="button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar no banco"}</button></div>
   </form></div>;
 }
@@ -154,14 +155,55 @@ export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
 }
 
 export function SupabaseCategories({ showNotice }: { showNotice: Notice }) {
-  const data = useFinanceData(showNotice); const [tab, setTab] = useState<"categories" | "centers">("categories");
-  const [name, setName] = useState(""); const [type, setType] = useState<"income" | "expense">("expense"); const [description, setDescription] = useState(""); const [modal, setModal] = useState(false);
-  const save = async (event: FormEvent) => { event.preventDefault(); try { if (tab === "categories") await createCategory({ name, type, color: "#278bd1", icon: null, is_default: false }); else await createCostCenter({ name, description: description || null, color: "#278bd1" }); await data.reload(); setName(""); setDescription(""); setModal(false); showNotice("Cadastro salvo no Supabase."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar cadastro."); } };
-  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Categorias e centros de custo</h1><p>Classificações e departamentos persistidos no banco.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Novo cadastro</button></div>
+  const data = useFinanceData(showNotice);
+  const [tab, setTab] = useState<"categories" | "centers">("categories");
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"income" | "expense">("expense");
+  const [description, setDescription] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [parentId, setParentId] = useState("");
+  const [manager, setManager] = useState("");
+  const [budget, setBudget] = useState("");
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const selectedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
+  const visibleCompany = selectedCompany && selectedCompany !== "all" ? selectedCompany : "";
+  const categories = data.categories.filter(item => item.is_active !== false && (!visibleCompany || !item.company_id || item.company_id === visibleCompany));
+  const centers = data.centers.filter(item => item.is_active !== false && (!visibleCompany || !item.company_id || item.company_id === visibleCompany));
+  const reset = () => { setName(""); setDescription(""); setCompanyId(""); setParentId(""); setManager(""); setBudget(""); setType("expense"); };
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      if (tab === "categories") {
+        await createCategory({ name: name.trim(), type, color: "#278bd1", icon: null, is_default: false, company_id: companyId || null, description: description.trim() || null, parent_id: parentId || null } as any);
+      } else {
+        const parsedBudget = budget.trim() ? Number(budget) : null;
+        if (parsedBudget !== null && (!Number.isFinite(parsedBudget) || parsedBudget < 0)) throw new Error("Informe um orçamento válido.");
+        await createCostCenter({ name: name.trim(), description: description.trim() || null, color: "#278bd1", company_id: companyId || null, monthly_budget: parsedBudget, manager_name: manager.trim() || null } as any);
+      }
+      await data.reload(); reset(); setModal(false); showNotice("Cadastro salvo no Supabase.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar cadastro."); }
+    finally { setSaving(false); }
+  };
+  const deactivate = async (id: string) => {
+    if (!window.confirm("Desativar este cadastro? Ele deixará de aparecer em novos lançamentos. O histórico será preservado.")) return;
+    try {
+      if (tab === "categories") await updateCategory(id, { is_active: false });
+      else await updateCostCenter(id, { is_active: false });
+      await data.reload(); showNotice("Cadastro desativado. O histórico financeiro foi preservado.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível desativar. Verifique se há movimentações vinculadas."); }
+  };
+  const companyLabel = (id?: string | null) => id ? data.companies.find(item => item.id === id)?.name || "Empresa" : "Compartilhado";
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>Categorias e centros de custo</h1><p>Compartilhe cadastros no workspace ou restrinja-os a uma empresa.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Novo cadastro</button></div>
     <div className="category-tabs"><button className={tab === "categories" ? "active" : ""} onClick={() => setTab("categories")}><Tags size={15}/> Categorias</button><button className={tab === "centers" ? "active" : ""} onClick={() => setTab("centers")}>Centros de custo</button></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
-    {!data.loading && !data.error && (tab === "categories" ? <section className="panel payable-list-panel"><h2>Categorias ({data.categories.length})</h2>{data.categories.map((item) => <div className="payable-table-row" key={item.id}><strong>{item.name}</strong><span>{item.type === "income" ? "Receita" : "Despesa"}</span></div>)}{data.categories.length === 0 && <p>Nenhuma categoria cadastrada.</p>}</section> : <section className="panel payable-list-panel"><h2>Centros de custo ({data.centers.length})</h2>{data.centers.map((item) => <div className="payable-table-row" key={item.id}><strong>{item.name}</strong><span>{item.description || "Sem descrição"}</span></div>)}{data.centers.length === 0 && <p>Nenhum centro de custo cadastrado.</p>}</section>)}
-    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><h2>{tab === "categories" ? "Nova categoria" : "Novo centro de custo"}</h2><button type="button" onClick={() => setModal(false)}>×</button></div><label>Nome<input required value={name} onChange={(e) => setName(e.target.value)}/></label>{tab === "categories" ? <label>Tipo<select value={type} onChange={(e) => setType(e.target.value as "income" | "expense")}><option value="expense">Despesa</option><option value="income">Receita</option></select></label> : <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)}/></label>}<div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="button-primary">Salvar</button></div></form></div>}
+    {!data.loading && !data.error && (tab === "categories" ? <section className="panel payable-list-panel"><h2>Categorias ({categories.length})</h2>{categories.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.description || "Sem descrição"} · {companyLabel(item.company_id)}{item.parent_id ? " · Subcategoria" : ""}</small></div><span>{item.type === "income" ? "Receita" : "Despesa"}</span><button className="button-secondary" onClick={() => void deactivate(item.id)}>Desativar</button></div>)}{categories.length === 0 && <p>Nenhuma categoria ativa cadastrada.</p>}</section> : <section className="panel payable-list-panel"><h2>Centros de custo ({centers.length})</h2>{centers.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.description || "Sem descrição"} · {companyLabel(item.company_id)}{item.manager_name ? " · Responsável: " + item.manager_name : ""}{item.monthly_budget != null ? " · Orçamento: " + money(Number(item.monthly_budget)) : ""}</small></div><button className="button-secondary" onClick={() => void deactivate(item.id)}>Desativar</button></div>)}{centers.length === 0 && <p>Nenhum centro de custo ativo cadastrado.</p>}</section>)}
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>{tab === "categories" ? "Nova categoria" : "Novo centro de custo"}</h2><p>Escolha se será compartilhado ou exclusivo.</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+      <label>Nome<input required maxLength={100} value={name} onChange={e => setName(e.target.value)}/></label>
+      <label>Disponibilidade<select value={companyId} onChange={e => setCompanyId(e.target.value)}><option value="">Compartilhado entre empresas</option>{data.companies.map(item => <option key={item.id} value={item.id}>Somente {item.name}</option>)}</select></label>
+      {tab === "categories" ? <><label>Tipo<select value={type} onChange={e => setType(e.target.value as "income" | "expense")}><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Categoria principal (opcional)<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Nenhuma — categoria principal</option>{data.categories.filter(item => item.type === type && item.is_active !== false && (!companyId ? !item.company_id : !item.company_id || item.company_id === companyId)).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Descrição<input maxLength={240} value={description} onChange={e => setDescription(e.target.value)}/></label></> : <><label>Descrição<input maxLength={240} value={description} onChange={e => setDescription(e.target.value)}/></label><label>Responsável<input maxLength={120} value={manager} onChange={e => setManager(e.target.value)}/></label><label>Orçamento mensal (R$)<input type="number" min="0" step="0.01" value={budget} onChange={e => setBudget(e.target.value)} placeholder="Opcional"/></label></>}
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => { setModal(false); reset(); }} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar"}</button></div></form></div>}
   </>;
 }
 
