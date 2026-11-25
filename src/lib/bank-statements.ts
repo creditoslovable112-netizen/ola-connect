@@ -78,6 +78,7 @@ export function parseCsv(text: string): ParsedBankStatementRow[] {
     throw new Error("Não reconheci as colunas. O CSV deve ter Data, Descrição e Valor (ou Débito/Crédito).");
   }
   const rows: ParsedBankStatementRow[] = [];
+  const seenRows = new Map<string, number>();
   for (const line of lines.slice(1)) {
     const cells = splitCsvLine(line, delimiter);
     const date = parseDate(cells[dateIndex] ?? "");
@@ -86,7 +87,12 @@ export function parseCsv(text: string): ParsedBankStatementRow[] {
     const credit = creditIndex >= 0 ? Math.abs(parseNumber(cells[creditIndex] ?? "")) : 0;
     const rawAmount = amountIndex >= 0 ? parseNumber(cells[amountIndex] ?? "") : 0;
     const amount = debit || credit ? (credit > 0 ? credit : -debit) : rawAmount;
-    if (date && description && amount !== 0) rows.push({ date, description: description.slice(0, 240), amount });
+    if (date && description && amount !== 0) {
+      const identity = `${date}|${amount.toFixed(2)}|${description.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim()}`;
+      const occurrence = (seenRows.get(identity) ?? 0) + 1;
+      seenRows.set(identity, occurrence);
+      rows.push({ date, description: description.slice(0, 240), amount, fitId: `csv:${identity}|${occurrence}` });
+    }
   }
   if (!rows.length) throw new Error("Não encontrei movimentações válidas no CSV.");
   return rows;
