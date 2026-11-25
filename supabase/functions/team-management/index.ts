@@ -12,6 +12,13 @@ Deno.serve(async (req) => {
   const { data: authData, error: authError } = await caller.auth.getUser();
   if (authError || !authData.user) return json({ error: "Sessão inválida." }, 401);
   const user = authData.user, admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const recordAudit = async (workspaceId: string, action: string, tableName: string, recordId: string | null, changedFields: string[] = []) => {
+    const { error } = await admin.from("workspace_audit_logs").insert({
+      workspace_id: workspaceId, actor_user_id: user.id, action, table_name: tableName,
+      record_id: recordId, changed_fields: changedFields, source: "team_management",
+    });
+    if (error) console.error("team-management audit", error);
+  };
   const configuredAppUrl = Deno.env.get("NEXUS_APP_URL") ?? "";
   const requestOrigin = req.headers.get("origin") ?? "";
   const isTrustedAppOrigin = (candidate: string) => {
@@ -96,7 +103,7 @@ Deno.serve(async (req) => {
           await admin.from("workspace_invites").delete().eq("id", invite.id); throw inviteError;
         }
       }
-      return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
+      await recordAudit(workspaceId, "INVITE", "workspace_invites", invite.id, ["email", "role", "status"]);\n      return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
     }
     if (action === "revoke_invite") {
       const { error } = await admin.from("workspace_invites").update({ status: "revoked" }).eq("workspace_id", workspaceId).eq("id", String(body.invite_id)).eq("status", "pending");
