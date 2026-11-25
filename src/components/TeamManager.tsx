@@ -27,7 +27,7 @@ export function TeamManager({ showNotice }: Props) {
       const {data:{user},error:userError}=await supabase.auth.getUser();
       if(userError||!user) throw userError??new Error("Faça login novamente.");
       const {data:rows,error}=await (supabase as any).from("workspace_members")
-        .select("workspace_id,role,workspaces(id,name,owner_id)").eq("user_id",user.id).eq("status","active").order("joined_at");
+        .select("workspace_id,role,workspaces(id,name,owner_id)").eq("user_id",user.id).eq("status","active").order("joined_at",{ascending:false});
       if(error) throw error;
       const mapped=(rows??[]).map((r:any)=>({id:r.workspaces?.id,name:r.workspaces?.name??"Workspace",owner_id:r.workspaces?.owner_id,role:r.role})).filter((w:any)=>w.id);
       setWorkspaces(mapped);
