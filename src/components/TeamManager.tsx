@@ -33,6 +33,7 @@ export function TeamManager({ showNotice }: Props) {
       setWorkspaces(mapped);
       const target=selected&&mapped.some((w:any)=>w.id===selected)?selected:(mapped[0]?.id??"");
       setWorkspaceId(target);
+      if (target) window.localStorage.setItem("nexus-active-workspace", target);
       const ownRole=mapped.find((w:any)=>w.id===target)?.role??"";
       setMyRole(ownRole);
       if(!target){setMembers([]);setInvites([]);return;}
