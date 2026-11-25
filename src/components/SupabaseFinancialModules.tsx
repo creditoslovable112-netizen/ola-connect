@@ -179,7 +179,7 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
   });
   const categoryTotals = data.categories.map((category) => ({
     name: category.name,
-    value: periodTransactions.filter((item) => item.category_id === category.id)
+    value: periodTransactions.filter((item) => item.type === "expense" && item.category_id === category.id)
       .reduce((sum, item) => sum + Number(item.amount), 0),
   })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
   const upcoming = pending.sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
