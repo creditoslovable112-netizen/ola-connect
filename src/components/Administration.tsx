@@ -12,6 +12,7 @@ type AuditEntry = {
   source: string; created_at: string;
 };
 type Props = { showNotice: (message: string) => void; onOpenTeam: () => void };
+type WorkspaceMembershipRow = { role: Workspace["role"]; workspaces: Omit<Workspace, "role"> | null };
 const actionLabels: Record<string,string> = {
   INSERT: "Registro criado", UPDATE: "Registro atualizado", DELETE: "Registro excluído",
   INVITE: "Convite enviado", REVOKE_INVITE: "Convite revogado", ROLE_CHANGED: "Permissão alterada",
@@ -55,7 +56,7 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
       setExpiresAt(sessionData.session?.expires_at ?? null);
       const { data: factors } = await supabase.auth.mfa.listFactors();
       setMfaCount((factors?.all ?? []).filter(f => f.status === "verified").length);
-      const { data: memberships, error } = await (supabase as any).from("workspace_members")
+      // Workspace tables are not yet represented in the generated client schema.\n      // eslint-disable-next-line @typescript-eslint/no-explicit-any\n      const { data: memberships, error } = await (supabase as any).from("workspace_members")
         .select("workspace_id,role,workspaces(id,name,owner_id,currency,timezone,created_at)")
         .eq("user_id", userData.user.id).eq("status", "active").order("joined_at", { ascending: true });
       if (error) throw error;
@@ -72,7 +73,7 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
         setTimezone(current.timezone ?? "America/Sao_Paulo");
       }
       if (nextId && (current?.role === "owner" || current?.role === "admin")) {
-        const { data: logs, error: auditError } = await (supabase as any).from("workspace_audit_logs")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any\n        const { data: logs, error: auditError } = await (supabase as any).from("workspace_audit_logs")
           .select("id,actor_user_id,action,table_name,record_id,company_id,changed_fields,source,created_at")
           .eq("workspace_id", nextId).order("created_at", { ascending: false }).limit(100);
         if (auditError) throw auditError;
@@ -90,7 +91,7 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
     if (!workspaceId || !canAdmin) return;
     setSaving(true);
     try {
-      const { error } = await (supabase as any).from("workspaces")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any\n      const { error } = await (supabase as any).from("workspaces")
         .update({ name: name.trim(), currency, timezone, updated_by: userId })
         .eq("id", workspaceId);
       if (error) throw error;
