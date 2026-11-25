@@ -139,6 +139,7 @@ function DashboardPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
+  const [tabLoading, setTabLoading] = useState(true);
   const [period, setPeriod] = useState("Últimos 7 meses");
   const [company, setCompany] = useState("Workspace");
   const [companyOptions, setCompanyOptions] = useState<Array<{id:string;name:string}>>([]);
@@ -171,6 +172,11 @@ function DashboardPage() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
+  useEffect(() => {
+    setTabLoading(true);
+    const timeout = window.setTimeout(() => setTabLoading(false), 420);
+    return () => window.clearTimeout(timeout);
+  }, [active, companyScope]);
   useEffect(() => {
     if (!session?.user.id) { setCompany("Workspace"); setCompanyOptions([]); return; }
     let active = true;
@@ -229,7 +235,7 @@ function DashboardPage() {
   };
 
 
-  if (authLoading) return <main className="nexus-auth"><section className="auth-card"><div className="auth-brand"><div className="auth-brand-mark"><Sparkles size={22}/></div><div><strong>NEXUS</strong><span>FINANCE</span></div></div><p className="auth-intro">Verificando sua sessão segura...</p></section></main>;
+  if (authLoading) return <main className="nexus-loading-screen"><div className="nexus-loading-brand"><img src="/nexus-mark.webp" alt="" /><span><strong>NEXUS</strong><small>FINANCE</small></span></div><DashboardSkeleton /></main>;
   const inviteNeedsPassword = Boolean(session?.user.user_metadata?.["nexus_workspace_invite_id"]) && !session?.user.user_metadata?.["password_set"];
   if (!session || recoveryMode || inviteNeedsPassword) return <><AuthScreen key={inviteNeedsPassword ? "invite" : "auth"} recoveryMode={recoveryMode || inviteNeedsPassword}/>{cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Você controla os cookies</strong><p>O NEXUS usa armazenamento estritamente necessário para autenticação e funcionamento. Não há rastreadores opcionais ativos nesta versão. Sua escolha vale apenas para as tecnologias e finalidades descritas nesta versão; novos fornecedores ou finalidades exigirão nova avaliação e escolha.</p><a className="cookie-link" href="#privacy-signup">Saiba mais sobre privacidade</a></div><div className="cookie-actions"><button className="button-secondary" onClick={() => void saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => void saveCookieChoice("all")}>Aceitar todos</button></div></section>}</>;
   if (legalStatusLoading) return <main className="nexus-auth"><section className="auth-card"><p role="status">Verificando a versão dos documentos e seu aceite…</p></section></main>;
@@ -288,8 +294,8 @@ function DashboardPage() {
           </div>
         </header>
 
-        <div className="page-content" key={companyScope}>
-          {active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+        <div className="page-content" key={companyScope} aria-busy={tabLoading}>
+          {tabLoading ? <DashboardSkeleton /> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
