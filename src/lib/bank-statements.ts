@@ -15,7 +15,7 @@ function parseDate(value: string): string | null {
   const ofx = raw.match(/^(\d{4})(\d{2})(\d{2})/);
   if (ofx) return `${ofx[1]}-${ofx[2]}-${ofx[3]}`;
   const br = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
-  if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+  if (br) return `${br[3]!}-${br[2]!.padStart(2, "0")}-${br[1]!.padStart(2, "0")}`;
   const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   return null;
@@ -36,7 +36,7 @@ function splitCsvLine(line: string, delimiter: string): string[] {
   let current = "";
   let quoted = false;
   for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
+    const char = line[i] ?? "";
     if (char === '"') {
       if (quoted && line[i + 1] === '"') { current += '"'; i += 1; }
       else quoted = !quoted;
@@ -56,7 +56,7 @@ export function parseOfx(text: string): ParsedBankStatementRow[] {
     const date = parseDate(read("DTPOSTED"));
     const signed = parseNumber(read("TRNAMT"));
     const description = read("MEMO") || read("NAME") || read("TRNTYPE") || "Movimentação importada";
-    if (date && signed !== 0) rows.push({ date, description: description.slice(0, 240), amount: signed, fitId: read("FITID") || undefined });
+    if (date && signed !== 0) { const fitId = read("FITID"); rows.push({ date, description: description.slice(0, 240), amount: signed, ...(fitId ? { fitId } : {}) }); }
   }
   if (!rows.length) throw new Error("Não encontrei movimentações OFX válidas neste arquivo.");
   return rows;
@@ -65,8 +65,8 @@ export function parseOfx(text: string): ParsedBankStatementRow[] {
 export function parseCsv(text: string): ParsedBankStatementRow[] {
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim());
   if (lines.length < 2) throw new Error("O CSV precisa ter cabeçalho e pelo menos uma movimentação.");
-  const first = lines[0];
-  const delimiter = [",", ";", "\t"].sort((a, b) => splitCsvLine(first, b).length - splitCsvLine(first, a).length)[0];
+  const first = lines[0] ?? "";
+  const delimiter = [",", ";", "\t"].sort((a, b) => splitCsvLine(first, b).length - splitCsvLine(first, a).length)[0] ?? ",";
   const headers = splitCsvLine(first, delimiter).map(normalizeHeader);
   const find = (...names: string[]) => headers.findIndex(header => names.includes(header));
   const dateIndex = find("data", "date", "datamovimento", "datatransacao", "posteddate", "transactiondate");
