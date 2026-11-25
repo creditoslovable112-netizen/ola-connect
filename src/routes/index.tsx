@@ -5,7 +5,8 @@ import { AuthScreen } from "../components/AuthScreen";
 import { supabase } from "../lib/supabase";
 import { SubscriptionManager } from "../components/SubscriptionManager";
 import { NexusAI } from "../components/NexusAI";
-import { TeamManager } from "../components/TeamManager";\nimport { listCompanies } from "../lib/finance-data";
+import { TeamManager } from "../components/TeamManager";
+import { listCompanies } from "../lib/finance-data";
 import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
 import { StatsCard } from "../components/StatsCard";
@@ -102,7 +103,9 @@ function DashboardPage() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
   const [period, setPeriod] = useState("Últimos 7 meses");
-  const [company, setCompany] = useState("Workspace");\n  const [companyOptions, setCompanyOptions] = useState<Array<{id:string;name:string}>>([]);\n  const [companyScope, setCompanyScope] = useState("all");
+  const [company, setCompany] = useState("Workspace");
+  const [companyOptions, setCompanyOptions] = useState<Array<{id:string;name:string}>>([]);
+  const [companyScope, setCompanyScope] = useState("all");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [search, setSearch] = useState("");
@@ -140,6 +143,15 @@ function DashboardPage() {
     if (preferredWorkspace) workspaceQuery = workspaceQuery.eq("workspace_id", preferredWorkspace);
     void workspaceQuery.order("joined_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data, error }: any) => { if (active && !error && data?.workspaces?.name) setCompany(data.workspaces.name); });
+    void listCompanies().then((rows:any[]) => {
+      if (!active) return;
+      setCompanyOptions(rows.map((row:any)=>({id:row.id,name:row.name})));
+      const saved = window.localStorage.getItem("nexus-active-company") || "all";
+      const valid = saved === "all" || rows.some((row:any)=>row.id===saved);
+      const scope = valid ? saved : "all";
+      setCompanyScope(scope);
+      if (!valid) window.localStorage.setItem("nexus-active-company","all");
+    }).catch(() => { if (active) setCompanyOptions([]); });
     return () => { active = false; };
   }, [session?.user.id]);
   useEffect(() => {
@@ -230,6 +242,7 @@ function DashboardPage() {
             <div className="breadcrumb"><span>Workspace</span><ChevronRight size={14}/><strong>{active}</strong></div>
           </div>
           <div className="topbar-actions">
+            {companyOptions.length > 0 && <label className="company-scope-control"><Building2 size={15}/><select aria-label="Filtrar dados por empresa" value={companyScope} onChange={(e)=>{const value=e.target.value;setCompanyScope(value);window.localStorage.setItem("nexus-active-company",value);window.location.reload();}}><option value="all">Todas as empresas · Consolidado</option>{companyOptions.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
             <button className="icon-button help-button" aria-label="Ajuda" onClick={() => showNotice("Central de ajuda em breve.")}><CircleHelp size={18}/></button>
             <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Central de notificações ainda não está disponível.")}><Bell size={18}/><i/></button>
