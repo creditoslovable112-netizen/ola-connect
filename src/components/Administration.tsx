@@ -56,7 +56,9 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
       setExpiresAt(sessionData.session?.expires_at ?? null);
       const { data: factors } = await supabase.auth.mfa.listFactors();
       setMfaCount((factors?.all ?? []).filter(f => f.status === "verified").length);
-      // Workspace tables are not yet represented in the generated client schema.\n      // eslint-disable-next-line @typescript-eslint/no-explicit-any\n      const { data: memberships, error } = await (supabase as any).from("workspace_members")
+      // Workspace tables are not yet represented in the generated client schema.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: memberships, error } = await (supabase as any).from("workspace_members")
         .select("workspace_id,role,workspaces(id,name,owner_id,currency,timezone,created_at)")
         .eq("user_id", userData.user.id).eq("status", "active").order("joined_at", { ascending: true });
       if (error) throw error;
@@ -73,7 +75,8 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
         setTimezone(current.timezone ?? "America/Sao_Paulo");
       }
       if (nextId && (current?.role === "owner" || current?.role === "admin")) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any\n        const { data: logs, error: auditError } = await (supabase as any).from("workspace_audit_logs")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: logs, error: auditError } = await (supabase as any).from("workspace_audit_logs")
           .select("id,actor_user_id,action,table_name,record_id,company_id,changed_fields,source,created_at")
           .eq("workspace_id", nextId).order("created_at", { ascending: false }).limit(100);
         if (auditError) throw auditError;
@@ -91,7 +94,8 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
     if (!workspaceId || !canAdmin) return;
     setSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any\n      const { error } = await (supabase as any).from("workspaces")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("workspaces")
         .update({ name: name.trim(), currency, timezone, updated_by: userId })
         .eq("id", workspaceId);
       if (error) throw error;
