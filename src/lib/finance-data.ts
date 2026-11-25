@@ -92,12 +92,34 @@ export async function deleteTransaction(id: string) {
   const { error } = await (supabase as any).from("transactions").delete().eq("id", id).eq("workspace_id", workspace_id);
   if (error) throw error;
 }
-export async function listBusinessContacts(contactType?: "customer" | "supplier") {
+export async function listBusinessContacts(contactType?: "customer" | "supplier", includeAllCompanies = false) {
   const workspace_id = await requireWorkspaceId();
   let query = (supabase as any).from("business_contacts").select("*").eq("workspace_id", workspace_id);
-  query = scopedToCompany(query).order("name");
+  if (!includeAllCompanies) query = scopedToCompany(query);
   if (contactType) query = query.eq("contact_type", contactType);
-  const { data, error } = await query; if (error) throw error; return data as BusinessContact[];
+  const { data, error } = await query.order("name"); if (error) throw error; return data as BusinessContact[];
+}
+export async function listSupplierCompanyLinks() {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("company_suppliers").select("supplier_id,company_id").eq("workspace_id", workspace_id);
+  if (error) throw error; return data as { supplier_id: string; company_id: string }[];
+}
+export async function saveSupplierCompanyLinks(supplierId: string, companyIds: string[]) {
+  const workspace_id = await requireWorkspaceId();
+  const { error: deleteError } = await (supabase as any).from("company_suppliers").delete().eq("workspace_id", workspace_id).eq("supplier_id", supplierId);
+  if (deleteError) throw deleteError;
+  if (companyIds.length) {
+    const { error } = await (supabase as any).from("company_suppliers").insert(companyIds.map(company_id => ({ workspace_id, supplier_id: supplierId, company_id })));
+    if (error) throw error;
+  }
+}
+export async function listSupplierTransactions(supplierId: string) {
+  const workspace_id = await requireWorkspaceId();
+  const { data, error } = await (supabase as any).from("transactions")
+    .select("id,description,amount,status,due_date,paid_at,transaction_date,company_id,type")
+    .eq("workspace_id", workspace_id).eq("supplier_id", supplierId).eq("type", "expense")
+    .order("transaction_date", { ascending: false });
+  if (error) throw error; return data ?? [];
 }
 export async function createBusinessContact(contact: Omit<TablesInsert<"business_contacts">, "user_id"> & { company_id?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
