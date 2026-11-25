@@ -6,7 +6,7 @@ export type Category = Tables<"categories">;
 export type CostCenter = Tables<"cost_centers">;
 export type Transaction = Tables<"transactions">;
 
-async function requireUserId(): Promise<string> {
+export async function requireUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
   if (!data.user) throw new Error("Entre na sua conta para acessar os dados financeiros.");
@@ -17,6 +17,7 @@ export async function listFinancialAccounts() {
   const { data, error } = await supabase
     .from("financial_accounts")
     .select("*")
+    .eq("user_id", await requireUserId())
     .eq("is_active", true)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -37,7 +38,7 @@ export async function createFinancialAccount(
 }
 
 export async function listCategories(type?: "income" | "expense") {
-  let query = supabase.from("categories").select("*").order("name");
+  let query = supabase.from("categories").select("*").eq("user_id", await requireUserId()).order("name");
   if (type) query = query.eq("type", type);
   const { data, error } = await query;
   if (error) throw error;
@@ -61,6 +62,7 @@ export async function listCostCenters() {
   const { data, error } = await supabase
     .from("cost_centers")
     .select("*")
+    .eq("user_id", await requireUserId())
     .order("name");
   if (error) throw error;
   return data;
@@ -83,6 +85,7 @@ export async function listTransactions() {
   const { data, error } = await supabase
     .from("transactions")
     .select("*")
+    .eq("user_id", await requireUserId())
     .order("transaction_date", { ascending: false });
   if (error) throw error;
   return data;
@@ -109,6 +112,7 @@ export async function updateTransaction(
     .from("transactions")
     .update(updates)
     .eq("id", id)
+    .eq("user_id", await requireUserId())
     .select()
     .single();
   if (error) throw error;
@@ -116,7 +120,7 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(id: string) {
-  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", await requireUserId());
   if (error) throw error;
 }
 
@@ -125,7 +129,7 @@ export type BusinessContact = Tables<"business_contacts">;
 export type Company = Tables<"companies">;
 
 export async function listBusinessContacts(contactType?: "customer" | "supplier") {
-  let query = supabase.from("business_contacts").select("*").order("name");
+  let query = supabase.from("business_contacts").select("*").eq("user_id", await requireUserId()).order("name");
   if (contactType) query = query.eq("contact_type", contactType);
   const { data, error } = await query;
   if (error) throw error;
@@ -140,12 +144,12 @@ export async function createBusinessContact(contact: Omit<TablesInsert<"business
 }
 
 export async function deleteBusinessContact(id: string) {
-  const { error } = await supabase.from("business_contacts").delete().eq("id", id);
+  const { error } = await supabase.from("business_contacts").delete().eq("id", id).eq("user_id", await requireUserId());
   if (error) throw error;
 }
 
 export async function listCompanies() {
-  const { data, error } = await supabase.from("companies").select("*").order("name");
+  const { data, error } = await supabase.from("companies").select("*").eq("user_id", await requireUserId()).order("name");
   if (error) throw error;
   return data;
 }
@@ -158,6 +162,6 @@ export async function createCompany(company: Omit<TablesInsert<"companies">, "us
 }
 
 export async function deleteCompany(id: string) {
-  const { error } = await supabase.from("companies").delete().eq("id", id);
+  const { error } = await supabase.from("companies").delete().eq("id", id).eq("user_id", await requireUserId());
   if (error) throw error;
 }
