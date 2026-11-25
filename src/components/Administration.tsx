@@ -62,9 +62,9 @@ export function Administration({ showNotice, onOpenTeam }: Props) {
         .select("workspace_id,role,workspaces(id,name,owner_id,currency,timezone,created_at)")
         .eq("user_id", userData.user.id).eq("status", "active").order("joined_at", { ascending: true });
       if (error) throw error;
-      const mapped = (memberships ?? []).map((m: any) => ({
-        ...m.workspaces, role: m.role
-      })).filter((w: any) => w.id) as Workspace[];
+      const mapped = ((memberships ?? []) as WorkspaceMembershipRow[])
+        .filter((membership) => membership.workspaces !== null)
+        .map((membership) => ({ ...membership.workspaces!, role: membership.role }));
       setWorkspaces(mapped);
       const nextId = target && mapped.some(w => w.id === target) ? target : (mapped[0]?.id ?? "");
       setWorkspaceId(nextId);
