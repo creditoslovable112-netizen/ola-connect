@@ -28,13 +28,15 @@ function useFinanceData(notice: Notice) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);
   const [supplierCompanyLinks, setSupplierCompanyLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
+  const [customers, setCustomers] = useState<BusinessContact[]>([]);
+  const [customerCompanyLinks, setCustomerCompanyLinks] = useState<{ customer_id: string; company_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const reload = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [a, c, cc, t, co, su, sl] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies(), listBusinessContacts("supplier", true), listSupplierCompanyLinks()]);
-      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co); setSuppliers(su); setSupplierCompanyLinks(sl);
+      const [a, c, cc, t, co, su, sl, cu, cl] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies(), listBusinessContacts("supplier", true), listSupplierCompanyLinks(), listBusinessContacts("customer", true), listCustomerCompanyLinks()]);
+      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co); setSuppliers(su); setSupplierCompanyLinks(sl); setCustomers(cu); setCustomerCompanyLinks(cl as { customer_id: string; company_id: string }[]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
       setError(message);
