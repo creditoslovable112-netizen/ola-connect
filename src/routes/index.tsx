@@ -212,8 +212,6 @@ function DashboardPage() {
       if (!active) return;
       setHasProAccess(!error && data === true);
       setProAccessLoading(false);
-    }).catch(() => {
-      if (active) { setHasProAccess(false); setProAccessLoading(false); }
     });
     return () => { active = false; };
   }, [session?.user.id]);
