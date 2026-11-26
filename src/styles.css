@@ -1821,3 +1821,73 @@ input:focus,select:focus,textarea:focus { border-color: #42a879 !important; box-
 .auth-submit:hover { background:linear-gradient(135deg,#116b43,#168454); }
 .auth-links a { color:#187448; }
 .auth-security { color:#75877b; }
+
+
+/* NEXUS FINANCE — versão totalmente branca */
+:root {
+  --background: #ffffff;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #20382b;
+  --sidebar-primary: #168454;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f8f3;
+  --sidebar-accent-foreground: #176c45;
+  --sidebar-border: #e7eee9;
+  --sidebar-ring: #42a879;
+}
+html, body, #root { background: #fff; }
+.nexus-app, .main-area, .page-content { background: #fff !important; }
+.sidebar {
+  background: #fff !important;
+  color: #20382b !important;
+  border-right: 1px solid #e8eee9 !important;
+  box-shadow: 5px 0 22px rgba(25,65,42,.035) !important;
+}
+.brand { border-bottom-color: #edf1ee !important; }
+.brand-logo { filter: none !important; }
+.nav-label { color: #829187 !important; }
+.nav-item {
+  color: #52665a !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.nav-item:hover {
+  color: #176c45 !important;
+  background: #f3f8f4 !important;
+}
+.nav-active {
+  color: #176c45 !important;
+  background: #eaf5ed !important;
+  border-color: #d8eadc !important;
+  box-shadow: inset 3px 0 #168454 !important;
+}
+.nav-active svg { color: #168454 !important; }
+.workspace-switch {
+  color: #294a37 !important;
+  background: #fff !important;
+  border-color: #e1eae3 !important;
+}
+.workspace-copy small, .profile-copy small { color: #7d8d82 !important; }
+.profile { border-top-color: #e8eee9 !important; }
+.profile-copy strong { color: #20382b !important; }
+.profile-signout { color: #52665a !important; }
+.sidebar-promo {
+  color: #294a37 !important;
+  background: #f8fbf8 !important;
+  border: 1px solid #e4ece5 !important;
+}
+.topbar {
+  background: #fff !important;
+  border-bottom: 1px solid #e8eee9 !important;
+}
+.mobile-scrim { background: rgba(20,40,28,.28) !important; }
+.search-box, .company-scope-control { background: #fff !important; }
+.panel, .metric-card, .summary-card, .stats-card, .dashboard-chart-panel {
+  background: #fff !important;
+}
+.nexus-skeleton { background: #fff !important; }
+@media (max-width:760px) {
+  .sidebar { box-shadow: 12px 0 34px rgba(20,50,30,.12) !important; }
+}
