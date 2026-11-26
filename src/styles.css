@@ -1684,3 +1684,105 @@ input, select, textarea {
   .push-settings-actions { display: grid; grid-template-columns: 1fr; }
   .push-settings-actions button { width: 100%; }
 }
+
+
+/* NEXUS FINANCE — identidade visual unificada: verde, dourado, preto e branco */
+:root {
+  --background: oklch(0.985 0.006 155);
+  --foreground: oklch(0.19 0.025 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.025 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.025 160);
+  --primary: oklch(0.57 0.15 158);
+  --primary-foreground: oklch(0.99 0.004 155);
+  --secondary: oklch(0.95 0.025 155);
+  --secondary-foreground: oklch(0.29 0.07 158);
+  --muted: oklch(0.96 0.012 155);
+  --muted-foreground: oklch(0.51 0.025 160);
+  --accent: oklch(0.94 0.045 155);
+  --accent-foreground: oklch(0.29 0.07 158);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.90 0.018 155);
+  --input: oklch(0.90 0.018 155);
+  --ring: oklch(0.64 0.14 158);
+  --chart-1: oklch(0.60 0.16 158);
+  --chart-2: oklch(0.77 0.14 88);
+  --chart-3: oklch(0.48 0.10 190);
+  --chart-4: oklch(0.68 0.17 145);
+  --chart-5: oklch(0.62 0.13 45);
+  --sidebar: oklch(0.22 0.045 160);
+  --sidebar-foreground: oklch(0.97 0.012 150);
+  --sidebar-primary: oklch(0.76 0.14 88);
+  --sidebar-primary-foreground: oklch(0.20 0.04 160);
+  --sidebar-accent: oklch(0.31 0.055 158);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.34 0.045 160);
+  --sidebar-ring: oklch(0.72 0.13 88);
+}
+.nexus-app { background: #f7faf8; color: #17251e; }
+.sidebar {
+  background: linear-gradient(180deg,#142b22 0%,#19392c 58%,#10251d 100%);
+  color: #f4faf6; border-right: 1px solid rgba(214,177,82,.24);
+  box-shadow: 12px 0 34px rgba(12,35,25,.10);
+}
+.brand { padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,.10); }
+.brand-logo { filter: drop-shadow(0 3px 10px rgba(0,0,0,.22)); }
+.nav-label { color: #9db7a8; letter-spacing: .13em; font-weight: 800; }
+.nav-item { color: #d8e7de; border: 1px solid transparent; transition: background .2s, color .2s, transform .2s; }
+.nav-item:hover { background: rgba(255,255,255,.09); color: #fff; transform: translateX(2px); }
+.nav-active { color: #fff !important; background: linear-gradient(100deg,rgba(36,165,111,.30),rgba(214,177,82,.12)) !important; border-color: rgba(214,177,82,.30); box-shadow: inset 3px 0 #d8b65a; }
+.nav-active svg { color: #e4c66f; }
+.workspace-switch { color: #f7fbf8; background: rgba(255,255,255,.075); border-color: rgba(255,255,255,.14); }
+.workspace-copy small,.profile-copy small { color: #a9c0b2; }
+.profile { border-top-color: rgba(255,255,255,.13); }
+.profile-copy strong { color: #fff; }
+.profile-signout { color: #d7e5dc; }
+.sidebar-promo { background: linear-gradient(135deg,rgba(214,177,82,.18),rgba(38,157,105,.20)); border: 1px solid rgba(220,190,111,.25); }
+.main-area { background: #f7faf8; }
+.topbar { background: rgba(255,255,255,.94); border-bottom: 1px solid #e4ece6; box-shadow: 0 5px 22px rgba(22,55,38,.035); backdrop-filter: blur(14px); }
+.breadcrumb strong { color: #193a2b; }
+.page-content { color: #1b2b22; }
+.eyebrow { color: #28835b; letter-spacing: .12em; }
+.welcome-row h1 { color: #142b20; letter-spacing: -.045em; }
+.panel,.metric-card,.summary-card,.stats-card,.dashboard-chart-panel {
+  background: #fff; border: 1px solid #e3ece5;
+  box-shadow: 0 8px 26px rgba(23,58,39,.045);
+}
+.panel-heading h2,.panel h2,.panel h3 { color: #1b3527; }
+.metric-card:hover,.summary-card:hover,.stats-card:hover,.panel:hover { border-color: #c8dfd0; box-shadow: 0 14px 34px rgba(25,91,57,.09); }
+.button-primary { background: linear-gradient(135deg,#168454,#21a66b); color: #fff; border: 1px solid #168454; box-shadow: 0 5px 14px rgba(22,132,84,.18); }
+.button-primary:hover { background: linear-gradient(135deg,#116b43,#168454); transform: translateY(-1px); }
+.button-secondary { background: #fff; color: #276447; border: 1px solid #cfe0d4; }
+.button-secondary:hover { background: #eff8f1; border-color: #9fc8ad; }
+.icon-button { color: #476253; }
+.icon-button:hover { background: #edf6ef; color: #176c45; }
+.search-box,.company-scope-control { background: #f7faf8; border-color: #dfe9e2; }
+input,select,textarea { accent-color: #168454; }
+input:focus,select:focus,textarea:focus { border-color: #42a879 !important; box-shadow: 0 0 0 3px rgba(38,157,105,.12); }
+.dashboard-chart-panel { overflow: hidden; }
+.dashboard-donut { filter: drop-shadow(0 5px 9px rgba(26,114,73,.10)); }
+.nexus-notification-panel,.pro-lock-dialog { border-color: #dce9df; box-shadow: 0 24px 70px rgba(14,48,30,.20); }
+.notification-mark-read,.nexus-notification-panel > footer button { background: #edf7ef; color: #176c45; }
+.notification-unread-dot { background: #1b9a61; }
+.notification-item-icon { background: #e8f5eb; color: #187449; }
+.notification-count { background: #c89f3b; }
+.pro-lock-backdrop { background: rgba(9,27,18,.72); }
+.pro-access-icon { background: #fff6dc; color: #a77a18; }
+.pro-lock-price { color: #176c45; }
+.push-settings { border-color: #dce9df; background: #fbfefb; }
+.push-settings h3 { color: #1b3527; }
+.push-secondary-button { border-color: #d2e2d7; color: #276447; }
+.toast { border-color: #d7e8dc; box-shadow: 0 12px 35px rgba(20,60,38,.14); }
+.nexus-skeleton { background: #f7faf8; }
+.skeleton-card { border-color: #e1ebe4; background: #fff; }
+.skeleton-status { color: #347b58; }
+@media (max-width:760px) {
+  .sidebar { box-shadow: 18px 0 48px rgba(8,30,19,.28); }
+  .mobile-scrim { background: rgba(9,27,18,.58); backdrop-filter: blur(3px); }
+  .topbar { box-shadow: 0 4px 18px rgba(22,55,38,.045); }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .button-primary,.button-secondary,.icon-button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+}
