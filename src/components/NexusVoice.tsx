@@ -31,7 +31,7 @@ export function NexusVoice() {
   useEffect(() => {
     if (!open) return;
     let alive = true;
-    void Promise.all([listFinancialAccounts(), listCategories("expense", false), listCompanies()])
+    void Promise.all([listFinancialAccounts(), listCategories(undefined, false), listCompanies()])
       .then(([a, c, co]) => {
         if (!alive) return;
         setAccounts(a); setCategories(c); setCompanies(co);
