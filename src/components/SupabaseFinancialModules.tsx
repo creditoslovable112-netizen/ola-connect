@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, FileUp, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, FileUp, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "../lib/supabase";
 import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
@@ -389,7 +389,18 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const expense = paid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
   const openIncome = data.transactions.filter((item) => item.type === "income" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
   const openExpense = data.transactions.filter((item) => item.type === "expense" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
-  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" onClick={() => showNotice("A exportação PDF/Excel será adicionada após validar os demonstrativos.")}><RefreshCw size={15}/> Atualizar</button></div>
+  const exportCsv = () => {
+    const fields = ["transaction_date", "type", "description", "counterparty", "amount", "status", "due_date", "paid_at", "account_id", "company_id"];
+    const escapeCsv = (value: unknown) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+    const rows = [fields, ...data.transactions.map(item => fields.map(field => (item as unknown as Record<string, unknown>)[field] ?? ""))];
+    const csv = "\\uFEFF" + rows.map(row => row.map(escapeCsv).join(";")).join("\\r\\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url; link.download = "nexus-finance-relatorio-" + today() + ".csv";
+    document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+    showNotice("Relatório CSV exportado com os lançamentos disponíveis.");
+  };
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" disabled={data.loading || Boolean(data.error)} onClick={exportCsv}><Download size={15}/> Exportar CSV</button></div>
     <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
     {!data.loading && !data.error && <><section className="summary-grid"><div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Resultado realizado</span><strong>{money(income - expense)}</strong><small>Receitas menos despesas</small></div></section><section className="panel payable-list-panel"><h2>Posição financeira</h2><div className="summary-line"><span>Recebimentos pendentes</span><strong>{money(openIncome)}</strong></div><div className="summary-line"><span>Pagamentos pendentes</span><strong>{money(openExpense)}</strong></div><div className="summary-footer"><span>Contas cadastradas</span><strong>{data.transactions.length}</strong></div><div className="demo-disclaimer"><ShieldCheck size={14}/> Relatório calculado em tempo real a partir do Supabase; sem valores fictícios.</div></section></>}
   </>;
