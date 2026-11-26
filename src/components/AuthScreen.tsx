@@ -84,7 +84,7 @@ export function AuthScreen({ recoveryMode = false }: { recoveryMode?: boolean })
       <div className="auth-glow auth-glow-one" /><div className="auth-glow auth-glow-two" />
       <section className="auth-card">
         <div className="auth-brand">
-          <div className="auth-brand-mark"><Sparkles size={22} /></div>
+          <img className="auth-brand-logo" src="/nexus-mark.webp" alt="NEXUS FINANCE" />
           <div><strong>NEXUS</strong><span>FINANCE</span></div>
         </div>
         <div className="auth-intro">
