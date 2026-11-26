@@ -150,7 +150,7 @@ export function NexusVoice() {
   };
 
   return <>
-    <button className="nexus-voice-fab" aria-label="Abrir NEXUS VOZ" onClick={() => { setOpen(true); setMessage(""); startListening(); }}><Mic size={21}/><span>NEXUS VOZ</span></button>
+    <button className="nexus-voice-fab" aria-label="Abrir NEXUS VOZ" onClick={() => { setOpen(true); setMessage(""); startListening(); }}><Mic size={25} strokeWidth={2.5}/></button>
     {open && <div className="nexus-voice-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setOpen(false); }}>
       <section className="nexus-voice-panel" role="dialog" aria-modal="true" aria-labelledby="nexus-voice-title">
         <header className="nexus-voice-heading"><div className="nexus-voice-mark"><Sparkles size={18}/></div><div><strong id="nexus-voice-title">NEXUS VOZ</strong><small>Fale ou digite o que deseja fazer</small></div><button className="icon-button" aria-label="Fechar" disabled={busy} onClick={() => { recognition.current?.stop(); setOpen(false); }}><X size={19}/></button></header>
