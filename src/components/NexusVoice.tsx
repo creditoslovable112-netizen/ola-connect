@@ -23,7 +23,7 @@ type SpeechWindow = Window & { SpeechRecognition?: new () => SpeechRecognitionLi
 const today = () => new Date().toISOString().slice(0, 10);
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-export function NexusVoice() {
+export function NexusVoice({ environment = "business" }: { environment?: "business" | "personal" }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,6 +42,19 @@ export function NexusVoice() {
   useEffect(() => {
     if (!open) return;
     let alive = true;
+    if (environment === "personal") {
+      void supabase.from("personal_financial_accounts").select("id,name").eq("is_active", true).order("name")
+        .then(({ data, error }) => {
+          if (error) throw error;
+          if (!alive) return;
+          setAccounts((data ?? []) as FinancialAccount[]);
+          setCategories([]); setCompanies([]); setGoals([]);
+          setAccountId((current) => current || data?.[0]?.id || "");
+          setCompanyId(""); setGoalId("");
+        })
+        .catch((error) => { if (alive) setMessage(error instanceof Error ? error.message : "Não foi possível carregar suas contas pessoais."); });
+      return () => { alive = false; };
+    }
     void Promise.all([listFinancialAccounts(), listCategories(undefined, false), listCompanies()])
       .then(async ([a, c, co]) => {
         const workspaceId = await requireWorkspaceId();
@@ -62,7 +75,7 @@ export function NexusVoice() {
       })
       .catch((error) => { if (alive) setMessage(error instanceof Error ? error.message : "Não foi possível carregar seus dados."); });
     return () => { alive = false; };
-  }, [open]);
+  }, [open, environment]);
 
   useEffect(() => () => { recognition.current?.stop(); }, []);
 
@@ -114,7 +127,8 @@ export function NexusVoice() {
     const transactionActions = plan.actions.filter((action) => action.type !== "goal_contribution");
     const goalActions = plan.actions.filter((action) => action.type === "goal_contribution");
     if (transactionActions.length && !accountId) { setMessage("Cadastre ou selecione uma conta financeira antes de confirmar."); return; }
-    if (transactionActions.length && companies.length > 0 && !companyId) { setMessage("Selecione a empresa que receberá os lançamentos."); return; }
+    if (environment === "personal" && goalActions.length) { setMessage("A reserva por voz para metas pessoais será liberada em uma próxima atualização. Nenhuma ação foi salva."); return; }
+    if (environment === "business" && transactionActions.length && companies.length > 0 && !companyId) { setMessage("Selecione a empresa que receberá os lançamentos."); return; }
     const selectedGoal = goals.find((item) => item.id === goalId);
     if (goalActions.length && !selectedGoal) { setMessage(goals.length ? "Selecione a meta que receberá o valor reservado." : "Cadastre primeiro uma meta financeira na seção Metas financeiras."); return; }
     const contribution = goalActions.reduce((sum, item) => sum + item.amount, 0);
@@ -125,15 +139,27 @@ export function NexusVoice() {
     try {
       for (const action of transactionActions) {
         if (action.type === "goal_contribution") continue;
-        const matchedCategory = categories.find((item) => (!item.company_id || item.company_id === companyId) && item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
-        const paidAt = action.status === "paid" ? new Date().toISOString() : null;
-        await createTransaction({
-          account_id: accountId, category_id: matchedCategory?.id ?? null, cost_center_id: null,
-          supplier_id: null, customer_id: null, company_id: companyId || null,
-          type: action.type, description: action.description.trim(), counterparty: action.counterparty?.trim() || null,
-          amount: action.amount, status: action.status ?? "pending", transaction_date: today(), due_date: today(),
-          paid_at: paidAt, notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
-        });
+        if (environment === "personal") {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error("Sua sessão expirou. Entre novamente.");
+          const { error } = await supabase.from("personal_transactions").insert({
+            user_id: user.id, account_id: accountId || null, type: action.type,
+            description: action.description.trim(), category: action.category_name?.trim() || null,
+            amount: action.amount, status: action.status ?? "pending", transaction_date: today(),
+            notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
+          });
+          if (error) throw error;
+        } else {
+          const matchedCategory = categories.find((item) => (!item.company_id || item.company_id === companyId) && item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
+          const paidAt = action.status === "paid" ? new Date().toISOString() : null;
+          await createTransaction({
+            account_id: accountId, category_id: matchedCategory?.id ?? null, cost_center_id: null,
+            supplier_id: null, customer_id: null, company_id: companyId || null,
+            type: action.type, description: action.description.trim(), counterparty: action.counterparty?.trim() || null,
+            amount: action.amount, status: action.status ?? "pending", transaction_date: today(), due_date: today(),
+            paid_at: paidAt, notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
+          });
+        }
       }
       if (goalActions.length && selectedGoal) {
         const workspaceId = await requireWorkspaceId();
@@ -149,6 +175,9 @@ export function NexusVoice() {
     } finally { setBusy(false); }
   };
 
+  const transactionActions = plan?.actions.filter((action) => action.type !== "goal_contribution") ?? [];
+  const goalActions = plan?.actions.filter((action) => action.type === "goal_contribution") ?? [];
+
   return <>
     <button className="nexus-voice-fab" aria-label="Abrir NEXUS VOZ" onClick={() => { setOpen(true); setMessage(""); startListening(); }}><Mic size={25} strokeWidth={2.5}/></button>
     {open && <div className="nexus-voice-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setOpen(false); }}>
@@ -162,9 +191,9 @@ export function NexusVoice() {
           {plan?.supported && plan.actions.length > 0 && <div className="nexus-voice-confirm">
             <strong>Confira antes de confirmar</strong><p>O NEXUS VOZ ainda não salvou nada. Revise as ações abaixo.</p>
             {plan.actions.map((action, index) => <div className="nexus-voice-action" key={index}><span>{action.type === "expense" ? "Despesa" : action.type === "income" ? "Receita" : "Reserva para meta"} · {action.type === "goal_contribution" ? (action.goal_name || "Meta a selecionar") : action.description}</span><strong>{money(action.amount)}</strong><small>{action.type === "goal_contribution" ? "Será somado ao valor acumulado após confirmação" : action.status === "paid" ? "Marcada como paga" : "Pendente"}{action.counterparty ? " · " + action.counterparty : ""}</small></div>)}
-            {transactionActions.length > 0 && <><label className="nexus-voice-label">Conta financeira<select value={accountId} onChange={(event) => setAccountId(event.target.value)}><option value="">Selecione uma conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{companies.length > 0 && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}</>}
-            {goalActions.length > 0 && <label className="nexus-voice-label">Meta financeira<select value={goalId} onChange={(event) => setGoalId(event.target.value)}><option value="">Selecione uma meta</option>{goals.map((item) => <option key={item.id} value={item.id}>{item.name} · {money(Number(item.current_amount))} de {money(Number(item.target_amount))}</option>)}</select></label>}
-            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || (transactionActions.length > 0 && !accountId) || (transactionActions.length > 0 && companies.length > 0 && !companyId) || (goalActions.length > 0 && !goalId)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
+            {transactionActions.length > 0 && <><label className="nexus-voice-label">Conta financeira<select value={accountId} onChange={(event) => setAccountId(event.target.value)}><option value="">Selecione uma conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{environment === "business" && companies.length > 0 && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}</>}
+            {environment === "business" && goalActions.length > 0 && <label className="nexus-voice-label">Meta financeira<select value={goalId} onChange={(event) => setGoalId(event.target.value)}><option value="">Selecione uma meta</option>{goals.map((item) => <option key={item.id} value={item.id}>{item.name} · {money(Number(item.current_amount))} de {money(Number(item.target_amount))}</option>)}</select></label>}
+            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || (transactionActions.length > 0 && !accountId) || (environment === "business" && transactionActions.length > 0 && companies.length > 0 && !companyId) || (environment === "business" && goalActions.length > 0 && !goalId) || (environment === "personal" && goalActions.length > 0)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
           </div>}
           {plan && !plan.supported && <div className="nexus-voice-unsupported"><strong>Preciso de mais informações</strong><p>{plan.clarification || "Esse pedido ainda não pode ser executado automaticamente."}</p></div>}
           <p className="nexus-voice-safety">Nenhum dado é alterado antes de você tocar em “Confirmar e salvar”.</p>
