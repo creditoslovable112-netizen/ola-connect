@@ -1961,3 +1961,23 @@ button:disabled { color: #68786d; }
 .nexus-app .nav-active, .nexus-app .nav-active :where(*) {
   color: #28835b !important;
 }
+
+
+/* NEXUS — verde de identidade também nos textos da marca, workspace e atalhos */
+.nexus-app .brand :where(strong,small,span),
+.nexus-app .workspace-switch :where(strong,small,span),
+.nexus-app .sidebar-promo :where(strong,p,span,button),
+.nexus-app .profile :where(strong,small,span),
+.nexus-app .breadcrumb :where(span,strong),
+.nexus-app .topbar :where(span,strong,p,label),
+.nexus-app .sidebar :where(p,strong,small,label,a,button,span),
+.nexus-app .page-content :where(h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,legend,a,li,th,td),
+.nexus-auth :where(h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,legend,a,li) {
+  color: #28835b !important;
+}
+.nexus-app .button-primary,
+.nexus-app .button-primary :where(*) ,
+.nexus-auth .auth-submit,
+.nexus-auth .auth-submit :where(*) {
+  color: #fff !important;
+}
