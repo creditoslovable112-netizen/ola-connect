@@ -42,12 +42,12 @@ Deno.serve(async (req: Request) => {
         systemInstruction: { parts: [{ text: [
           "Você é o interpretador do NEXUS VOZ. Responda SOMENTE JSON válido, sem markdown.",
           "Você NÃO executa ações. Apenas interpreta o pedido para uma tela de confirmação humana.",
-          "Nesta primeira versão, a única ação permitida é registrar uma ou mais transações financeiras de receita ou despesa no módulo Transações.",
-          "Se o usuário pedir reservar dinheiro, transferir, pagar boleto, fazer saque, movimentar banco, alterar assinatura, cadastrar/editar/excluir outros registros, navegar ou qualquer ação diferente de registrar receita/despesa, retorne supported=false e explique que essa ação ainda não está habilitada pelo NEXUS VOZ. Não transforme reserva em despesa.",
+          "Nesta versão, as ações permitidas são registrar transações de receita/despesa e acrescentar valor acumulado a uma meta financeira existente.",
+          "Se o usuário pedir reservar/acrescentar dinheiro a uma meta, use type=goal_contribution com amount e goal_name se informado; não transforme reserva em despesa. Se pedir transferir dinheiro entre contas, pagar boleto, fazer saque, movimentar banco, alterar assinatura, cadastrar/editar/excluir outros registros, navegar ou qualquer outra ação não permitida, retorne supported=false. Se a meta não estiver identificada, goal_name=null para o usuário escolher na confirmação.",
           "Se houver ambiguidade, valor ausente, descrição insuficiente, ou mistura com ação não suportada, retorne supported=false e faça uma pergunta clara. Não retorne ações parciais.",
           "Quando a pessoa disser gastei, paguei ou comprei, status=paid. Para vou pagar, preciso pagar ou conta a pagar, status=pending. Não invente data, categoria ou conta.",
           "Converta valores falados para número decimal em reais. Cada despesa/receita vira um item separado. Não crie itens que não foram pedidos.",
-          "Formato exato: {supported:boolean, clarification:string|null, actions:[{type:'expense'|'income',description:string,amount:number,counterparty:string|null,status:'paid'|'pending',category_name:string|null}]}",
+          "Formato exato: {supported:boolean, clarification:string|null, actions:[{type:'expense'|'income'|'goal_contribution',description:string,amount:number,counterparty:string|null,status:'paid'|'pending',category_name:string|null,goal_name:string|null}]}",
           "Se não houver pedido válido, use supported=false, actions=[] e clarification explicativa.",
           "Limite de 10 ações; amount deve ser maior que zero; description curta. category_name só preencha se estiver explícita no pedido; caso contrário null."
         ].join(" ") }] },
@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
     if (parsed.actions.length < 1 || parsed.actions.length > 10) return json({ error: "A quantidade de lançamentos não é válida." }, 422);
     const actions = [];
     for (const item of parsed.actions) {
-      if (!item || !["expense", "income"].includes(item.type) || typeof item.description !== "string" || !item.description.trim() || item.description.length > 160 || typeof item.amount !== "number" || !Number.isFinite(item.amount) || item.amount <= 0 || item.amount > 100000000 || !["paid", "pending"].includes(item.status)) {
+      if (!item || !["expense", "income", "goal_contribution"].includes(item.type) || typeof item.description !== "string" || !item.description.trim() || item.description.length > 160 || typeof item.amount !== "number" || !Number.isFinite(item.amount) || item.amount <= 0 || item.amount > 100000000 || (item.type !== "goal_contribution" && !["paid", "pending"].includes(item.status))) {
         return json({ error: "Um dos lançamentos não passou pela validação. Reformule o pedido." }, 422);
       }
       actions.push({
@@ -76,6 +76,7 @@ Deno.serve(async (req: Request) => {
         counterparty: typeof item.counterparty === "string" ? item.counterparty.slice(0, 120) : null,
         status: item.status,
         category_name: typeof item.category_name === "string" ? item.category_name.slice(0, 80) : null,
+        goal_name: typeof item.goal_name === "string" ? item.goal_name.slice(0, 120) : null,
       });
     }
     return json({ supported: true, clarification: null, actions });
