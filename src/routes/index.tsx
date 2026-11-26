@@ -121,25 +121,23 @@ const proFeatureModules = new Set([
   "Clientes", "Fornecedores", "Empresas", "Gestão de Pessoa Física",
 ]);
 
-function ProAccessGate({ onSubscribe }: { onSubscribe: () => void }) {
-  return <section className="pro-access-page">
-    <div className="pro-access-card">
+function ProUpgradeModal({ feature, onClose, onSubscribe }: { feature: string; onClose: () => void; onSubscribe: () => void }) {
+  return <div className="pro-lock-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="pro-lock-dialog" role="dialog" aria-modal="true" aria-labelledby="pro-lock-title">
+      <button className="pro-lock-close icon-button" type="button" onClick={onClose} aria-label="Fechar aviso"><X size={19}/></button>
       <span className="pro-access-icon"><LockKeyhole size={25}/></span>
-      <div className="eyebrow">RECURSO EXCLUSIVO</div>
-      <h1>Desbloqueie o NEXUS PRO</h1>
-      <p>Este módulo fica disponível quando sua assinatura mensal NEXUS PRO estiver ativa e confirmada.</p>
-      <ul>
-        <li>Dashboard e indicadores financeiros</li>
-        <li>Contas a pagar e receber e fluxo de caixa</li>
-        <li>Transações, contas bancárias e importação de extratos</li>
-        <li>Empresas, clientes, fornecedores e centros de custo</li>
-        <li>Relatórios e análises financeiras</li>
-        <li>Gestão de Pessoa Física, contas pessoais e financiamentos</li>
-      </ul>
-      <button className="button-primary" onClick={onSubscribe}>Ver assinatura NEXUS PRO <ChevronRight size={16}/></button>
-      <small>R$ 29,90 por mês · A liberação depende da confirmação do pagamento pelo provedor.</small>
-    </div>
-  </section>;
+      <div className="eyebrow">RECURSO NEXUS PRO</div>
+      <h2 id="pro-lock-title">{feature}</h2>
+      <p>Esta opção está bloqueada. Ative o NEXUS PRO para liberar este recurso e os demais módulos da gestão empresarial e pessoal.</p>
+      <div className="pro-lock-price">R$ 29,90 <small>/mês</small></div>
+      <button className="button-primary" type="button" onClick={onSubscribe}>Ver plano e assinar <ChevronRight size={16}/></button>
+      <button className="button-secondary" type="button" onClick={onClose}>Agora não</button>
+    </section>
+  </div>;
+}
+
+function FreeWorkspaceHome() {
+  return <section className="free-workspace-home"><div className="eyebrow">SEU ESPAÇO FINANCEIRO</div><h1>Bem-vindo ao NEXUS FINANCE</h1><p>Escolha uma opção no menu para conhecer os recursos disponíveis.</p></section>;
 }
 
 function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:string)=>void}) {
@@ -184,6 +182,7 @@ function DashboardPage() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
+  const [lockedFeature, setLockedFeature] = useState<string | null>(null);
   const [cookieBanner, setCookieBanner] = useState(false);
   const [legalStatusLoading, setLegalStatusLoading] = useState(false);
   const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
@@ -302,7 +301,7 @@ function DashboardPage() {
           <div><strong>NEXUS</strong><small>FINANCE</small></div>
           <button className="mobile-close icon-button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X size={18}/></button>
         </div>
-        <div className="environment-switch" role="group" aria-label="Ambiente financeiro"><button className={environment === "business" ? "environment-active" : ""} onClick={() => { setEnvironment("business"); setActive("Dashboard"); }}><Building2 size={15}/> Empresarial</button><button className={environment === "personal" ? "environment-active" : ""} onClick={() => { setEnvironment("personal"); setActive("Gestão de Pessoa Física"); }}><Users size={15}/> Pessoa Física</button></div>
+        <div className="environment-switch" role="group" aria-label="Ambiente financeiro"><button className={environment === "business" ? "environment-active" : ""} onClick={() => { setEnvironment("business"); setActive("Dashboard"); }}><Building2 size={15}/> Empresarial</button><button className={environment === "personal" ? "environment-active" : ""} onClick={() => { if (!hasProAccess) { setLockedFeature("Gestão de Pessoa Física"); return; } setEnvironment("personal"); setActive("Gestão de Pessoa Física"); }}><Users size={15}/> Pessoa Física{!hasProAccess && <LockKeyhole className="nav-lock-icon" size={13}/>}</button></div>
         <div className="workspace-switch" aria-label="Workspace atual">
           <span className="workspace-avatar"><Building2 size={17}/></span>
           <span className="workspace-copy"><strong>{environment === "personal" ? "Minha vida financeira" : company}</strong><small>{environment === "personal" ? "Ambiente pessoal privado" : "Workspace compartilhado"}</small></span>
@@ -310,8 +309,8 @@ function DashboardPage() {
         <div className="sidebar-scroll">
           {(environment === "business" ? navGroups : [{ title: "FINANÇAS PESSOAIS", items: [{ label: "Gestão de Pessoa Física", icon: Wallet }] }]).map((group) => <div className="nav-group" key={group.title}>
             <p className="nav-label">{group.title}</p>
-            {group.items.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${active === label ? "nav-active" : ""}`} onClick={() => { setActive(label); setMobileOpen(false); }}>
-              <Icon size={17} strokeWidth={1.8}/><span>{label}</span>
+            {group.items.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${active === label ? "nav-active" : ""} ${proFeatureModules.has(label) && !hasProAccess ? "nav-item-locked" : ""}`} aria-label={proFeatureModules.has(label) && !hasProAccess ? `${label} — bloqueado no plano atual` : label} onClick={() => { setMobileOpen(false); if (proFeatureModules.has(label) && !hasProAccess) { setLockedFeature(label); return; } setActive(label); }}>
+              <Icon size={17} strokeWidth={1.8}/><span>{label}</span>{proFeatureModules.has(label) && !hasProAccess && <LockKeyhole className="nav-lock-icon" size={14}/>}
             </button>)}
           </div>)}
           <div className="sidebar-promo">
@@ -348,10 +347,11 @@ function DashboardPage() {
         </header>
 
         <div className="page-content" key={companyScope} aria-busy={tabLoading || (proFeatureModules.has(active) && proAccessLoading)}>
-          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <ProAccessGate onSubscribe={() => setActive("Assinatura")}/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
+      {lockedFeature && <ProUpgradeModal feature={lockedFeature} onClose={() => setLockedFeature(null)} onSubscribe={() => { setLockedFeature(null); setActive("Assinatura"); }}/ >}
       {session && hasProAccess && !proAccessLoading && <NexusVoice environment={environment} />}
       {cookieBanner && <section className="cookie-banner" role="dialog" aria-label="Preferências de cookies" aria-live="polite"><div><strong>Suas escolhas de privacidade</strong><p>O armazenamento necessário mantém a sessão e a segurança. Não carregamos analytics, pixels ou publicidade nesta versão. Você pode rejeitar tecnologias opcionais ou aceitar todas; marketing é uma escolha separada.</p><button className="cookie-link" onClick={() => { setActive("Privacidade e termos"); setCookieBanner(false); }}>Ler política de cookies</button></div><div className="cookie-actions"><button className="button-secondary" onClick={() => saveCookieChoice("necessary")}>Rejeitar opcionais</button><button className="button-primary" onClick={() => saveCookieChoice("all")}>Aceitar todos</button></div></section>}
     </div>
