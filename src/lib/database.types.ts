@@ -80,6 +80,48 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_goals: {
+        Row: {
+          id: string
+          workspace_id: string
+          company_id: string | null
+          user_id: string
+          name: string
+          target_amount: number
+          current_amount: number
+          target_date: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          workspace_id: string
+          company_id?: string | null
+          user_id: string
+          name: string
+          target_amount: number
+          current_amount?: number
+          target_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          workspace_id?: string
+          company_id?: string | null
+          user_id?: string
+          name?: string
+          target_amount?: number
+          current_amount?: number
+          target_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financial_accounts: {
         Row: {
           account_type: string
