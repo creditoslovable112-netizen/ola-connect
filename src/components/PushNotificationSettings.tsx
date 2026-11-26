@@ -87,9 +87,10 @@ export function PushNotificationSettings() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        await supabase.from("push_subscriptions").delete()
+        const { error: deleteError } = await supabase.from("push_subscriptions").delete()
           .eq("user_id", userData.user?.id ?? "")
           .eq("endpoint", subscription.endpoint);
+        if (deleteError) throw deleteError;
         await subscription.unsubscribe();
       }
       setSubscribed(false);
@@ -107,8 +108,9 @@ export function PushNotificationSettings() {
     try {
       const { data, error } = await supabase.functions.invoke("nexus-push", { body: { action: "send-test" } });
       if (error) throw error;
+      if (data?.sent === 0 && data?.failed > 0) throw new Error("O servidor não conseguiu entregar o teste. Verifique as chaves VAPID e tente novamente.");
       if (data?.sent === 0) throw new Error("Nenhum dispositivo inscrito foi encontrado.");
-      setMessage("Solicitação de teste enviada. Confira as notificações do dispositivo.");
+      setMessage(data?.failed > 0 ? "Teste enviado a alguns dispositivos. Um ou mais aparelhos não responderam." : "Solicitação de teste enviada. Confira as notificações do dispositivo.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível enviar o teste.");
     } finally {
