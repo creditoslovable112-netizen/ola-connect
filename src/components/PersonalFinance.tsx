@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { CreditCard, Landmark, Plus, RefreshCw, Trash2, Wallet, TrendingDown, TrendingUp, CalendarClock } from "lucide-react";
+import { Plus, RefreshCw, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 type Account = { id:string; name:string; account_type:string; institution:string|null; opening_balance:number; is_active:boolean };
