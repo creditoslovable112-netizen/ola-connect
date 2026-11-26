@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, LoaderCircle, Mic, MicOff, Send, Sparkles, X } from "lucide-react";
+import { Check, LoaderCircle, Mic, Send, Sparkles, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { createTransaction, getActiveCompanyId, listCategories, listCompanies, listFinancialAccounts, requireWorkspaceId, type Category, type Company, type FinancialAccount } from "../lib/finance-data";
 
-type VoiceAction = { type: "expense" | "income" | "goal_contribution"; description: string; amount: number; counterparty: string | null; status: "paid" | "pending"; category_name: string | null; goal_name: string | null };
+type VoiceAction = {
+  type: "expense" | "income" | "goal_contribution";
+  description: string;
+  amount: number;
+  counterparty: string | null;
+  status?: "paid" | "pending";
+  category_name: string | null;
+  goal_name: string | null;
+};
 type VoiceGoal = { id: string; name: string; target_amount: number; current_amount: number; company_id: string | null };
 type VoicePlan = { supported: boolean; clarification: string | null; actions: VoiceAction[] };
 type SpeechRecognitionAlternativeLike = { transcript: string };
@@ -25,22 +33,34 @@ export function NexusVoice() {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [goals, setGoals] = useState<VoiceGoal[]>([]);
   const [accountId, setAccountId] = useState("");
   const [companyId, setCompanyId] = useState("");
+  const [goalId, setGoalId] = useState("");
   const recognition = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let alive = true;
     void Promise.all([listFinancialAccounts(), listCategories(undefined, false), listCompanies()])
-      .then(([a, c, co]) => {
+      .then(async ([a, c, co]) => {
+        const workspaceId = await requireWorkspaceId();
+        let goalQuery = supabase.from("financial_goals")
+          .select("id,name,target_amount,current_amount,company_id")
+          .eq("workspace_id", workspaceId).order("name");
+        const activeCompanyId = getActiveCompanyId();
+        if (activeCompanyId) goalQuery = goalQuery.or(`company_id.eq.${activeCompanyId},company_id.is.null`);
+        const { data: goalRows, error: goalError } = await goalQuery;
+        if (goalError) throw goalError;
         if (!alive) return;
-        setAccounts(a); setCategories(c); setCompanies(co);
+        const availableGoals = (goalRows ?? []) as VoiceGoal[];
+        setAccounts(a); setCategories(c); setCompanies(co); setGoals(availableGoals);
         setAccountId((current) => current || a[0]?.id || "");
+        setGoalId((current) => current || (availableGoals.length === 1 ? availableGoals[0].id : ""));
         const savedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
         setCompanyId((current) => current || (savedCompany && savedCompany !== "all" ? savedCompany : co.length === 1 ? co[0].id : ""));
       })
-      .catch((error) => { if (alive) setMessage(error instanceof Error ? error.message : "Não foi possível carregar suas contas."); });
+      .catch((error) => { if (alive) setMessage(error instanceof Error ? error.message : "Não foi possível carregar seus dados."); });
     return () => { alive = false; };
   }, [open]);
 
@@ -61,12 +81,9 @@ export function NexusVoice() {
       instance.onerror = () => { setListening(false); setMessage("Não consegui acessar o microfone. Verifique a permissão do navegador ou digite o pedido."); };
       instance.onend = () => setListening(false);
       recognition.current = instance;
-      setMessage("");
-      setListening(true);
-      instance.start();
+      setMessage(""); setListening(true); instance.start();
     } catch {
-      setListening(false);
-      setMessage("Não foi possível iniciar o microfone. Tente digitar o pedido.");
+      setListening(false); setMessage("Não foi possível iniciar o microfone. Tente digitar o pedido.");
     }
   };
 
@@ -77,8 +94,16 @@ export function NexusVoice() {
       const { data, error } = await supabase.functions.invoke("nexus-voice-prepare", { body: { message: text.trim() } });
       if (error) throw error;
       if (!data || typeof data.supported !== "boolean" || !Array.isArray(data.actions)) throw new Error("A resposta do assistente veio em um formato inválido.");
-      setPlan(data as VoicePlan);
-      if (!data.supported && data.clarification) setMessage(data.clarification);
+      const nextPlan = data as VoicePlan;
+      setPlan(nextPlan);
+      const namedGoal = nextPlan.actions.find((item) => item.type === "goal_contribution" && item.goal_name);
+      if (namedGoal?.goal_name) {
+        const match = goals.find((item) => item.name.toLocaleLowerCase("pt-BR") === namedGoal.goal_name!.toLocaleLowerCase("pt-BR"));
+        if (match) setGoalId(match.id);
+      } else if (nextPlan.actions.some((item) => item.type === "goal_contribution") && goals.length === 1) {
+        setGoalId(goals[0].id);
+      }
+      if (!nextPlan.supported && nextPlan.clarification) setMessage(nextPlan.clarification);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não consegui entender o pedido. Tente novamente.");
     } finally { setBusy(false); }
@@ -86,35 +111,40 @@ export function NexusVoice() {
 
   const confirm = async () => {
     if (!plan?.supported || !plan.actions.length) return;
-    if (!accountId) { setMessage("Cadastre ou selecione uma conta financeira antes de confirmar."); return; }
-    if (companies.length > 0 && !companyId) { setMessage("Selecione a empresa que receberá os lançamentos."); return; }
+    const transactionActions = plan.actions.filter((action) => action.type !== "goal_contribution");
+    const goalActions = plan.actions.filter((action) => action.type === "goal_contribution");
+    if (transactionActions.length && !accountId) { setMessage("Cadastre ou selecione uma conta financeira antes de confirmar."); return; }
+    if (transactionActions.length && companies.length > 0 && !companyId) { setMessage("Selecione a empresa que receberá os lançamentos."); return; }
+    const selectedGoal = goals.find((item) => item.id === goalId);
+    if (goalActions.length && !selectedGoal) { setMessage(goals.length ? "Selecione a meta que receberá o valor reservado." : "Cadastre primeiro uma meta financeira na seção Metas financeiras."); return; }
+    const contribution = goalActions.reduce((sum, item) => sum + item.amount, 0);
+    if (selectedGoal && contribution > Number(selectedGoal.target_amount) - Number(selectedGoal.current_amount)) {
+      setMessage("O valor reservado ultrapassa o que falta para atingir essa meta."); return;
+    }
     setBusy(true); setMessage("");
     try {
-      for (const action of plan.actions) {
+      for (const action of transactionActions) {
         const matchedCategory = categories.find((item) => (!item.company_id || item.company_id === companyId) && item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
         const paidAt = action.status === "paid" ? new Date().toISOString() : null;
         await createTransaction({
-          account_id: accountId,
-          category_id: matchedCategory?.id ?? null,
-          cost_center_id: null,
-          supplier_id: null,
-          customer_id: null,
-          company_id: companyId || null,
-          type: action.type,
-          description: action.description.trim(),
-          counterparty: action.counterparty?.trim() || null,
-          amount: action.amount,
-          status: action.status,
-          transaction_date: today(),
-          due_date: today(),
-          paid_at: paidAt,
-          notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
+          account_id: accountId, category_id: matchedCategory?.id ?? null, cost_center_id: null,
+          supplier_id: null, customer_id: null, company_id: companyId || null,
+          type: action.type, description: action.description.trim(), counterparty: action.counterparty?.trim() || null,
+          amount: action.amount, status: action.status ?? "pending", transaction_date: today(), due_date: today(),
+          paid_at: paidAt, notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
         });
+      }
+      if (goalActions.length && selectedGoal) {
+        const workspaceId = await requireWorkspaceId();
+        const { error } = await supabase.from("financial_goals")
+          .update({ current_amount: Number(selectedGoal.current_amount) + contribution, updated_at: new Date().toISOString() })
+          .eq("id", selectedGoal.id).eq("workspace_id", workspaceId);
+        if (error) throw error;
       }
       setMessage(plan.actions.length === 1 ? (goalActions.length ? "Valor acrescentado à meta financeira." : "Lançamento salvo com sucesso.") : plan.actions.length + " ações concluídas com sucesso.");
       setPlan(null); setText("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível salvar os lançamentos.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível salvar todas as ações. Confira os dados antes de tentar novamente.");
     } finally { setBusy(false); }
   };
 
@@ -129,12 +159,11 @@ export function NexusVoice() {
           <button className="button-primary nexus-voice-prepare" onClick={() => void prepare()} disabled={busy || !text.trim()}>{busy ? <LoaderCircle className="nexus-voice-spin" size={16}/> : <Send size={16}/>} Preparar ação</button>
           {message && <p className="nexus-voice-message" role="status">{message}</p>}
           {plan?.supported && plan.actions.length > 0 && <div className="nexus-voice-confirm">
-            <strong>Confira antes de confirmar</strong>
-            <p>O NEXUS VOZ ainda não salvou nada. Revise os lançamentos abaixo.</p>
+            <strong>Confira antes de confirmar</strong><p>O NEXUS VOZ ainda não salvou nada. Revise as ações abaixo.</p>
             {plan.actions.map((action, index) => <div className="nexus-voice-action" key={index}><span>{action.type === "expense" ? "Despesa" : action.type === "income" ? "Receita" : "Reserva para meta"} · {action.type === "goal_contribution" ? (action.goal_name || "Meta a selecionar") : action.description}</span><strong>{money(action.amount)}</strong><small>{action.type === "goal_contribution" ? "Será somado ao valor acumulado após confirmação" : action.status === "paid" ? "Marcada como paga" : "Pendente"}{action.counterparty ? " · " + action.counterparty : ""}</small></div>)}
-            <label className="nexus-voice-label">Conta financeira<select value={accountId} onChange={(event) => setAccountId(event.target.value)}><option value="">Selecione uma conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            {companies.length > 0 && hasTransactions && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}\n            {goalActions.length > 0 && <label className="nexus-voice-label">Meta financeira<select value={goalId} onChange={(event) => setGoalId(event.target.value)}><option value="">Selecione uma meta</option>{goals.map((item) => <option key={item.id} value={item.id}>{item.name} · {money(Number(item.current_amount))} de {money(Number(item.target_amount))}</option>)}</select></label>}
-            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || (hasTransactions && !accountId) || (hasTransactions && companies.length > 0 && !companyId) || (goalActions.length > 0 && !goalId)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
+            {transactionActions.length > 0 && <><label className="nexus-voice-label">Conta financeira<select value={accountId} onChange={(event) => setAccountId(event.target.value)}><option value="">Selecione uma conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{companies.length > 0 && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}</>}
+            {goalActions.length > 0 && <label className="nexus-voice-label">Meta financeira<select value={goalId} onChange={(event) => setGoalId(event.target.value)}><option value="">Selecione uma meta</option>{goals.map((item) => <option key={item.id} value={item.id}>{item.name} · {money(Number(item.current_amount))} de {money(Number(item.target_amount))}</option>)}</select></label>}
+            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || (transactionActions.length > 0 && !accountId) || (transactionActions.length > 0 && companies.length > 0 && !companyId) || (goalActions.length > 0 && !goalId)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
           </div>}
           {plan && !plan.supported && <div className="nexus-voice-unsupported"><strong>Preciso de mais informações</strong><p>{plan.clarification || "Esse pedido ainda não pode ser executado automaticamente."}</p></div>}
           <p className="nexus-voice-safety">Nenhum dado é alterado antes de você tocar em “Confirmar e salvar”.</p>
