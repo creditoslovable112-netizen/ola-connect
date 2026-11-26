@@ -90,7 +90,7 @@ export function NexusVoice() {
     setBusy(true); setMessage("");
     try {
       for (const action of plan.actions) {
-        const matchedCategory = categories.find((item) => item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
+        const matchedCategory = categories.find((item) => (!item.company_id || item.company_id === companyId) && item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
         const paidAt = action.status === "paid" ? new Date().toISOString() : null;
         await createTransaction({
           account_id: accountId,
