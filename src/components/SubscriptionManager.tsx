@@ -28,6 +28,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [hasProAccess, setHasProAccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -79,6 +80,28 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
     return "Sem assinatura ativa";
   };
 
+  const startCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-subscription", {
+        body: { plan_slug: "pro" },
+      });
+      if (error) throw error;
+      const checkoutUrl = data?.checkout_url;
+      if (typeof checkoutUrl !== "string") {
+        throw new Error(data?.error || "A Cakto não retornou o link de pagamento.");
+      }
+      const parsed = new URL(checkoutUrl);
+      if (parsed.protocol !== "https:" || parsed.hostname !== "pay.cakto.com.br") {
+        throw new Error("O link de pagamento retornado não é um checkout oficial da Cakto.");
+      }
+      window.location.assign(parsed.toString());
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.");
+      setCheckoutLoading(false);
+    }
+  };
+
   if (loading) return <section className="panel payable-list-panel"><p>Verificando sua assinatura mensal...</p></section>;
 
   return (
@@ -93,7 +116,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
           <p>Status: <strong>{hasProAccess ? "Assinatura mensal ativa" : statusLabel(subscription?.status)}</strong>
             {subscription?.current_period_end ? " · Válida até " + new Date(subscription.current_period_end).toLocaleDateString("pt-BR") : ""}
           </p>
-          {!hasProAccess && <p>A assinatura só libera os módulos depois que o provedor confirmar o pagamento e registrar o período vigente.</p>}
+          {!hasProAccess && <p>A assinatura só libera os módulos depois que a Cakto confirmar o pagamento e registrar o período vigente.</p>}
         </div>
         {hasProAccess ? <span className="subscription-access-ok"><Check size={16}/> Acesso liberado</span> : <span className="subscription-access-pending"><LockKeyhole size={16}/> Aguardando ativação</span>}
       </section>
@@ -105,13 +128,14 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
             <div className="subscription-price">{formatPrice(plan.price_brl)}<small>/mês</small></div>
             <p>{planDescriptions[plan.slug]}</p>
             <ul>{(plan.features || []).map((feature) => <li key={feature}><Check size={15}/>{feature}</li>)}</ul>
-            <button className="button-primary" type="button" disabled>
-              <Clock3 size={15}/> Integração de assinatura em preparação
+            <button className="button-primary" type="button" onClick={() => void startCheckout()} disabled={checkoutLoading || hasProAccess}>
+              {checkoutLoading ? <Clock3 size={15}/> : <LockKeyhole size={15}/>}
+              {checkoutLoading ? "Preparando checkout..." : hasProAccess ? "Assinatura ativa" : "Assinar NEXUS PRO"}
             </button>
           </article>
         ))}
       </div>
-      <div className="demo-disclaimer"><ShieldCheck size={14}/> A integração com a Cakto será conectada em uma próxima etapa. Nenhum pagamento é simulado e nenhum acesso é liberado manualmente nesta tela.</div>
+      <div className="demo-disclaimer"><ShieldCheck size={14}/> Pagamento processado pela Cakto. O acesso PRO só é liberado após a confirmação segura do pagamento pelo webhook.</div>
     </div>
   );
 }
