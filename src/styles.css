@@ -1342,8 +1342,8 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 
 
 /* NEXUS VOZ */
-.nexus-voice-fab{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;align-items:center;gap:9px;padding:13px 17px;border:0;border-radius:999px;background:var(--accent,#159b78);color:#fff;font-family:inherit;font-size:13px;font-weight:700;box-shadow:0 8px 28px #0003;cursor:pointer}
-.nexus-voice-fab:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.nexus-voice-fab{position:fixed;right:24px;bottom:24px;z-index:80;display:grid;place-items:center;width:60px;height:60px;padding:0;border:0;border-radius:50%;background:#a8efbd;color:#111827;box-shadow:0 8px 28px #0003;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.nexus-voice-fab:hover{background:#96e8ae;transform:translateY(-2px);box-shadow:0 10px 30px #0004}
 .nexus-voice-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:flex-end;padding:22px;background:#0b122044}
 .nexus-voice-panel{width:min(440px,100%);max-height:min(88dvh,760px);overflow:auto;border:1px solid var(--border);border-radius:22px;background:var(--surface);color:var(--text-primary);box-shadow:0 24px 80px #0003}
 .nexus-voice-heading{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--surface)}
@@ -1364,4 +1364,4 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .nexus-voice-confirm-actions{display:flex;gap:8px}.nexus-voice-confirm-actions>*{flex:1;justify-content:center}
 .nexus-voice-safety{margin:0;text-align:center;font-size:10px;color:var(--text-secondary)}
 .nexus-voice-spin{animation:nexus-voice-spin .9s linear infinite}@keyframes nexus-voice-spin{to{transform:rotate(360deg)}}
-@media(max-width:600px){.nexus-voice-fab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));padding:12px 15px}.nexus-voice-backdrop{align-items:flex-end;justify-content:center;padding:0}.nexus-voice-panel{width:100%;max-height:90dvh;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom)}.nexus-voice-heading{padding:14px 16px}.nexus-voice-body{padding:15px}}
+@media(max-width:600px){.nexus-voice-fab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:56px;height:56px}.nexus-voice-backdrop{align-items:flex-end;justify-content:center;padding:0}.nexus-voice-panel{width:100%;max-height:90dvh;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom)}.nexus-voice-heading{padding:14px 16px}.nexus-voice-body{padding:15px}}
