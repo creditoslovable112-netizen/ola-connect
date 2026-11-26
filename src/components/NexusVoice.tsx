@@ -124,6 +124,7 @@ export function NexusVoice() {
     setBusy(true); setMessage("");
     try {
       for (const action of transactionActions) {
+        if (action.type === "goal_contribution") continue;
         const matchedCategory = categories.find((item) => (!item.company_id || item.company_id === companyId) && item.name.toLocaleLowerCase("pt-BR") === (action.category_name ?? "").toLocaleLowerCase("pt-BR"));
         const paidAt = action.status === "paid" ? new Date().toISOString() : null;
         await createTransaction({
