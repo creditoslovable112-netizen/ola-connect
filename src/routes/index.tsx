@@ -11,6 +11,7 @@ import { TeamManager } from "../components/TeamManager";
 import { Administration } from "../components/Administration";
 import { FinancialGoals } from "../components/FinancialGoals";
 import { PersonalFinance } from "../components/PersonalFinance";
+import { AdvancedManagement } from "../components/AdvancedManagement";
 import { listCompanies } from "../lib/finance-data";
 import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
@@ -62,6 +63,10 @@ const navGroups = [
   ]},
   { title: "GESTÃO", items: [
     { label: "Relatórios", icon: FileBarChart },
+    { label: "Estoque", icon: Wallet },
+    { label: "Contratos", icon: FileText },
+    { label: "Gestão de pessoas", icon: Users },
+    { label: "Aprovação de pagamentos", icon: ClipboardCheck },
     { label: "Metas financeiras", icon: Target },
     { label: "Categorias e centros de custo", icon: Receipt },
     { label: "Clientes", icon: Users },
@@ -119,7 +124,7 @@ function HelpCenter() {
 const proFeatureModules = new Set([
   "Dashboard", "Contas a pagar", "Contas a receber", "Fluxo de caixa",
   "Transações", "Contas bancárias", "Relatórios", "Metas financeiras", "Categorias e centros de custo",
-  "Clientes", "Fornecedores", "Empresas", "Gestão de Pessoa Física",
+  "Clientes", "Fornecedores", "Empresas", "Estoque", "Contratos", "Gestão de pessoas", "Aprovação de pagamentos", "Patrimônio pessoal", "Gestão de Pessoa Física",
 ]);
 
 function ProUpgradeModal({ feature, onClose, onSubscribe }: { feature: string; onClose: () => void; onSubscribe: () => void }) {
@@ -417,7 +422,7 @@ function DashboardPage() {
           <span className="workspace-copy"><strong>{environment === "personal" ? "Minha vida financeira" : company}</strong><small>{environment === "personal" ? "Ambiente pessoal privado" : "Workspace compartilhado"}</small></span>
         </div>
         <div className="sidebar-scroll">
-          {(environment === "business" ? navGroups : [{ title: "FINANÇAS PESSOAIS", items: [{ label: "Gestão de Pessoa Física", icon: Wallet }] }]).map((group) => <div className="nav-group" key={group.title}>
+          {(environment === "business" ? navGroups : [{ title: "FINANÇAS PESSOAIS", items: [{ label: "Gestão de Pessoa Física", icon: Wallet }, { label: "Patrimônio pessoal", icon: Landmark }] }]).map((group) => <div className="nav-group" key={group.title}>
             <p className="nav-label">{group.title}</p>
             {group.items.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${active === label ? "nav-active" : ""} ${proFeatureModules.has(label) && !hasProAccess ? "nav-item-locked" : ""}`} aria-label={proFeatureModules.has(label) && !hasProAccess ? `${label} — bloqueado no plano atual` : label} onClick={() => { setMobileOpen(false); if (proFeatureModules.has(label) && !hasProAccess) { setLockedFeature(label); return; } setActive(label); }}>
               <Icon size={17} strokeWidth={1.8}/><span>{label}</span>{proFeatureModules.has(label) && !hasProAccess && <LockKeyhole className="nav-lock-icon" size={14}/>}
@@ -457,7 +462,7 @@ function DashboardPage() {
         </header>
 
         <div className="page-content" key={companyScope} aria-busy={tabLoading || (proFeatureModules.has(active) && proAccessLoading)}>
-          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Estoque" ? <AdvancedManagement mode="business" module="inventory" showNotice={showNotice}/> : active === "Contratos" ? <AdvancedManagement mode="business" module="contracts" showNotice={showNotice}/> : active === "Gestão de pessoas" ? <AdvancedManagement mode="business" module="people" showNotice={showNotice}/> : active === "Aprovação de pagamentos" ? <AdvancedManagement mode="business" module="approvals" showNotice={showNotice}/> : active === "Patrimônio pessoal" ? <AdvancedManagement mode="personal" module="assets" showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
