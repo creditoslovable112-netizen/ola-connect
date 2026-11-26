@@ -9,7 +9,6 @@ const money=(n:number)=>Number(n||0).toLocaleString("pt-BR",{style:"currency",cu
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const monthNow=()=>today().slice(0,7)+"-01";
 const monthLabel=(m:string)=>new Date(m+"T12:00:00").toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
-const shiftMonth=(m:string,n:number)=>{const d=new Date(m+"T12:00:00");d.setMonth(d.getMonth()+n);return d.toISOString().slice(0,10)};
 const installmentValue=(p:Purchase,index:number)=>{const cents=Math.round(Number(p.total_amount)*100);const base=Math.floor(cents/p.installments);return (index===p.installments-1?cents-base*(p.installments-1):base)/100};
 function statementAmount(purchases:Purchase[],cardId:string,month:string){return purchases.reduce((sum,p)=>{const delta=(new Date(month+"T12:00:00").getFullYear()-new Date(p.first_statement_month+"T12:00:00").getFullYear())*12+new Date(month+"T12:00:00").getMonth()-new Date(p.first_statement_month+"T12:00:00").getMonth();return sum+(p.card_id===cardId&&delta>=0&&delta<p.installments?installmentValue(p,delta):0)},0)}
 export function PersonalCreditCards({showNotice}:{showNotice:(m:string)=>void}){
