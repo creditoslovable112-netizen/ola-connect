@@ -11,7 +11,7 @@ type Tab = "overview"|"transactions"|"accounts"|"financings"|"cards";
 const money=(v:number)=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const today=()=>new Date().toISOString().slice(0,10);
 const types:Record<string,string>={vehicle:"Veículo",real_estate:"Imóvel",personal_loan:"Empréstimo pessoal",other:"Outro"};
-const accountTypes:Record<string,string>={checking:"Conta corrente",savings:"Poupança",cash:"Dinheiro",credit_card:"Cartão de crédito",investment:"Investimento",other:"Outra"};
+const accountTypes:Record<string,string>={checking:"Conta corrente",savings:"Poupança",cash:"Dinheiro",investment:"Investimento",other:"Outra"};
 
 export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}) {
  const [tab,setTab]=useState<Tab>("overview");
