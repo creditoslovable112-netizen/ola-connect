@@ -1463,3 +1463,106 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .free-workspace-home h1 { margin: 8px 0; font-size: clamp(1.7rem, 4vw, 2.4rem); }
 .free-workspace-home p { color: var(--muted-foreground, #64748b); }
 @media (max-width: 520px) { .pro-lock-dialog { padding: 25px 21px; } }
+
+
+/* NEXUS FINANCE — identidade clara, vibrante e acessível */
+:root {
+  --background: oklch(0.995 0.003 250);
+  --foreground: oklch(0.22 0.035 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.035 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.035 255);
+  --primary: oklch(0.56 0.19 252);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.025 245);
+  --secondary-foreground: oklch(0.3 0.07 250);
+  --muted: oklch(0.97 0.008 250);
+  --muted-foreground: oklch(0.52 0.035 255);
+  --accent: oklch(0.95 0.04 175);
+  --accent-foreground: oklch(0.32 0.1 175);
+  --border: oklch(0.92 0.015 250);
+  --input: oklch(0.92 0.015 250);
+  --ring: oklch(0.65 0.16 250);
+  --chart-1: oklch(0.62 0.2 250);
+  --chart-2: oklch(0.68 0.18 155);
+  --chart-3: oklch(0.72 0.17 55);
+  --chart-4: oklch(0.64 0.2 305);
+  --chart-5: oklch(0.68 0.2 20);
+}
+.dark {
+  --background: oklch(0.995 0.003 250);
+  --foreground: oklch(0.22 0.035 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.035 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.035 255);
+  --primary: oklch(0.56 0.19 252);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.025 245);
+  --secondary-foreground: oklch(0.3 0.07 250);
+  --muted: oklch(0.97 0.008 250);
+  --muted-foreground: oklch(0.52 0.035 255);
+  --accent: oklch(0.95 0.04 175);
+  --accent-foreground: oklch(0.32 0.1 175);
+  --border: oklch(0.92 0.015 250);
+  --input: oklch(0.92 0.015 250);
+  --ring: oklch(0.65 0.16 250);
+  --chart-1: oklch(0.62 0.2 250);
+  --chart-2: oklch(0.68 0.18 155);
+  --chart-3: oklch(0.72 0.17 55);
+  --chart-4: oklch(0.64 0.2 305);
+  --chart-5: oklch(0.68 0.2 20);
+}
+body, .nexus-app, .main-area { background: #fff; }
+.sidebar, .topbar { background: #fff; }
+.page-content { background: linear-gradient(180deg,#fff 0%,#fbfdff 100%); }
+.panel, .metric-card, .summary-card {
+  background-color: #fff;
+  border-color: #e8eef6;
+  box-shadow: 0 5px 22px rgba(35,66,110,.055);
+}
+.dashboard-chart-panel, .dashboard-insights-grid > .panel {
+  border: 1px solid #e4ebf5;
+  box-shadow: 0 12px 34px rgba(42,76,130,.075);
+}
+.metrics-grid > .metric-card:not(.balance-card) {
+  border-top: 3px solid transparent;
+  background-image: linear-gradient(#fff,#fff),linear-gradient(110deg,#39a7f5,#8b7cf6,#35c9a5);
+  background-origin: border-box;
+  background-clip: padding-box,border-box;
+}
+.metrics-grid > .metric-card:nth-child(2) .metric-top svg { color:#2698e8; }
+.metrics-grid > .metric-card:nth-child(3) .metric-top svg { color:#ee8d59; }
+.metrics-grid > .metric-card:nth-child(4) .metric-top svg { color:#8b70df; }
+.summary-card { border:1px solid #e8eef6; transition:transform .25s ease,box-shadow .25s ease; }
+.summary-card:hover { transform:translateY(-3px);box-shadow:0 12px 26px rgba(35,66,110,.1); }
+.dashboard-chart-panel { overflow:hidden; }
+.dashboard-chart-heading h2,.dashboard-insights-grid .panel-heading h2 { color:#172b4d; }
+.dashboard-main-chart { min-height:220px; }
+.dashboard-chart-controls select { background:#f8fbff;border-color:#dce7f5;color:#29496f; }
+.dashboard-chart-foot { color:#647995; }
+.chart-dot-income { background:#18b889;box-shadow:0 0 0 4px #18b88920; }
+.chart-dot-expense { background:#ff9b62;box-shadow:0 0 0 4px #ff9b6220; }
+.dashboard-donut { animation:nexus-chart-rise .85s cubic-bezier(.2,.8,.2,1) both; }
+.dashboard-category-list > div { transition:background .2s ease,transform .2s ease; border-radius:8px; }
+.dashboard-category-list > div:hover { background:#f5f9ff;transform:translateX(3px); }
+.metrics-grid > .metric-card, .dashboard-chart-panel, .dashboard-insights-grid > .panel {
+  animation:nexus-chart-rise .7s cubic-bezier(.2,.8,.2,1) both;
+}
+.metrics-grid > .metric-card:nth-child(2) { animation-delay:80ms; }
+.metrics-grid > .metric-card:nth-child(3) { animation-delay:150ms; }
+.metrics-grid > .metric-card:nth-child(4) { animation-delay:220ms; }
+.dashboard-chart-panel { animation-delay:120ms; }
+.dashboard-insights-grid > .panel:nth-child(1) { animation-delay:180ms; }
+.dashboard-insights-grid > .panel:nth-child(2) { animation-delay:260ms; }
+@keyframes nexus-chart-rise {
+  from { opacity:0;transform:translateY(15px); }
+  to { opacity:1;transform:translateY(0); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .dashboard-donut,.metrics-grid > .metric-card,.dashboard-chart-panel,.dashboard-insights-grid > .panel {
+    animation:none !important;
+  }
+  .summary-card,.dashboard-category-list > div { transition:none; }
+}
