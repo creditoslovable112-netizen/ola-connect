@@ -384,25 +384,103 @@ export function SupabaseTransactions({ showNotice }: { showNotice: Notice }) {
 
 export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice);
-  const paid = data.transactions.filter((item) => item.status === "paid");
-  const income = paid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
-  const expense = paid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
-  const openIncome = data.transactions.filter((item) => item.type === "income" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
-  const openExpense = data.transactions.filter((item) => item.type === "expense" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
-  const exportCsv = () => {
-    const fields = ["transaction_date", "type", "description", "counterparty", "amount", "status", "due_date", "paid_at", "account_id", "company_id"];
-    const escapeCsv = (value: unknown) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
-    const rows = [fields, ...data.transactions.map(item => fields.map(field => (item as unknown as Record<string, unknown>)[field] ?? ""))];
-    const csv = "\\uFEFF" + rows.map(row => row.map(escapeCsv).join(";")).join("\\r\\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    const link = document.createElement("a");
-    link.href = url; link.download = "nexus-finance-relatorio-" + today() + ".csv";
-    document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
-    showNotice("Relatório CSV exportado com os lançamentos disponíveis.");
+  const [monthsBack, setMonthsBack] = useState("6");
+  const paid = data.transactions.filter(item => item.status === "paid");
+  const pending = data.transactions.filter(item => item.status === "pending" || item.status === "overdue");
+  const overdue = pending.filter(item => Boolean(item.due_date && item.due_date < today()));
+  const income = paid.filter(item => item.type === "income").reduce((sum,item)=>sum+Number(item.amount),0);
+  const expense = paid.filter(item => item.type === "expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const overdueAmount = overdue.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
+  const overduePayables = overdue.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const openIncome = pending.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
+  const openExpense = pending.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const opening = data.accounts.reduce((sum,item)=>sum+Number(item.opening_balance),0);
+  const currentBalance = opening + paid.reduce((sum,item)=>sum+(item.type==="income"?1:-1)*Number(item.amount),0);
+  const todayDate = new Date(today()+"T12:00:00");
+  const startMonth = new Date(todayDate.getFullYear(),todayDate.getMonth()-Number(monthsBack)+1,1);
+  const monthKey = (value:string|null) => value ? value.slice(0,7) : "";
+  const monthLabel = (key:string) => {
+    const [year,month] = key.split("-").map(Number);
+    return new Date(year,month-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
   };
-  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" disabled={data.loading || Boolean(data.error)} onClick={exportCsv}><Download size={15}/> Exportar CSV</button></div>
-    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
-    {!data.loading && !data.error && <><section className="summary-grid"><div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Resultado realizado</span><strong>{money(income - expense)}</strong><small>Receitas menos despesas</small></div></section><section className="panel payable-list-panel"><h2>Posição financeira</h2><div className="summary-line"><span>Recebimentos pendentes</span><strong>{money(openIncome)}</strong></div><div className="summary-line"><span>Pagamentos pendentes</span><strong>{money(openExpense)}</strong></div><div className="summary-footer"><span>Contas cadastradas</span><strong>{data.transactions.length}</strong></div><div className="demo-disclaimer"><ShieldCheck size={14}/> Relatório calculado em tempo real a partir do Supabase; sem valores fictícios.</div></section></>}
+  const months = Array.from({length:Number(monthsBack)},(_,index)=>{
+    const date=new Date(todayDate.getFullYear(),todayDate.getMonth()-Number(monthsBack)+1+index,1);
+    return date.toISOString().slice(0,7);
+  });
+  const dre = months.map(key=>{
+    const rows=paid.filter(item=>monthKey(item.paid_at ?? item.transaction_date)===key);
+    const revenue=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
+    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    return {key,label:monthLabel(key),revenue,costs,result:revenue-costs};
+  });
+  const dueForecast = Array.from({length:3},(_,index)=>{
+    const date=new Date(todayDate.getFullYear(),todayDate.getMonth()+index,1);
+    const key=date.toISOString().slice(0,7);
+    const rows=pending.filter(item=>monthKey(item.due_date)===key);
+    const expectedIn=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
+    const expectedOut=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    return {key,label:monthLabel(key),expectedIn,expectedOut,net:expectedIn-expectedOut};
+  });
+  const categorySpending=data.categories.map(category=>{
+    const value=paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&new Date((item.paid_at??item.transaction_date)+"T12:00:00")>=startMonth)
+      .reduce((sum,item)=>sum+Number(item.amount),0);
+    return {name:category.name,value};
+  }).filter(item=>item.value>0).sort((a,b)=>b.value-a.value);
+  const currentMonth=today().slice(0,7);
+  const previousDate=new Date(todayDate.getFullYear(),todayDate.getMonth()-1,1);
+  const previousMonth=previousDate.toISOString().slice(0,7);
+  const deviations=data.categories.map(category=>{
+    const values=(month:string)=>paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&monthKey(item.paid_at??item.transaction_date)===month).reduce((sum,item)=>sum+Number(item.amount),0);
+    const previous=values(previousMonth), current=values(currentMonth);
+    const change=previous>0?(current-previous)/previous:(current>1000?1:0);
+    return {name:category.name,previous,current,change};
+  }).filter(item=>item.current>0&&item.change>=0.5).sort((a,b)=>b.change-a.change).slice(0,5);
+  const exportCsv=()=>{
+    const fields=["transaction_date","type","description","counterparty","amount","status","due_date","paid_at","account_id","company_id","category_id","cost_center_id"];
+    const quote=(value:unknown)=>'"'+String(value??"").replace(/"/g,'""')+'"';
+    const rows=[fields,...data.transactions.map(item=>fields.map(field=>(item as unknown as Record<string,unknown>)[field]??""))];
+    const csv="\\uFEFF"+rows.map(row=>row.map(quote).join(";")).join("\\r\\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    const link=document.createElement("a");link.href=url;link.download="nexus-finance-relatorio-"+today()+".csv";
+    document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    showNotice("Arquivo CSV compatível com Excel exportado.");
+  };
+  return <>
+    <div className="welcome-row"><div><div className="eyebrow">GESTÃO · RELATÓRIOS REAIS</div><h1>Relatórios e análises</h1><p>DRE gerencial, inadimplência, projeção de caixa e variações por categoria.</p></div><div className="welcome-actions"><select aria-label="Período dos relatórios" value={monthsBack} onChange={event=>setMonthsBack(event.target.value)}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select><button className="button-secondary" disabled={data.loading||Boolean(data.error)} onClick={exportCsv}><Download size={15}/> Excel / CSV</button><button className="button-secondary" disabled={data.loading||Boolean(data.error)} onClick={()=>window.print()}>Salvar PDF</button></div></div>
+    <DataState loading={data.loading} error={data.error} retry={()=>void data.reload()}/>
+    {!data.loading&&!data.error&&<>
+      <section className="summary-grid">
+        <div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Pagamentos recebidos</small></div>
+        <div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Pagamentos efetuados</small></div>
+        <div className="summary-card"><span>Resultado realizado</span><strong>{money(income-expense)}</strong><small>Receitas menos despesas</small></div>
+        <div className="summary-card"><span>Saldo calculado</span><strong>{money(currentBalance)}</strong><small>Saldo inicial + movimentações pagas</small></div>
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>DRE gerencial</h2><p>Demonstrativo simplificado por competência de pagamento, usando os lançamentos disponíveis.</p></div></div>
+        <div className="table-scroll"><table className="data-table"><thead><tr><th>Período</th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead><tbody>{dre.map(row=><tr key={row.key}><td>{row.label}</td><td>{money(row.revenue)}</td><td>{money(row.costs)}</td><td><strong>{money(row.result)}</strong></td></tr>)}</tbody></table></div>
+        <div className="demo-disclaimer"><ShieldCheck size={14}/> DRE gerencial simplificada; não substitui escrituração contábil ou demonstrações assinadas por contador.</div>
+      </section>
+      <section className="summary-grid report-alert-grid">
+        <div className="summary-card"><span>Recebíveis vencidos</span><strong>{money(overdueAmount)}</strong><small>{overdue.filter(item=>item.type==="income").length} cobranças em atraso</small></div>
+        <div className="summary-card"><span>Pagamentos vencidos</span><strong>{money(overduePayables)}</strong><small>{overdue.filter(item=>item.type==="expense").length} contas em atraso</small></div>
+        <div className="summary-card"><span>Recebimentos em aberto</span><strong>{money(openIncome)}</strong><small>Inclui vencidos e a vencer</small></div>
+        <div className="summary-card"><span>Pagamentos em aberto</span><strong>{money(openExpense)}</strong><small>Inclui vencidos e a vencer</small></div>
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Projeção de caixa · próximos 3 meses</h2><p>Estimativa baseada somente em lançamentos pendentes com vencimento informado.</p></div></div>
+        <div className="table-scroll"><table className="data-table"><thead><tr><th>Mês</th><th>Entradas previstas</th><th>Saídas previstas</th><th>Saldo do período</th></tr></thead><tbody>{dueForecast.map(row=><tr key={row.key}><td>{row.label}</td><td>{money(row.expectedIn)}</td><td>{money(row.expectedOut)}</td><td><strong>{money(row.net)}</strong></td></tr>)}</tbody></table></div>
+        <div className="summary-footer"><span>Saldo atual + compromissos em aberto</span><strong>{money(currentBalance+openIncome-openExpense)}</strong></div>
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Valores pagos no período selecionado.</p></div></div>
+        {categorySpending.length?categorySpending.map(row=><div className="summary-line" key={row.name}><span>{row.name}</span><strong>{money(row.value)}</strong></div>):<p>Não há despesas categorizadas no período.</p>}
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Alertas de variação</h2><p>Categorias com aumento de pelo menos 50% em relação ao mês anterior. É um alerta estatístico, não uma conclusão automática de fraude.</p></div></div>
+        {deviations.length?deviations.map(row=><div className="summary-line" key={row.name}><span>{row.name}<small> {money(row.previous)} → {money(row.current)}</small></span><strong>+{Math.round(row.change*100)}%</strong></div>):<p>Nenhum aumento relevante foi identificado com os dados disponíveis.</p>}
+      </section>
+      <div className="demo-disclaimer"><ShieldCheck size={14}/> Os indicadores usam somente dados reais acessíveis no workspace e no filtro de empresa. O CSV pode ser aberto no Excel; para PDF, use a opção Salvar PDF e escolha “Salvar como PDF” na impressão do dispositivo.</div>
+    </>}
   </>;
 }
 
