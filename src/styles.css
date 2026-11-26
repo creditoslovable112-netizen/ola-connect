@@ -1891,3 +1891,51 @@ html, body, #root { background: #fff; }
 @media (max-width:760px) {
   .sidebar { box-shadow: 12px 0 34px rgba(20,50,30,.12) !important; }
 }
+
+
+/* NEXUS FINANCE — reforço de contraste e legibilidade */
+:root {
+  --foreground: #17251d;
+  --muted-foreground: #4b5d51;
+  --secondary-foreground: #294a37;
+  --accent-foreground: #24543a;
+  --sidebar-foreground: #20382b;
+}
+body, .nexus-app, .page-content { color: #203329; }
+.nav-label, .eyebrow, .breadcrumb, .breadcrumb span,
+.metric-top, .metric-foot, .metric-caption, .period-label,
+.updated-label, .panel-heading p, .chart-legend,
+.summary-subtitle, .summary-line, .summary-footer,
+.table-head, .transaction-row, .category-cell, .date-cell,
+.due-item, .search-box, .empty-search {
+  color: #53645a !important;
+}
+.nav-item { color: #40564a !important; }
+.nav-label { color: #52675a !important; }
+.workspace-copy small, .profile-copy small,
+.sidebar-promo p, .auth-security,
+.auth-intro p, .auth-form input::placeholder {
+  color: #586b5f !important;
+}
+.metric-value, .metric-value-row strong,
+.summary-total strong, .panel-heading h2,
+.panel h2, .panel h3, .transaction-name strong,
+.welcome-row h1, .coming-soon h1 {
+  color: #172f22 !important;
+}
+.panel-heading p, .metric-foot, .metric-caption,
+.result-note, .summary-subtitle, .transaction-name small {
+  color: #596b60 !important;
+}
+input, select, textarea, .search-box input {
+  color: #203329 !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #66766b !important;
+  opacity: 1;
+}
+button:disabled { color: #68786d; }
+.text-muted-foreground, .text-gray-400, .text-gray-500,
+.text-slate-400, .text-slate-500, .text-neutral-400, .text-neutral-500 {
+  color: #53645a !important;
+}
