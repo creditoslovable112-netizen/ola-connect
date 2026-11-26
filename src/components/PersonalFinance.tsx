@@ -42,10 +42,11 @@ export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}
     supabase.from("personal_financial_accounts").select("id,name,account_type,institution,opening_balance,is_active").eq("is_active",true).order("name"),
     supabase.from("personal_transactions").select("id,account_id,type,description,category,amount,transaction_date,status").order("transaction_date",{ascending:false}).limit(500),
     supabase.from("personal_financings").select("id,name,financing_type,lender,principal_amount,total_amount,monthly_installment,installments_total,installments_paid,monthly_interest_rate,first_due_date,is_active").eq("is_active",true).order("first_due_date"),
-    supabase.from("personal_financing_payments").select("id,financing_id,installment_number,amount,paid_at").order("paid_at",{ascending:false})
+    supabase.from("personal_financing_payments").select("id,financing_id,installment_number,amount,paid_at").order("paid_at",{ascending:false}),
+    (supabase as any).from("personal_financial_goals").select("*").order("target_date",{ascending:true,nullsFirst:false})
    ]);
-   for(const r of [a,e,f,p]) if(r.error) throw r.error;
-   setAccounts((a.data||[]) as Account[]); setEntries((e.data||[]) as Entry[]); setFinancings((f.data||[]) as Financing[]); setPayments((p.data||[]) as Payment[]);
+   for(const r of [a,e,f,p,g]) if(r.error) throw r.error;
+   setAccounts((a.data||[]) as Account[]); setEntries((e.data||[]) as Entry[]); setFinancings((f.data||[]) as Financing[]); setPayments((p.data||[]) as Payment[]); setGoals((g.data||[]) as Goal[]);
   } catch(error) { showNotice(error instanceof Error?error.message:"Não foi possível carregar suas finanças pessoais."); }
   finally {setLoading(false);}
  },[showNotice]);
