@@ -17,7 +17,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Command, CreditCard,
   Download, FileBarChart, FileText, Filter, LayoutDashboard, LifeBuoy,
   Menu, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles,
-  TrendingUp, Wallet, X, Users, Receipt, Landmark, CircleDollarSign, Tags, Network,
+  TrendingUp, Wallet, X, Users, LockKeyhole, Receipt, Landmark, CircleDollarSign, Tags, Network,
   ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut
 } from "lucide-react";
 import {
@@ -109,6 +109,32 @@ function HelpCenter() {
  </section>;
 }
 
+const proFeatureModules = new Set([
+  "Dashboard", "Contas a pagar", "Contas a receber", "Fluxo de caixa",
+  "Transações", "Contas bancárias", "Relatórios", "Categorias e centros de custo",
+  "Clientes", "Fornecedores", "Empresas",
+]);
+
+function ProAccessGate({ onSubscribe }: { onSubscribe: () => void }) {
+  return <section className="pro-access-page">
+    <div className="pro-access-card">
+      <span className="pro-access-icon"><LockKeyhole size={25}/></span>
+      <div className="eyebrow">RECURSO EXCLUSIVO</div>
+      <h1>Desbloqueie o NEXUS PRO</h1>
+      <p>Este módulo fica disponível quando sua assinatura mensal NEXUS PRO estiver ativa e confirmada.</p>
+      <ul>
+        <li>Dashboard e indicadores financeiros</li>
+        <li>Contas a pagar e receber e fluxo de caixa</li>
+        <li>Transações, contas bancárias e importação de extratos</li>
+        <li>Empresas, clientes, fornecedores e centros de custo</li>
+        <li>Relatórios e análises financeiras</li>
+      </ul>
+      <button className="button-primary" onClick={onSubscribe}>Ver assinatura NEXUS PRO <ChevronRight size={16}/></button>
+      <small>R$ 29,90 por mês · A liberação depende da confirmação do pagamento pelo provedor.</small>
+    </div>
+  </section>;
+}
+
 function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:string)=>void}) {
  const [settings,setSettings]=useState({language:"Português (Brasil)",currency:"BRL",timezone:"America/Sao_Paulo",notifications:true});
  useEffect(() => {
@@ -140,6 +166,8 @@ function DashboardPage() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [active, setActive] = useState("Dashboard");
   const [tabLoading, setTabLoading] = useState(true);
+  const [proAccessLoading, setProAccessLoading] = useState(true);
+  const [hasProAccess, setHasProAccess] = useState(false);
   const [period, setPeriod] = useState("Últimos 7 meses");
   const [company, setCompany] = useState("Workspace");
   const [companyOptions, setCompanyOptions] = useState<Array<{id:string;name:string}>>([]);
@@ -172,6 +200,24 @@ function DashboardPage() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
   useEffect(() => { setCookieBanner(!window.localStorage.getItem("nexus-cookie-choice")); }, []);
+  useEffect(() => {
+    let active = true;
+    if (!session?.user.id) {
+      setHasProAccess(false);
+      setProAccessLoading(false);
+      return;
+    }
+    setProAccessLoading(true);
+    void supabase.rpc("has_active_pro_subscription").then(({ data, error }) => {
+      if (!active) return;
+      setHasProAccess(!error && data === true);
+      setProAccessLoading(false);
+    }).catch(() => {
+      if (active) { setHasProAccess(false); setProAccessLoading(false); }
+    });
+    return () => { active = false; };
+  }, [session?.user.id]);
+
   useEffect(() => {
     setTabLoading(true);
     const timeout = window.setTimeout(() => setTabLoading(false), 420);
@@ -294,8 +340,8 @@ function DashboardPage() {
           </div>
         </header>
 
-        <div className="page-content" key={companyScope} aria-busy={tabLoading}>
-          {tabLoading ? <DashboardSkeleton /> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+        <div className="page-content" key={companyScope} aria-busy={tabLoading || (proFeatureModules.has(active) && proAccessLoading)}>
+          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <ProAccessGate onSubscribe={() => setActive("Assinatura")}/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
