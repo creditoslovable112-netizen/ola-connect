@@ -84,7 +84,7 @@ export function FinancialGoals({ showNotice }: { showNotice: Notice }) {
     }
     try {
       const workspaceId = await requireWorkspaceId();
-      const { error } = await (supabase as any).from("financial_goals").update({ current_amount: amount })
+      const { error } = await (supabase as any).from("financial_goals").update({ current_amount: amount, updated_at: new Date().toISOString() })
         .eq("id", goal.id).eq("workspace_id", workspaceId);
       if (error) throw error;
       await load();
