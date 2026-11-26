@@ -82,6 +82,8 @@ const helpArticles = [
  { category:"Primeiros passos", question:"Como começar a usar o NEXUS FINANCE?", answer:"Entre na sua conta, cadastre sua empresa (se houver), configure suas categorias e centros de custo e depois cadastre suas contas bancárias. Em seguida, registre contas a pagar e a receber. O painel apresenta os dados que existem no seu workspace." },
  { category:"Empresas e equipe", question:"Posso gerenciar mais de uma empresa?", answer:"Sim. Cadastre cada empresa no módulo Empresas. Os registros podem ser vinculados a uma empresa específica ou compartilhados no workspace, conforme a função permitir. O seletor superior permite visualizar uma empresa ou o consolidado." },
  { category:"Empresas e equipe", question:"Como convidar alguém para minha equipe?", answer:"Acesse Equipe, informe o e-mail e escolha o papel de acesso. O convite depende da configuração de autenticação e do e-mail do projeto. Usuários existentes podem precisar entrar com o mesmo e-mail para aceitar o convite." },
+ { category:"Pessoa Física", question:"Como funciona a Gestão de Pessoa Física?", answer:"Alterne para Pessoa Física no seletor do menu. Nesse ambiente você cadastra contas pessoais, receitas, despesas e financiamentos. Os dados ficam separados do workspace empresarial e disponíveis enquanto sua assinatura PRO estiver ativa." },
+ { category:"Pessoa Física", question:"Como acompanho parcelas de um financiamento?", answer:"Em Pessoa Física, abra Financiamentos e cadastre o valor financiado, total do contrato, valor da parcela e quantidade. Use Registrar parcela paga para atualizar o histórico. O saldo mostrado é estimado e não substitui o saldo oficial do banco; o aplicativo não realiza o pagamento." },
  { category:"Financeiro", question:"Como cadastrar uma conta bancária?", answer:"Abra Contas bancárias e escolha Nova conta. Informe nome, banco, tipo, empresa, saldo inicial e data correspondente. Agência e número da conta são opcionais. O cadastro manual não conecta o aplicativo ao banco." },
  { category:"Financeiro", question:"Como importar um extrato bancário?", answer:"Na conta desejada, escolha Importar extrato e selecione um arquivo OFX ou CSV de até 15 MB. Confira a prévia e só então confirme. O sistema tenta reconhecer data, descrição e valor; no CSV, use cabeçalhos como Data, Descrição e Valor, ou Débito e Crédito." },
  { category:"Financeiro", question:"A importação altera o saldo da conta?", answer:"Sim. Após confirmar, as movimentações válidas são registradas como efetivadas e entram no saldo calculado. Revise o arquivo antes de confirmar e evite importar um mesmo extrato repetidamente. Lançamentos reconhecidos como duplicados são ignorados." },
@@ -132,6 +134,7 @@ function ProAccessGate({ onSubscribe }: { onSubscribe: () => void }) {
         <li>Transações, contas bancárias e importação de extratos</li>
         <li>Empresas, clientes, fornecedores e centros de custo</li>
         <li>Relatórios e análises financeiras</li>
+        <li>Gestão de Pessoa Física, contas pessoais e financiamentos</li>
       </ul>
       <button className="button-primary" onClick={onSubscribe}>Ver assinatura NEXUS PRO <ChevronRight size={16}/></button>
       <small>R$ 29,90 por mês · A liberação depende da confirmação do pagamento pelo provedor.</small>
@@ -302,7 +305,7 @@ function DashboardPage() {
         <div className="environment-switch" role="group" aria-label="Ambiente financeiro"><button className={environment === "business" ? "environment-active" : ""} onClick={() => { setEnvironment("business"); setActive("Dashboard"); }}><Building2 size={15}/> Empresarial</button><button className={environment === "personal" ? "environment-active" : ""} onClick={() => { setEnvironment("personal"); setActive("Gestão de Pessoa Física"); }}><Users size={15}/> Pessoa Física</button></div>
         <div className="workspace-switch" aria-label="Workspace atual">
           <span className="workspace-avatar"><Building2 size={17}/></span>
-          <span className="workspace-copy"><strong>{company}</strong><small>Workspace compartilhado</small></span>
+          <span className="workspace-copy"><strong>{environment === "personal" ? "Minha vida financeira" : company}</strong><small>{environment === "personal" ? "Ambiente pessoal privado" : "Workspace compartilhado"}</small></span>
         </div>
         <div className="sidebar-scroll">
           {(environment === "business" ? navGroups : [{ title: "FINANÇAS PESSOAIS", items: [{ label: "Gestão de Pessoa Física", icon: Wallet }] }]).map((group) => <div className="nav-group" key={group.title}>
