@@ -1981,3 +1981,67 @@ button:disabled { color: #68786d; }
 .nexus-auth .auth-submit :where(*) {
   color: #fff !important;
 }
+
+
+/* NEXUS — opções com letras pretas e cartões brancos com brilho suave */
+.nexus-app button:not(.button-primary):not(.auth-submit):not(.profile-signout),
+.nexus-app button:not(.button-primary):not(.auth-submit):not(.profile-signout) :where(*) {
+  color: #111 !important;
+}
+.nexus-app .nav-item,
+.nexus-app .nav-item :where(*) {
+  color: #111 !important;
+}
+.nexus-app .button-secondary,
+.nexus-app .select-like,
+.nexus-app .more-button,
+.nexus-app .text-link,
+.nexus-app .company-menu button,
+.nexus-auth button:not(.auth-submit),
+.nexus-auth button:not(.auth-submit) :where(*) {
+  color: #111 !important;
+}
+.nexus-app .button-primary,
+.nexus-app .button-primary :where(*),
+.nexus-auth .auth-submit,
+.nexus-auth .auth-submit :where(*) {
+  color: #fff !important;
+}
+
+@keyframes nexus-card-white-glow {
+  0%, 100% {
+    background-position: 0% 50%;
+    box-shadow: 0 7px 22px rgba(255,255,255,.88), 0 3px 14px rgba(31,91,58,.055);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 10px 30px rgba(255,255,255,1), 0 7px 22px rgba(31,91,58,.10);
+  }
+}
+.nexus-app .panel,
+.nexus-app .metric-card,
+.nexus-app .summary-card,
+.nexus-app .stats-card,
+.nexus-app .dashboard-chart-panel,
+.nexus-app .push-settings,
+.nexus-app .workspace-switch,
+.nexus-app .sidebar-promo,
+.nexus-auth .auth-card {
+  background: linear-gradient(115deg,#fff 0%,#fff 42%,#fbfffc 50%,#fff 58%,#fff 100%) !important;
+  background-size: 220% 220% !important;
+  animation: nexus-card-white-glow 7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexus-app .panel,
+  .nexus-app .metric-card,
+  .nexus-app .summary-card,
+  .nexus-app .stats-card,
+  .nexus-app .dashboard-chart-panel,
+  .nexus-app .push-settings,
+  .nexus-app .workspace-switch,
+  .nexus-app .sidebar-promo,
+  .nexus-auth .auth-card {
+    animation: none !important;
+    background: #fff !important;
+  }
+}
