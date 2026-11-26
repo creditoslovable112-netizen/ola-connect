@@ -263,7 +263,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_active_pro_subscription: { Args: Record<string, never>; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
