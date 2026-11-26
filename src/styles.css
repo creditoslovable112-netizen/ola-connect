@@ -1339,3 +1339,29 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .financial-goals-empty p{margin:0;font-size:12px}
 @media(max-width:800px){.financial-goal-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.financial-goals-list{grid-template-columns:1fr}}
 @media(max-width:480px){.financial-goal-form{padding:14px}.financial-goal-fields{grid-template-columns:1fr}.financial-goal-update{align-items:stretch;flex-direction:column}.financial-goal-update .button-secondary{width:100%}}
+
+
+/* NEXUS VOZ */
+.nexus-voice-fab{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;align-items:center;gap:9px;padding:13px 17px;border:0;border-radius:999px;background:var(--accent,#159b78);color:#fff;font:700 13px inherit;box-shadow:0 8px 28px #0003;cursor:pointer}
+.nexus-voice-fab:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.nexus-voice-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:flex-end;padding:22px;background:#0b122044}
+.nexus-voice-panel{width:min(440px,100%);max-height:min(88dvh,760px);overflow:auto;border:1px solid var(--border);border-radius:22px;background:var(--surface);color:var(--text-primary);box-shadow:0 24px 80px #0003}
+.nexus-voice-heading{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--surface)}
+.nexus-voice-heading>div:nth-child(2){display:grid;gap:3px;flex:1}.nexus-voice-heading small{font-size:11px;color:var(--text-secondary)}
+.nexus-voice-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--accent,#159b78) 14%,transparent);color:var(--accent,#159b78)}
+.nexus-voice-body{display:grid;gap:14px;padding:18px}
+.nexus-voice-mic{display:grid;justify-items:center;gap:6px;padding:20px;border:1px dashed var(--border);border-radius:16px;background:var(--surface-hover);color:var(--text-primary);cursor:pointer}
+.nexus-voice-mic svg{color:var(--accent,#159b78)}.nexus-voice-mic small{font-size:11px;color:var(--text-secondary)}
+.nexus-voice-mic.is-listening{border-color:var(--accent,#159b78);background:color-mix(in srgb,var(--accent,#159b78) 9%,var(--surface))}
+.nexus-voice-label{display:grid;gap:6px;font-size:12px;font-weight:650;color:var(--text-secondary)}
+.nexus-voice-label textarea,.nexus-voice-label select{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text-primary);font:inherit;font-size:13px}
+.nexus-voice-prepare{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.nexus-voice-message{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface-hover);font-size:12px;color:var(--text-primary)}
+.nexus-voice-confirm,.nexus-voice-unsupported{display:grid;gap:10px;padding:14px;border:1px solid var(--border);border-radius:14px}
+.nexus-voice-confirm>p,.nexus-voice-unsupported>p{margin:0;font-size:12px;color:var(--text-secondary)}
+.nexus-voice-action{display:grid;grid-template-columns:1fr auto;gap:4px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
+.nexus-voice-action small{grid-column:1/-1;color:var(--text-secondary)}
+.nexus-voice-confirm-actions{display:flex;gap:8px}.nexus-voice-confirm-actions>*{flex:1;justify-content:center}
+.nexus-voice-safety{margin:0;text-align:center;font-size:10px;color:var(--text-secondary)}
+.nexus-voice-spin{animation:nexus-voice-spin .9s linear infinite}@keyframes nexus-voice-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.nexus-voice-fab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));padding:12px 15px}.nexus-voice-backdrop{align-items:flex-end;justify-content:center;padding:0}.nexus-voice-panel{width:100%;max-height:90dvh;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom)}.nexus-voice-heading{padding:14px 16px}.nexus-voice-body{padding:15px}}
