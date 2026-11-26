@@ -294,6 +294,12 @@ function DashboardPage() {
     window.setTimeout(() => setNotice(""), 2600);
   }, []);
   useEffect(() => {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
+    void navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.warn("NEXUS push service worker registration failed:", error);
+    });
+  }, []);
+  useEffect(() => {
     let mounted = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
