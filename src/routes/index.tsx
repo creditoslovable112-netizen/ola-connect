@@ -165,6 +165,108 @@ function WorkspaceModule({title,showNotice}:{title:string;showNotice:(message:st
 }
 
 
+
+type NexusNotification = { id: string; title: string; message: string; detail: string; tone: "success" | "warning" | "info"; goalId: string };
+function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpenGoals }: { userId: string; enabled: boolean; hasProAccess: boolean; environment: "business" | "personal"; onOpenGoals: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<NexusNotification[]>([]);
+  const [readIds, setReadIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const storageKey = `nexus-notifications-read:${userId}`;
+
+  useEffect(() => {
+    try { setReadIds(JSON.parse(window.localStorage.getItem(storageKey) || "[]") as string[]); }
+    catch { setReadIds([]); }
+  }, [storageKey]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!enabled || !hasProAccess || environment !== "business") { setItems([]); return; }
+    setLoading(true);
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from("financial_goals")
+          .select("id,name,target_amount,current_amount,target_date")
+          .order("target_date", { ascending: true, nullsFirst: false });
+        if (error) throw error;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const generated: NexusNotification[] = (data ?? []).flatMap((goal: any) => {
+          const target = Number(goal.target_amount || 0);
+          const current = Number(goal.current_amount || 0);
+          if (!(target > 0) || current < 0) return [];
+          const remaining = Math.max(0, target - current);
+          const money = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+          const notifications: NexusNotification[] = [];
+          if (remaining > 0) notifications.push({
+            id: `goal-progress:${goal.id}:${Math.round(current * 100)}`,
+            goalId: goal.id, tone: "info", title: `Sua meta “${goal.name}” está avançando`,
+            message: `Faltam ${money(remaining)} para alcançar sua meta.`,
+            detail: `${money(current)} de ${money(target)} acumulados.`
+          });
+          else notifications.push({
+            id: `goal-complete:${goal.id}`, goalId: goal.id, tone: "success",
+            title: `Meta concluída: ${goal.name}`, message: "Parabéns! Você alcançou o valor planejado.",
+            detail: `Objetivo de ${money(target)} atingido.`
+          });
+          if (goal.target_date) {
+            const due = new Date(`${goal.target_date}T12:00:00`);
+            const days = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+            if (remaining > 0 && days >= 0 && days <= 30) notifications.push({
+              id: `goal-deadline:${goal.id}:${goal.target_date}`, goalId: goal.id,
+              tone: days <= 7 ? "warning" : "info", title: `Prazo da meta “${goal.name}”`,
+              message: days === 0 ? "O prazo definido é hoje." : `Faltam ${days} dias para o prazo definido.`,
+              detail: `Ainda faltam ${money(remaining)} para alcançar o objetivo.`
+            });
+            if (remaining > 0 && days < 0) notifications.push({
+              id: `goal-overdue:${goal.id}:${goal.target_date}`, goalId: goal.id, tone: "warning",
+              title: `Revise o prazo da meta “${goal.name}”`,
+              message: "A data planejada já passou e a meta ainda não foi concluída.",
+              detail: `Faltam ${money(remaining)} para alcançar o objetivo.`
+            });
+          }
+          return notifications;
+        });
+        if (alive) setItems(generated);
+      } catch {
+        if (alive) setItems([]);
+      } finally { if (alive) setLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [enabled, hasProAccess, environment, userId]);
+
+  const unread = items.filter(item => !readIds.includes(item.id)).length;
+  const markAllRead = () => {
+    const next = items.map(item => item.id);
+    setReadIds(next);
+    window.localStorage.setItem(storageKey, JSON.stringify(next));
+  };
+  const markRead = (id: string) => {
+    const next = Array.from(new Set([...readIds, id]));
+    setReadIds(next);
+    window.localStorage.setItem(storageKey, JSON.stringify(next));
+  };
+
+  return <div className="nexus-notification-wrap">
+    <button className="icon-button notification-button" aria-label={`Notificações, ${unread} não lidas`} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+      <Bell size={18}/>{unread > 0 && <i/>}<span className="notification-count">{unread > 9 ? "9+" : unread}</span>
+    </button>
+    {open && <>
+      <button className="notification-dismiss-layer" aria-label="Fechar notificações" onClick={() => setOpen(false)}/>
+      <section className="nexus-notification-panel" aria-label="Central de notificações">
+        <header><div><strong>Notificações</strong><small>{unread ? `${unread} não lidas` : "Tudo em dia"}</small></div><button className="notification-mark-read" onClick={markAllRead} disabled={!unread}>Marcar todas como lidas</button></header>
+        <div className="nexus-notification-list">
+          {loading ? <p className="notification-empty">Buscando atualizações das suas metas…</p> : !enabled ? <p className="notification-empty">Ative as notificações nas configurações para receber lembretes.</p> : environment === "personal" ? <p className="notification-empty">As notificações das metas pessoais serão adicionadas quando esse módulo disponibilizar metas próprias.</p> : !hasProAccess ? <p className="notification-empty">Ative o NEXUS PRO para acompanhar notificações das suas metas financeiras.</p> : items.length === 0 ? <p className="notification-empty">Nenhuma novidade nas suas metas financeiras.</p> : items.map(item => <article className={`nexus-notification-item ${item.tone} ${readIds.includes(item.id) ? "is-read" : ""}`} key={item.id}>
+            <span className="notification-item-icon">{item.tone === "success" ? <Check size={16}/> : item.tone === "warning" ? <Clock3 size={16}/> : <Target size={16}/>}</span>
+            <button className="notification-item-copy" onClick={() => { markRead(item.id); setOpen(false); onOpenGoals(); }}><strong>{item.title}</strong><span>{item.message}</span><small>{item.detail}</small></button>
+            {!readIds.includes(item.id) && <i className="notification-unread-dot"/>}
+          </article>)}
+        </div>
+        <footer><button onClick={() => { setOpen(false); onOpenGoals(); }}>Ver minhas metas <ChevronRight size={15}/></button></footer>
+      </section>
+    </>}
+  </div>;
+}
+
 function DashboardPage() {
   const [environment, setEnvironment] = useState<"business" | "personal">("business");
   const [session, setSession] = useState<Session | null>(null);
@@ -186,6 +288,7 @@ function DashboardPage() {
   const [cookieBanner, setCookieBanner] = useState(false);
   const [legalStatusLoading, setLegalStatusLoading] = useState(false);
   const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const showNotice = useCallback((message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 2600);
@@ -341,7 +444,7 @@ function DashboardPage() {
             {environment === "business" && companyOptions.length > 0 && <label className="company-scope-control"><Building2 size={15}/><select aria-label="Filtrar dados por empresa" value={companyScope} onChange={(e)=>{const value=e.target.value;setCompanyScope(value);window.localStorage.setItem("nexus-active-company",value);window.location.reload();}}><option value="all">Todas as empresas · Consolidado</option>{companyOptions.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
             <button className="icon-button help-button" aria-label="Ajuda" onClick={() => setActive("Central de ajuda")}><CircleHelp size={18}/></button>
-            <button className="icon-button notification-button" aria-label="Notificações" onClick={() => showNotice("Central de notificações ainda não está disponível.")}><Bell size={18}/><i/></button>
+            <NotificationCenter userId={session.user.id} enabled={notificationsEnabled} hasProAccess={hasProAccess} environment={environment} onOpenGoals={() => setActive("Metas financeiras")}/>
             <div className="top-avatar" aria-label="Perfil da conta">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
