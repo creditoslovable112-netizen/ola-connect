@@ -31,7 +31,7 @@ export function FinancialGoals({ showNotice }: { showNotice: Notice }) {
     setLoading(true);
     try {
       const workspaceId = await requireWorkspaceId();
-      let query = (supabase as any).from("financial_goals").select("id,name,target_amount,current_amount,target_date,notes,company_id")
+      let query = supabase.from("financial_goals").select("id,name,target_amount,current_amount,target_date,notes,company_id")
         .eq("workspace_id", workspaceId).order("target_date", { ascending: true, nullsFirst: false });
       const companyId = getActiveCompanyId();
       if (companyId) query = query.or(`company_id.eq.${companyId},company_id.is.null`);
@@ -62,7 +62,7 @@ export function FinancialGoals({ showNotice }: { showNotice: Notice }) {
       const [{ data: userData, error: userError }, workspaceId] = await Promise.all([supabase.auth.getUser(), requireWorkspaceId()]);
       if (userError) throw userError;
       if (!userData.user) throw new Error("Entre na sua conta para cadastrar uma meta.");
-      const { error } = await (supabase as any).from("financial_goals").insert({
+      const { error } = await supabase.from("financial_goals").insert({
         workspace_id: workspaceId, user_id: userData.user.id, company_id: getActiveCompanyId(),
         name: name.trim(), target_amount: target, current_amount: current,
         target_date: targetDate || null, notes: notes.trim() || null,
@@ -84,7 +84,7 @@ export function FinancialGoals({ showNotice }: { showNotice: Notice }) {
     }
     try {
       const workspaceId = await requireWorkspaceId();
-      const { error } = await (supabase as any).from("financial_goals").update({ current_amount: amount, updated_at: new Date().toISOString() })
+      const { error } = await supabase.from("financial_goals").update({ current_amount: amount, updated_at: new Date().toISOString() })
         .eq("id", goal.id).eq("workspace_id", workspaceId);
       if (error) throw error;
       await load();
@@ -98,7 +98,7 @@ export function FinancialGoals({ showNotice }: { showNotice: Notice }) {
     if (!window.confirm(`Excluir a meta "${goal.name}"?`)) return;
     try {
       const workspaceId = await requireWorkspaceId();
-      const { error } = await (supabase as any).from("financial_goals").delete().eq("id", goal.id).eq("workspace_id", workspaceId);
+      const { error } = await supabase.from("financial_goals").delete().eq("id", goal.id).eq("workspace_id", workspaceId);
       if (error) throw error;
       await load();
       showNotice("Meta excluída.");
