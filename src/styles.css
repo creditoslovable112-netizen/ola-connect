@@ -1486,3 +1486,140 @@ button:disabled { cursor:not-allowed; opacity:.58; }
     animation:none !important;
   }
 }
+
+
+/* NEXUS FINANCE — refinamento responsivo para desktop e mobile */
+.nexus-app {
+  background: #f5f8f7;
+  color: #202b3b;
+}
+.sidebar {
+  width: 264px;
+  padding: 24px 16px 16px;
+  border-right-color: #e8eeeb;
+  box-shadow: 8px 0 28px rgba(26, 55, 45, .025);
+}
+.main-area {
+  margin-left: 264px;
+  width: calc(100% - 264px);
+  min-width: 0;
+}
+.topbar {
+  min-height: 72px;
+  padding-inline: clamp(20px, 3vw, 44px);
+  border-bottom-color: #e8eeeb;
+  box-shadow: 0 3px 16px rgba(27, 48, 40, .025);
+}
+.page-content {
+  width: 100%;
+  max-width: 1600px;
+  padding: clamp(24px, 3vw, 42px) clamp(20px, 3vw, 46px) 38px;
+}
+.panel, .metric-card, .summary-card, .stats-card, .dashboard-chart-panel {
+  border-radius: 18px;
+  border-color: #e8eeeb;
+  box-shadow: 0 5px 20px rgba(29, 58, 47, .035);
+}
+.nav-item {
+  min-height: 42px;
+  border-radius: 11px;
+  font-size: 12.5px;
+}
+.nav-active {
+  box-shadow: inset 3px 0 0 #159b78;
+}
+.workspace-switch {
+  border-color: #e8eeeb;
+  background: linear-gradient(135deg, #fbfdfc, #f5f9f7);
+}
+.search-box, .company-scope-control {
+  border-radius: 11px;
+  background: #fbfdfc;
+}
+.button-primary, .button-secondary {
+  min-height: 42px;
+  border-radius: 11px;
+}
+input, select, textarea {
+  max-width: 100%;
+}
+@media (min-width: 1500px) {
+  .sidebar { width: 278px; }
+  .main-area { margin-left: 278px; width: calc(100% - 278px); }
+  .page-content { padding-inline: 48px; }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .sidebar { width: 232px; padding-inline: 12px; }
+  .main-area { margin-left: 232px; width: calc(100% - 232px); }
+  .topbar { padding-inline: 20px; }
+  .page-content { padding: 24px 20px 32px; }
+  .topbar-actions { gap: 8px; }
+  .topbar-actions .search-box { width: 175px; }
+}
+@media (max-width: 760px) {
+  .sidebar { width: min(330px, 88vw); max-width: calc(100vw - 34px); }
+  .main-area { margin: 0; width: 100%; }
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    padding: 9px 12px;
+    gap: 8px;
+  }
+  .topbar-left { flex: 1 1 auto; min-width: 0; }
+  .topbar-actions { flex: 0 0 auto; gap: 4px; }
+  .topbar-actions .search-box { width: 40px; height: 40px; padding: 0; justify-content: center; border: 0; background: #f3f7f5; }
+  .topbar-actions .search-box input, .topbar-actions .search-box kbd { display: none; }
+  .topbar-actions .icon-button { width: 38px; height: 40px; }
+  .topbar-actions .help-button { display: none; }
+  .topbar-actions .notification-button { display: none; }
+  .top-avatar { width: 32px; height: 32px; flex-basis: 32px; }
+  .breadcrumb { font-size: 11px; }
+  .breadcrumb strong { max-width: 42vw; }
+  .page-content { padding: 20px 14px calc(30px + env(safe-area-inset-bottom)); }
+  .welcome-row { gap: 12px; }
+  .welcome-row h1 { font-size: clamp(23px, 6.2vw, 29px); letter-spacing: -.7px; }
+  .welcome-row p { font-size: 13px; }
+  .welcome-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .welcome-actions > button { width: 100%; min-width: 0; min-height: 46px; }
+  .summary-grid, .payable-summary-grid, .personal-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-card, .summary-card, .stats-card { padding: 14px 12px; }
+  .panel { padding: 15px 13px; }
+  .panel-heading { flex-direction: row; align-items: center; }
+  .dashboard-chart-panel { overflow: hidden; }
+  .dashboard-toolbar, .payable-toolbar { align-items: stretch; }
+  .dashboard-toolbar > *, .payable-toolbar > * { flex: 1 1 140px; }
+  .company-scope-control { max-width: min(48vw, 210px); padding-inline: 8px; }
+  .company-scope-control select { min-width: 0; max-width: 100%; font-size: 10px; }
+  .toast { left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); width: auto; max-width: none; }
+}
+@media (max-width: 420px) {
+  .topbar { padding-inline: 9px; }
+  .mobile-menu { width: 38px; flex-basis: 38px; }
+  .breadcrumb span, .breadcrumb > svg { display: none; }
+  .breadcrumb strong { max-width: 38vw; font-size: 10px; }
+  .topbar-actions .search-box { display: none; }
+  .top-avatar { display: none; }
+  .page-content { padding-inline: 11px; }
+  .welcome-actions { grid-template-columns: 1fr; }
+  .summary-grid, .payable-summary-grid { gap: 8px; }
+  .metric-card, .summary-card, .stats-card { padding: 12px 10px; }
+  .metric-value { font-size: 19px; }
+  .panel { border-radius: 15px; }
+  .panel-heading { align-items: flex-start; }
+  .company-scope-control { max-width: 54vw; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav-item, .panel, .metric-card, .summary-card, .stats-card {
+    transition: box-shadow .2s ease, border-color .2s ease, background-color .2s ease, transform .2s ease;
+  }
+  @media (hover: hover) and (min-width: 761px) {
+    .panel:hover, .metric-card:hover, .summary-card:hover, .stats-card:hover {
+      border-color: #dce9e2;
+      box-shadow: 0 10px 28px rgba(29, 58, 47, .07);
+      transform: translateY(-2px);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .nav-item, .panel, .metric-card, .summary-card, .stats-card { transition: none !important; }
+}
