@@ -1432,3 +1432,17 @@ button:disabled { cursor:not-allowed; opacity:.58; }
 .personal-payment-entry button{min-height:42px;display:flex;align-items:center;gap:7px}
 @media(max-width:900px){.personal-card-columns{grid-template-columns:1fr}}
 @media(max-width:520px){.personal-card-metrics{grid-template-columns:1fr 1fr}.personal-payment-entry{align-items:stretch;flex-direction:column}.personal-payment-entry button{justify-content:center}.personal-month-select{align-items:flex-start;flex-direction:column}.personal-month-select input{width:100%}}
+
+
+/* Personal budgets and financing calculator */
+.personal-budget-item{display:flex;flex-direction:column;gap:9px;padding:13px 0;border-bottom:1px solid var(--border,#e5e7eb)}
+.personal-budget-item:last-child{border-bottom:0}
+.personal-budget-item>small{color:var(--muted-foreground,#64748b);font-size:12px}
+.personal-progress i.over-budget{background:#dc2626}
+.personal-simulation-table{width:100%;overflow-x:auto}
+.personal-simulation-table table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.personal-simulation-table th,.personal-simulation-table td{padding:9px 7px;text-align:right;border-bottom:1px solid var(--border,#e5e7eb)}
+.personal-simulation-table th:first-child,.personal-simulation-table td:first-child{text-align:left}
+.personal-simulation-table th{color:var(--muted-foreground,#64748b);font-weight:600}
+.personal-form .personal-disclaimer{display:flex;align-items:flex-start;gap:6px}
+@media(max-width:520px){.personal-simulation-table{margin-right:-4px;width:calc(100% + 8px)}.personal-simulation-table table{font-size:11px}.personal-simulation-table th,.personal-simulation-table td{padding:8px 5px}}
