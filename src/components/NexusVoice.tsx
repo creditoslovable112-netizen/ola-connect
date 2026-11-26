@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, LoaderCircle, Mic, MicOff, Send, Sparkles, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { createTransaction, listCategories, listCompanies, listFinancialAccounts, type Category, type Company, type FinancialAccount } from "../lib/finance-data";
+import { createTransaction, getActiveCompanyId, listCategories, listCompanies, listFinancialAccounts, requireWorkspaceId, type Category, type Company, type FinancialAccount } from "../lib/finance-data";
 
-type VoiceAction = { type: "expense" | "income"; description: string; amount: number; counterparty: string | null; status: "paid" | "pending"; category_name: string | null };
+type VoiceAction = { type: "expense" | "income" | "goal_contribution"; description: string; amount: number; counterparty: string | null; status: "paid" | "pending"; category_name: string | null; goal_name: string | null };
+type VoiceGoal = { id: string; name: string; target_amount: number; current_amount: number; company_id: string | null };
 type VoicePlan = { supported: boolean; clarification: string | null; actions: VoiceAction[] };
 type SpeechRecognitionAlternativeLike = { transcript: string };
 type SpeechRecognitionResultLike = { 0: SpeechRecognitionAlternativeLike };
@@ -110,7 +111,7 @@ export function NexusVoice() {
           notes: "Lançamento criado pelo NEXUS VOZ após confirmação do usuário.",
         });
       }
-      setMessage(plan.actions.length === 1 ? "Lançamento salvo com sucesso." : plan.actions.length + " lançamentos salvos com sucesso.");
+      setMessage(plan.actions.length === 1 ? (goalActions.length ? "Valor acrescentado à meta financeira." : "Lançamento salvo com sucesso.") : plan.actions.length + " ações concluídas com sucesso.");
       setPlan(null); setText("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível salvar os lançamentos.");
@@ -130,10 +131,10 @@ export function NexusVoice() {
           {plan?.supported && plan.actions.length > 0 && <div className="nexus-voice-confirm">
             <strong>Confira antes de confirmar</strong>
             <p>O NEXUS VOZ ainda não salvou nada. Revise os lançamentos abaixo.</p>
-            {plan.actions.map((action, index) => <div className="nexus-voice-action" key={index}><span>{action.type === "expense" ? "Despesa" : "Receita"} · {action.description}</span><strong>{money(action.amount)}</strong><small>{action.status === "paid" ? "Marcada como paga" : "Pendente"}{action.counterparty ? " · " + action.counterparty : ""}</small></div>)}
+            {plan.actions.map((action, index) => <div className="nexus-voice-action" key={index}><span>{action.type === "expense" ? "Despesa" : action.type === "income" ? "Receita" : "Reserva para meta"} · {action.type === "goal_contribution" ? (action.goal_name || "Meta a selecionar") : action.description}</span><strong>{money(action.amount)}</strong><small>{action.type === "goal_contribution" ? "Será somado ao valor acumulado após confirmação" : action.status === "paid" ? "Marcada como paga" : "Pendente"}{action.counterparty ? " · " + action.counterparty : ""}</small></div>)}
             <label className="nexus-voice-label">Conta financeira<select value={accountId} onChange={(event) => setAccountId(event.target.value)}><option value="">Selecione uma conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            {companies.length > 0 && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
-            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || !accountId || (companies.length > 0 && !companyId)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
+            {companies.length > 0 && hasTransactions && <label className="nexus-voice-label">Empresa<select value={companyId} onChange={(event) => setCompanyId(event.target.value)}><option value="">Selecione uma empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}\n            {goalActions.length > 0 && <label className="nexus-voice-label">Meta financeira<select value={goalId} onChange={(event) => setGoalId(event.target.value)}><option value="">Selecione uma meta</option>{goals.map((item) => <option key={item.id} value={item.id}>{item.name} · {money(Number(item.current_amount))} de {money(Number(item.target_amount))}</option>)}</select></label>}
+            <div className="nexus-voice-confirm-actions"><button className="button-secondary" disabled={busy} onClick={() => setPlan(null)}>Cancelar</button><button className="button-primary" disabled={busy || (hasTransactions && !accountId) || (hasTransactions && companies.length > 0 && !companyId) || (goalActions.length > 0 && !goalId)} onClick={() => void confirm()}><Check size={16}/> Confirmar e salvar</button></div>
           </div>}
           {plan && !plan.supported && <div className="nexus-voice-unsupported"><strong>Preciso de mais informações</strong><p>{plan.clarification || "Esse pedido ainda não pode ser executado automaticamente."}</p></div>}
           <p className="nexus-voice-safety">Nenhum dado é alterado antes de você tocar em “Confirmar e salvar”.</p>
