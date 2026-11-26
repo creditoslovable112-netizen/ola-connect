@@ -1684,3 +1684,38 @@ input, select, textarea {
   .push-settings-actions { display: grid; grid-template-columns: 1fr; }
   .push-settings-actions button { width: 100%; }
 }
+
+
+/* NEXUS FINANCE — módulos avançados */
+.advanced-management { display: grid; gap: 18px; min-width: 0; }
+.advanced-filter { display: flex; align-items: end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.advanced-filter label { display: grid; gap: 7px; min-width: min(100%, 260px); font-weight: 600; }
+.advanced-filter select { min-height: 42px; border: 1px solid var(--border, #dfe5e2); border-radius: 10px; padding: 8px 12px; background: var(--background, #fff); color: var(--foreground, #17211d); }
+.advanced-filter small { color: var(--muted-foreground, #68756f); }
+.advanced-panel { min-width: 0; overflow: hidden; }
+.advanced-panel .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.advanced-panel .panel-heading h2 { margin: 0; }
+.advanced-panel .panel-heading p { margin: 5px 0 0; color: var(--muted-foreground, #68756f); font-size: 13px; }
+.advanced-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; margin: 12px 0 18px; border: 1px solid var(--border, #dfe5e2); border-radius: 12px; background: var(--card, #fff); }
+.advanced-form label { display: grid; gap: 6px; min-width: 0; font-size: 13px; font-weight: 600; }
+.advanced-form input, .advanced-form select, .advanced-form textarea { width: 100%; min-width: 0; min-height: 40px; border: 1px solid var(--border, #dfe5e2); border-radius: 9px; padding: 8px 10px; background: var(--background, #fff); color: var(--foreground, #17211d); }
+.advanced-form textarea { min-height: 76px; resize: vertical; }
+.advanced-form .form-actions { display: flex; justify-content: flex-end; gap: 8px; grid-column: 1 / -1; }
+.advanced-panel .table-scroll { overflow-x: auto; width: 100%; }
+.advanced-panel .data-table { width: 100%; min-width: 680px; border-collapse: collapse; }
+.advanced-panel .data-table th, .advanced-panel .data-table td { padding: 11px 12px; border-bottom: 1px solid var(--border, #e7ece9); text-align: left; vertical-align: middle; font-size: 13px; }
+.advanced-panel .data-table th { color: var(--muted-foreground, #68756f); font-weight: 700; white-space: nowrap; }
+.advanced-panel .data-table td strong, .advanced-panel .data-table td small { display: block; }
+.advanced-panel .data-table td small { margin-top: 3px; color: var(--muted-foreground, #68756f); font-size: 11px; }
+.advanced-management .personal-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.advanced-management .personal-metrics article { min-width: 0; padding: 16px; border: 1px solid var(--border, #e2e9e5); border-radius: 14px; background: var(--card, #fff); display: grid; gap: 7px; }
+.advanced-management .personal-metrics article span { color: var(--muted-foreground, #68756f); font-size: 12px; }
+.advanced-management .personal-metrics article strong { font-size: clamp(18px, 2vw, 25px); overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .advanced-form { grid-template-columns: 1fr; padding: 12px; }
+  .advanced-management .personal-metrics { grid-template-columns: 1fr; }
+  .advanced-filter { align-items: stretch; }
+  .advanced-filter label { min-width: 100%; }
+  .advanced-panel .panel-heading { align-items: flex-start; }
+  .advanced-panel .panel-heading > button { width: 100%; justify-content: center; }
+}
