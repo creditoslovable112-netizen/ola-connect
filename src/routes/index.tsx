@@ -19,7 +19,7 @@ import {
   Download, FileBarChart, FileText, Filter, LayoutDashboard, LifeBuoy,
   Menu, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles,
   TrendingUp, Wallet, X, Users, LockKeyhole, Receipt, Landmark, CircleDollarSign, Tags, Network,
-  ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut
+  ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut, Target
 } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
