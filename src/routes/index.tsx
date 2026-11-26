@@ -216,7 +216,7 @@ function DashboardPage() {
       setProAccessLoading(false);
     });
     return () => { active = false; };
-  }, [session?.user.id]);
+  }, [session?.user.id, active]);
 
   useEffect(() => {
     setTabLoading(true);
