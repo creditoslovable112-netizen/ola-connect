@@ -1939,3 +1939,25 @@ button:disabled { color: #68786d; }
 .text-slate-400, .text-slate-500, .text-neutral-400, .text-neutral-500 {
   color: #53645a !important;
 }
+
+
+/* NEXUS FINANCE — padronizar a cor de todos os textos pelo tom do “BEM-VINDO AO NEXUS” */
+.nexus-app :where(h1,h2,h3,h4,h5,h6,p,span,strong,b,small,label,legend,a,li,th,td,
+  .nav-item,.nav-label,.breadcrumb,.eyebrow,.metric-top,.metric-value,
+  .metric-foot,.metric-caption,.panel-heading,.transaction-name,.category-cell,
+  .date-cell,.summary-line,.summary-footer,.summary-subtitle,.chart-legend,
+  .period-label,.updated-label,.text-link,.workspace-copy,.profile-copy,
+  .sidebar-promo,.due-item,.empty-search) {
+  color: #28835b !important;
+}
+.nexus-app input, .nexus-app select, .nexus-app textarea,
+.nexus-app input::placeholder, .nexus-app textarea::placeholder {
+  color: #28835b !important;
+}
+.nexus-app .button-primary, .nexus-app .auth-submit,
+.nexus-app .button-primary :where(*), .nexus-app .auth-submit :where(*) {
+  color: #fff !important;
+}
+.nexus-app .nav-active, .nexus-app .nav-active :where(*) {
+  color: #28835b !important;
+}
