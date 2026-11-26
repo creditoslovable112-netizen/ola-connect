@@ -1,0 +1,577 @@
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, FileUp, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
+import { supabase } from "../lib/supabase";
+import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
+import {
+  createCategory, createCostCenter, updateCategory, updateCostCenter, createFinancialAccount, createTransaction, importBankStatementRows, listBankStatementImports, requireWorkspaceId,
+  listCategories, listCostCenters, listFinancialAccounts, listTransactions,
+  updateTransaction, listBusinessContacts, createBusinessContact, listCompanies, createCompany,
+  listSupplierCompanyLinks, saveSupplierCompanyLinks, listSupplierTransactions,
+  listSupplierDocuments, uploadSupplierDocument, createSupplierDocumentUrl,
+  listCustomerCompanyLinks, saveCustomerCompanyLinks, listCustomerTransactions,
+  listCustomerDocuments, uploadCustomerDocument, createCustomerDocumentUrl,
+  type BusinessContact, type Company, type Category, type CostCenter, type FinancialAccount, type Transaction,
+} from "../lib/finance-data";
+import { parseCsv, parseOfx, type ParsedBankStatementRow } from "../lib/bank-statements";
+
+type Notice = (message: string) => void;
+const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dateLabel = (value: string | null) => value ? new Date(value + "T12:00:00").toLocaleDateString("pt-BR") : "—";
+const today = () => new Date().toISOString().slice(0, 10);
+const statusLabel = (item: Transaction) => item.status === "paid" ? "Pago" : item.status === "cancelled" ? "Cancelado" : item.status === "overdue" || (item.due_date && item.due_date < today()) ? "Vencida" : "Pendente";
+
+function useFinanceData(notice: Notice) {
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [centers, setCenters] = useState<CostCenter[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [suppliers, setSuppliers] = useState<BusinessContact[]>([]);
+  const [supplierCompanyLinks, setSupplierCompanyLinks] = useState<{ supplier_id: string; company_id: string }[]>([]);
+  const [customers, setCustomers] = useState<BusinessContact[]>([]);
+  const [customerCompanyLinks, setCustomerCompanyLinks] = useState<{ customer_id: string; company_id: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const reload = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const [a, c, cc, t, co, su, sl, cu, cl] = await Promise.all([listFinancialAccounts(), listCategories(), listCostCenters(), listTransactions(), listCompanies(), listBusinessContacts("supplier", true), listSupplierCompanyLinks(), listBusinessContacts("customer", true), listCustomerCompanyLinks()]);
+      setAccounts(a); setCategories(c); setCenters(cc); setTransactions(t); setCompanies(co); setSuppliers(su); setSupplierCompanyLinks(sl); setCustomers(cu); setCustomerCompanyLinks(cl as { customer_id: string; company_id: string }[]);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Não foi possível carregar os dados.";
+      setError(message);
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => {
+    void reload();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    void requireWorkspaceId().then((workspaceId) => {
+      if (cancelled) return;
+      channel = supabase.channel("nexus-finance-" + workspaceId)
+        .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "financial_accounts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "categories", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "cost_centers", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "companies", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .on("postgres_changes", { event: "*", schema: "public", table: "business_contacts", filter: "workspace_id=eq." + workspaceId }, () => void reload())
+        .subscribe();
+    }).catch(() => undefined);
+    return () => { cancelled = true; if (channel) void supabase.removeChannel(channel); };
+  }, [reload]);
+  return { accounts, categories, centers, transactions, companies, suppliers, supplierCompanyLinks, customers, customerCompanyLinks, loading, error, reload };
+}
+
+function DataState({ loading, error, retry }: { loading: boolean; error: string; retry: () => void }) {
+  if (loading) return <div className="panel"><p>Carregando dados do Supabase…</p></div>;
+  if (error) return <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={retry}><RefreshCw size={15}/> Tentar novamente</button></div>;
+  return null;
+}
+
+function TransactionForm({ type, accounts, categories, centers, companies, suppliers, supplierCompanyLinks, customers, customerCompanyLinks, onClose, onSaved, notice }: {
+  type: "income" | "expense"; accounts: FinancialAccount[]; categories: Category[]; centers: CostCenter[]; companies: Company[]; suppliers: BusinessContact[]; supplierCompanyLinks: { supplier_id: string; company_id: string }[]; customers: BusinessContact[]; customerCompanyLinks: { customer_id: string; company_id: string }[];
+  onClose: () => void; onSaved: () => Promise<void>; notice: Notice;
+}) {
+  const [description, setDescription] = useState("");
+  const [counterparty, setCounterparty] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [due, setDue] = useState(today());
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState("");
+  const [centerId, setCenterId] = useState("");
+  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? ((window.localStorage.getItem("nexus-active-company") || "") === "all" ? "" : window.localStorage.getItem("nexus-active-company") || "") : "");
+  const [saving, setSaving] = useState(false);
+  const options = categories.filter((item) => item.type === type && item.is_active !== false && (!item.company_id || item.company_id === companyId));
+  const availableCenters = centers.filter((item) => item.is_active !== false && (!item.company_id || item.company_id === companyId));
+  const availableSuppliers = suppliers.filter(item => !companyId || supplierCompanyLinks.some(link => link.supplier_id === item.id && link.company_id === companyId));
+  const availableCustomers = customers.filter(item => !companyId || customerCompanyLinks.some(link => link.customer_id === item.id && link.company_id === companyId));
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (companies.length > 0 && (!companyId || companyId === "all")) { notice("Selecione uma empresa para vincular este lançamento."); return; }
+    if (!accountId) { notice("Cadastre uma conta financeira antes de lançar movimentações."); return; }
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) { notice("Informe um valor maior que zero."); return; }
+    setSaving(true);
+    try {
+      await createTransaction({ account_id: accountId, category_id: categoryId || null, cost_center_id: centerId || null, supplier_id: type === "expense" ? supplierId || null : null, customer_id: type === "income" ? customerId || null : null,
+        company_id: companyId && companyId !== "all" ? companyId : null,
+        type, description: description.trim(), counterparty: counterparty.trim() || null, amount: value,
+        status: "pending", transaction_date: today(), due_date: due, notes: null });
+      await onSaved(); onClose(); notice(type === "expense" ? "Conta a pagar salva no Supabase." : "Conta a receber salva no Supabase.");
+    } catch (e) { notice(e instanceof Error ? e.message : "Falha ao salvar movimentação."); }
+    finally { setSaving(false); }
+  };
+  return <div className="modal-backdrop" onClick={onClose}><form className="payable-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+    <div className="modal-heading"><div><h2>{type === "expense" ? "Nova conta a pagar" : "Nova conta a receber"}</h2><p>O registro será salvo na sua conta do Supabase</p></div><button type="button" className="icon-button" onClick={onClose}>×</button></div>
+    <label>Empresa<select required={companies.length > 0} value={companyId} onChange={(e) => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{companies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label>Descrição<input required value={description} onChange={(e) => setDescription(e.target.value)} maxLength={160}/></label>
+    <label>{type === "expense" ? "Fornecedor cadastrado" : "Cliente"}{type === "expense" ? <select value={supplierId} onChange={(e) => { setSupplierId(e.target.value); const selected = suppliers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{suppliers.filter((item) => !companyId || supplierCompanyLinks.some((link) => link.supplier_id === item.id && link.company_id === companyId)).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select> : <select value={customerId} onChange={(e) => { setCustomerId(e.target.value); const selected = customers.find((item) => item.id === e.target.value); if (selected) setCounterparty(selected.name); }}><option value="">Sem vínculo com cadastro</option>{availableCustomers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}</label>
+    <div className="modal-fields"><label>Valor (R$)<input required type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}/></label><label>Vencimento<input required type="date" value={due} onChange={(e) => setDue(e.target.value)}/></label></div>
+    <label>Conta financeira<select required value={accountId} onChange={(e) => setAccountId(e.target.value)}>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Sem categoria</option>{options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <label>Centro de custo<select value={centerId} onChange={(e) => setCenterId(e.target.value)}><option value="">Sem centro de custo</option>{availableCenters.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    <div className="modal-actions"><button type="button" className="button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar no banco"}</button></div>
+  </form></div>;
+}
+
+export function SupabasePayables({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice); const [modal, setModal] = useState(false); const [query, setQuery] = useState("");
+  const items = useMemo(() => data.transactions.filter((item) => item.type === "expense").filter((item) => (item.description + (item.counterparty ?? "")).toLowerCase().includes(query.toLowerCase())), [data.transactions, query]);
+  const total = items.filter((item) => item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const markPaid = async (item: Transaction) => { try { await updateTransaction(item.id, { status: "paid", paid_at: new Date().toISOString() }); await data.reload(); showNotice("Despesa marcada como paga."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao atualizar."); } };
+  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Contas a pagar</h1><p>Despesas e compromissos salvos na sua conta.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova conta</button></div>
+    <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total em aberto <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Contas cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Vencidas <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou fornecedor…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>DESCRIÇÃO / FORNECEDOR</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem fornecedor"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markPaid(item)}>{item.status === "paid" ? "Pago" : "Marcar pago"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a pagar cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
+    {modal && <TransactionForm type="expense" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} customers={data.customers} customerCompanyLinks={data.customerCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+  </>;
+}
+
+export function SupabaseReceivables({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice); const [modal, setModal] = useState(false); const [query, setQuery] = useState("");
+  const items = useMemo(() => data.transactions.filter((item) => item.type === "income").filter((item) => (item.description + (item.counterparty ?? "")).toLowerCase().includes(query.toLowerCase())), [data.transactions, query]);
+  const total = items.filter((item) => item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const markReceived = async (item: Transaction) => { try { await updateTransaction(item.id, { status: "paid", paid_at: new Date().toISOString() }); await data.reload(); showNotice("Recebimento confirmado."); } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao atualizar."); } };
+  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Contas a receber</h1><p>Receitas e cobranças salvas na sua conta.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova cobrança</button></div>
+    <section className="payable-summary-grid"><article className="metric-card"><div className="metric-top">Total a receber <Wallet size={17}/></div><div className="metric-value">{money(total)}</div><div className="metric-foot">Registros pendentes</div></article><article className="metric-card"><div className="metric-top">Cobranças cadastradas <Activity size={17}/></div><div className="metric-value">{items.length}</div><div className="metric-foot">Dados do banco</div></article><article className="metric-card"><div className="metric-top">Em atraso <CalendarDays size={17}/></div><div className="metric-value">{items.filter((item) => statusLabel(item) === "Vencida").length}</div><div className="metric-foot">Com vencimento ultrapassado</div></article></section>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="payable-toolbar"><input placeholder="Buscar descrição ou cliente…" value={query} onChange={(e) => setQuery(e.target.value)}/></div><div className="payable-table"><div className="payable-table-head"><span>COBRANÇA / CLIENTE</span><span>VENCIMENTO</span><span>VALOR</span><span>STATUS</span><span>AÇÃO</span></div>{items.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "Sem cliente"}</small></div><span>{dateLabel(item.due_date)}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span><button className="pay-action" disabled={item.status === "paid"} onClick={() => void markReceived(item)}>{item.status === "paid" ? "Recebido" : "Marcar recebido"}</button></div>)}{items.length === 0 && <p className="empty-search">Nenhuma conta a receber cadastrada.</p>}</div><p className="demo-disclaimer"><ShieldCheck size={14}/> Dados carregados e persistidos no Supabase.</p></section>}
+    {modal && <TransactionForm type="income" accounts={data.accounts} categories={data.categories} centers={data.centers} companies={data.companies} suppliers={data.suppliers} supplierCompanyLinks={data.supplierCompanyLinks} customers={data.customers} customerCompanyLinks={data.customerCompanyLinks} onClose={() => setModal(false)} onSaved={data.reload} notice={showNotice}/>}
+  </>;
+}
+
+export function SupabaseAccounts({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const [modal, setModal] = useState(false);
+  const [name, setName] = useState(""); const [institution, setInstitution] = useState("");
+  const [kind, setKind] = useState("checking"); const [balance, setBalance] = useState("0");
+  const [branchCode, setBranchCode] = useState(""); const [accountNumber, setAccountNumber] = useState("");
+  const [openingDate, setOpeningDate] = useState(today());
+  const [companyId, setCompanyId] = useState(() => typeof window !== "undefined" ? (window.localStorage.getItem("nexus-active-company") || "") : "");
+  const [importAccount, setImportAccount] = useState<FinancialAccount | null>(null);
+  const [fileName, setFileName] = useState(""); const [fileFormat, setFileFormat] = useState<"ofx" | "csv">("ofx");
+  const [parsedRows, setParsedRows] = useState<ParsedBankStatementRow[]>([]);
+  const [savingImport, setSavingImport] = useState(false); const [imports, setImports] = useState<any[]>([]);
+  const balances = (account: FinancialAccount) => Number(account.opening_balance) + data.transactions.filter(item => item.account_id === account.id && item.status === "paid" && (!account.opening_date || item.transaction_date >= account.opening_date)).reduce((sum,item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)),0);
+  const accountScopeKey = data.accounts.map(item => item.id).join("|");
+  const visibleImports = imports.filter(item => data.accounts.some(account => account.id === item.account_id));
+  useEffect(() => { if (!accountScopeKey) { setImports([]); return; } void listBankStatementImports().then(setImports).catch(() => setImports([])); }, [accountScopeKey, data.transactions.length]);
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    if (data.companies.length > 0 && (!companyId || companyId === "all")) { showNotice("Selecione uma empresa para vincular esta conta."); return; }
+    try {
+      await createFinancialAccount({ name: name.trim(), institution: institution.trim() || null, company_id: companyId && companyId !== "all" ? companyId : null, account_type: kind, opening_balance: Number(balance), color: "#238bd2", is_active: true, branch_code: branchCode.trim() || null, account_number: accountNumber.trim() || null, opening_date: openingDate || null } as any);
+      await data.reload(); setModal(false); setName(""); setInstitution(""); setBranchCode(""); setAccountNumber(""); setBalance("0"); showNotice("Conta bancária cadastrada com sucesso.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar conta."); }
+  };
+  const readStatement = async (file?: File) => {
+    if (!file) return;
+    try {
+      const extension = file.name.toLowerCase().split(".").pop();
+      if (extension !== "ofx" && extension !== "csv") throw new Error("Selecione um arquivo OFX ou CSV.");
+      if (file.size > 15 * 1024 * 1024) throw new Error("O extrato deve ter no máximo 15 MB.");
+      const raw = await file.text(); const rows = extension === "ofx" ? parseOfx(raw) : parseCsv(raw);
+      setFileName(file.name); setFileFormat(extension); setParsedRows(rows); showNotice(`${rows.length} movimentações encontradas. Revise antes de importar.`);
+    } catch (e) { setParsedRows([]); showNotice(e instanceof Error ? e.message : "Não foi possível ler o extrato."); }
+  };
+  const confirmImport = async () => {
+    if (!importAccount || !parsedRows.length) return;
+    setSavingImport(true);
+    try {
+      const result = await importBankStatementRows(importAccount, fileName, fileFormat, parsedRows);
+      await data.reload(); setImports(await listBankStatementImports()); setImportAccount(null); setParsedRows([]); setFileName("");
+      showNotice(`Importação concluída: ${result.imported} novas movimentações e ${result.duplicates} duplicadas ignoradas.`);
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao importar extrato."); }
+    finally { setSavingImport(false); }
+  };
+  return <>
+    <div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · DADOS REAIS</div><h1>Contas bancárias</h1><p>Cadastre suas contas e importe extratos OFX ou CSV para registrar movimentações reais.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova conta</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <>
+      <section className="account-total-card"><div><span>Saldo consolidado</span><strong>{money(data.accounts.reduce((sum,item) => sum + balances(item),0))}</strong><small>Saldos iniciais + movimentações efetivadas</small></div><Landmark size={28}/></section>
+      <section className="financial-account-grid">{data.accounts.map(item => <article className="financial-account-card" key={item.id}>
+        <div className="financial-account-top"><span className="account-bank-icon"><Landmark size={19}/></span><span className="account-kind">{item.account_type}</span></div>
+        <div className="account-bank-name">{item.institution || "Instituição não informada"}</div><h3>{item.name}</h3>
+        <div className="account-kind">{item.branch_code ? `Ag. ${item.branch_code}` : ""}{item.account_number ? ` · Conta ${item.account_number}` : ""}</div>
+        <div className="account-balance-label">Saldo calculado</div><strong className="account-balance">{money(balances(item))}</strong>
+        <button className="button-secondary" onClick={() => { setImportAccount(item); setParsedRows([]); setFileName(""); }}><FileUp size={15}/> Importar extrato</button>
+      </article>)}</section>
+      {data.accounts.length === 0 && <div className="panel">Nenhuma conta cadastrada ainda. Cadastre sua primeira conta para começar.</div>}
+      <section className="panel payable-list-panel"><h2>Histórico de importações</h2>{visibleImports.length ? visibleImports.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.file_name}</strong><small>{data.accounts.find(a => a.id === item.account_id)?.name || "Conta"} · {new Date(item.created_at).toLocaleString("pt-BR")}</small></div><span>{item.file_format.toUpperCase()}</span><span>{item.imported_rows} importadas</span><span>{item.duplicate_rows} duplicadas</span></div>) : <p>Nenhum extrato importado ainda.</p>}</section>
+    </>}
+    {modal && <div className="modal-backdrop" onClick={() => setModal(false)}><form className="payable-modal" onClick={e => e.stopPropagation()} onSubmit={save}>
+      <div className="modal-heading"><h2>Nova conta bancária</h2><button type="button" onClick={() => setModal(false)}>×</button></div>
+      <label>Empresa<select required={data.companies.length > 0} value={companyId} onChange={e => setCompanyId(e.target.value)}><option value="">Selecione a empresa</option>{data.companies.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Nome da conta<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Conta principal"/></label>
+      <label>Banco / instituição<input value={institution} onChange={e => setInstitution(e.target.value)} placeholder="Ex.: Banco do Brasil"/></label>
+      <label>Tipo<select value={kind} onChange={e => setKind(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro em caixa</option><option value="credit_card">Cartão de crédito</option><option value="investment">Investimento</option><option value="other">Outra</option></select></label>
+      <label>Agência (opcional)<input value={branchCode} onChange={e => setBranchCode(e.target.value)} maxLength={20}/></label>
+      <label>Número da conta (opcional)<input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} maxLength={30}/></label>
+      <label>Saldo inicial (R$)<input required type="number" step="0.01" value={balance} onChange={e => setBalance(e.target.value)}/></label>
+      <label>Data do saldo inicial<input required type="date" value={openingDate} onChange={e => setOpeningDate(e.target.value)}/></label>
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)}>Cancelar</button><button className="button-primary" type="submit">Salvar conta</button></div>
+    </form></div>}
+    {importAccount && <div className="modal-backdrop" onClick={() => !savingImport && setImportAccount(null)}><section className="payable-modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-heading"><div><h2>Importar extrato</h2><p>{importAccount.institution || importAccount.name} · {importAccount.name}</p></div><button type="button" disabled={savingImport} onClick={() => setImportAccount(null)}>×</button></div>
+      <div className="panel"><strong>Arquivos aceitos: OFX e CSV</strong><p>O arquivo será lido para uma prévia. Nada será gravado até você confirmar.</p></div>
+      <label>Selecionar extrato<input type="file" accept=".ofx,.csv,application/x-ofx,text/csv" onChange={e => void readStatement(e.target.files?.[0])}/></label>
+      {parsedRows.length > 0 && <><div className="summary-line"><span>Arquivo</span><strong>{fileName}</strong></div><div className="summary-line"><span>Movimentações encontradas</span><strong>{parsedRows.length}</strong></div><div className="payable-list-panel"><h3>Prévia (até 5 lançamentos)</h3>{parsedRows.slice(0,5).map((row,i) => <div className="payable-table-row" key={i}><div><strong>{row.description}</strong><small>{dateLabel(row.date)}</small></div><strong>{money(row.amount)}</strong></div>)}</div><p>Duplicidades são identificadas e ignoradas. As movimentações importadas entram como efetivadas e alteram o saldo.</p></>}
+      <div className="modal-actions"><button type="button" className="button-secondary" disabled={savingImport} onClick={() => setImportAccount(null)}>Cancelar</button><button type="button" className="button-primary" disabled={savingImport || !parsedRows.length} onClick={() => void confirmImport()}>{savingImport ? "Importando…" : "Confirmar importação"}</button></div>
+    </section></div>}
+  </>;
+}
+
+export function SupabaseCategories({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const [tab, setTab] = useState<"categories" | "centers">("categories");
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"income" | "expense">("expense");
+  const [description, setDescription] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [parentId, setParentId] = useState("");
+  const [manager, setManager] = useState("");
+  const [budget, setBudget] = useState("");
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const selectedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
+  const visibleCompany = selectedCompany && selectedCompany !== "all" ? selectedCompany : "";
+  const categories = data.categories.filter(item => item.is_active !== false && (!visibleCompany || !item.company_id || item.company_id === visibleCompany));
+  const centers = data.centers.filter(item => item.is_active !== false && (!visibleCompany || !item.company_id || item.company_id === visibleCompany));
+  const reset = () => { setName(""); setDescription(""); setCompanyId(""); setParentId(""); setManager(""); setBudget(""); setType("expense"); };
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      if (tab === "categories") {
+        await createCategory({ name: name.trim(), type, color: "#278bd1", icon: null, is_default: false, company_id: companyId || null, description: description.trim() || null, parent_id: parentId || null } as any);
+      } else {
+        const parsedBudget = budget.trim() ? Number(budget) : null;
+        if (parsedBudget !== null && (!Number.isFinite(parsedBudget) || parsedBudget < 0)) throw new Error("Informe um orçamento válido.");
+        await createCostCenter({ name: name.trim(), description: description.trim() || null, color: "#278bd1", company_id: companyId || null, monthly_budget: parsedBudget, manager_name: manager.trim() || null } as any);
+      }
+      await data.reload(); reset(); setModal(false); showNotice("Cadastro salvo no Supabase.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar cadastro."); }
+    finally { setSaving(false); }
+  };
+  const deactivate = async (id: string) => {
+    if (!window.confirm("Desativar este cadastro? Ele deixará de aparecer em novos lançamentos. O histórico será preservado.")) return;
+    try {
+      if (tab === "categories") await updateCategory(id, { is_active: false });
+      else await updateCostCenter(id, { is_active: false });
+      await data.reload(); showNotice("Cadastro desativado. O histórico financeiro foi preservado.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível desativar. Verifique se há movimentações vinculadas."); }
+  };
+  const companyLabel = (id?: string | null) => id ? data.companies.find(item => item.id === id)?.name || "Empresa" : "Compartilhado";
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>Categorias e centros de custo</h1><p>Compartilhe cadastros no workspace ou restrinja-os a uma empresa.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Novo cadastro</button></div>
+    <div className="category-tabs"><button className={tab === "categories" ? "active" : ""} onClick={() => setTab("categories")}><Tags size={15}/> Categorias</button><button className={tab === "centers" ? "active" : ""} onClick={() => setTab("centers")}>Centros de custo</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && (tab === "categories" ? <section className="panel payable-list-panel"><h2>Categorias ({categories.length})</h2>{categories.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.description || "Sem descrição"} · {companyLabel(item.company_id)}{item.parent_id ? " · Subcategoria" : ""}</small></div><span>{item.type === "income" ? "Receita" : "Despesa"}</span><button className="button-secondary" onClick={() => void deactivate(item.id)}>Desativar</button></div>)}{categories.length === 0 && <p>Nenhuma categoria ativa cadastrada.</p>}</section> : <section className="panel payable-list-panel"><h2>Centros de custo ({centers.length})</h2>{centers.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.name}</strong><small>{item.description || "Sem descrição"} · {companyLabel(item.company_id)}{item.manager_name ? " · Responsável: " + item.manager_name : ""}{item.monthly_budget != null ? " · Orçamento: " + money(Number(item.monthly_budget)) : ""}</small></div><button className="button-secondary" onClick={() => void deactivate(item.id)}>Desativar</button></div>)}{centers.length === 0 && <p>Nenhum centro de custo ativo cadastrado.</p>}</section>)}
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>{tab === "categories" ? "Nova categoria" : "Novo centro de custo"}</h2><p>Escolha se será compartilhado ou exclusivo.</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+      <label>Nome<input required maxLength={100} value={name} onChange={e => setName(e.target.value)}/></label>
+      <label>Disponibilidade<select value={companyId} onChange={e => setCompanyId(e.target.value)}><option value="">Compartilhado entre empresas</option>{data.companies.map(item => <option key={item.id} value={item.id}>Somente {item.name}</option>)}</select></label>
+      {tab === "categories" ? <><label>Tipo<select value={type} onChange={e => setType(e.target.value as "income" | "expense")}><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Categoria principal (opcional)<select value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Nenhuma — categoria principal</option>{data.categories.filter(item => item.type === type && item.is_active !== false && (!companyId ? !item.company_id : !item.company_id || item.company_id === companyId)).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Descrição<input maxLength={240} value={description} onChange={e => setDescription(e.target.value)}/></label></> : <><label>Descrição<input maxLength={240} value={description} onChange={e => setDescription(e.target.value)}/></label><label>Responsável<input maxLength={120} value={manager} onChange={e => setManager(e.target.value)}/></label><label>Orçamento mensal (R$)<input type="number" min="0" step="0.01" value={budget} onChange={e => setBudget(e.target.value)} placeholder="Opcional"/></label></>}
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => { setModal(false); reset(); }} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar"}</button></div></form></div>}
+  </>;
+}
+
+export function SupabaseCashFlow({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const settled = data.transactions.filter((item) => item.status === "paid");
+  const income = settled.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const expense = settled.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const pending = data.transactions.filter((item) => item.status === "pending" || item.status === "overdue");
+  const forecastIncome = pending.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const forecastExpense = pending.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const opening = data.accounts.reduce((sum, item) => sum + Number(item.opening_balance), 0);
+  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Fluxo de caixa</h1><p>Entradas, saídas e compromissos registrados no banco.</p></div><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <><section className="payable-summary-grid cashflow-metrics"><article className="metric-card"><div className="metric-top">Saldo de abertura <Wallet size={17}/></div><div className="metric-value">{money(opening)}</div></article><article className="metric-card"><div className="metric-top">Entradas pagas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div></article><article className="metric-card"><div className="metric-top">Saídas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div></article><article className="metric-card"><div className="metric-top">Saldo calculado <Activity size={17}/></div><div className="metric-value">{money(opening + income - expense)}</div></article></section><section className="panel payable-list-panel"><h2>Projeção pendente</h2><div className="summary-line"><span>Entradas previstas</span><strong>{money(forecastIncome)}</strong></div><div className="summary-line"><span>Saídas previstas</span><strong>{money(forecastExpense)}</strong></div><div className="summary-footer"><span>Saldo projetado</span><strong>{money(opening + income - expense + forecastIncome - forecastExpense)}</strong></div><h2>Movimentações</h2>{data.transactions.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span></div>)}{data.transactions.length === 0 && <p>Nenhuma movimentação registrada.</p>}</section></>}
+  </>;
+}
+
+
+export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const [period, setPeriod] = useState("6");
+  const [chartMode, setChartMode] = useState<"both" | "income" | "expense">("both");
+  const paid = data.transactions.filter((item) => item.status === "paid");
+  const now = new Date();
+  const month = today().slice(0, 7);
+  const monthPaid = paid.filter((item) => (item.paid_at ?? item.transaction_date).startsWith(month));
+  const income = monthPaid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const expense = monthPaid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const balance = data.accounts.reduce((sum, item) => sum + Number(item.opening_balance), 0) +
+    paid.reduce((sum, item) => sum + (item.type === "income" ? Number(item.amount) : -Number(item.amount)), 0);
+  const pending = data.transactions.filter((item) => item.status !== "paid" && item.status !== "cancelled");
+  const pendingIncome = pending.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const pendingExpense = pending.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const overdue = pending.filter((item) => item.due_date && item.due_date < today());
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - Number(period) + 1, 1);
+  const periodTransactions = paid.filter((item) => {
+    const date = new Date((item.paid_at ?? item.transaction_date) + "T12:00:00");
+    return date >= cutoff;
+  });
+  const chartData = Array.from({ length: Number(period) }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - Number(period) + 1 + index, 1);
+    const key = date.toISOString().slice(0, 7);
+    const monthItems = periodTransactions.filter((item) => (item.paid_at ?? item.transaction_date).startsWith(key));
+    return {
+      month: date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+      receitas: monthItems.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0),
+      despesas: monthItems.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0),
+    };
+  });
+  const categoryTotals = data.categories.map((category) => ({
+    name: category.name,
+    value: periodTransactions.filter((item) => item.type === "expense" && item.category_id === category.id)
+      .reduce((sum, item) => sum + Number(item.amount), 0),
+  })).filter((item) => item.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
+  const upcoming = pending.sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
+  const colors = ["#159b78", "#4b91c8", "#e6a34b", "#8d75c7", "#d87878", "#6b9caa"];
+  return <><div className="welcome-row"><div><div className="eyebrow">VISÃO GERAL · DADOS REAIS</div><h1>Bem-vindo ao NEXUS</h1><p>Indicadores, tendências e compromissos da sua gestão financeira.</p></div><div className="welcome-actions"><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar dados</button></div></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <>
+      <section className="metrics-grid">
+        <article className="metric-card balance-card"><div className="metric-top">Saldo consolidado <Wallet size={17}/></div><div className="metric-value">{money(balance)}</div><div className="metric-foot">{data.accounts.length} contas financeiras</div></article>
+        <article className="metric-card"><div className="metric-top">Receitas recebidas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card"><div className="metric-top">Despesas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card"><div className="metric-top">Resultado do mês <Activity size={17}/></div><div className="metric-value">{money(income - expense)}</div><div className="metric-foot">Receitas menos despesas pagas</div></article>
+      </section>
+      <section className="summary-grid dashboard-extra-metrics">
+        <div className="summary-card"><span>A receber</span><strong>{money(pendingIncome)}</strong><small><TrendingUp size={13}/> {pending.filter((item) => item.type === "income").length} cobranças em aberto</small></div>
+        <div className="summary-card"><span>A pagar</span><strong>{money(pendingExpense)}</strong><small><TrendingDown size={13}/> {pending.filter((item) => item.type === "expense").length} contas em aberto</small></div>
+        <div className="summary-card"><span>Contas vencidas</span><strong>{overdue.length}</strong><small>Precisam de atenção</small></div>
+        <div className="summary-card"><span>Movimentações</span><strong>{data.transactions.length}</strong><small>Registros na sua conta</small></div>
+      </section>
+      <section className="panel dashboard-chart-panel">
+        <div className="panel-heading dashboard-chart-heading"><div><h2>Evolução financeira</h2><p>Comparativo de receitas e despesas pagas</p></div>
+          <div className="dashboard-chart-controls"><select aria-label="Período do gráfico" value={period} onChange={(event) => setPeriod(event.target.value)}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select><select aria-label="Séries exibidas" value={chartMode} onChange={(event) => setChartMode(event.target.value as typeof chartMode)}><option value="both">Receitas e despesas</option><option value="income">Só receitas</option><option value="expense">Só despesas</option></select></div>
+        </div>
+        <div className="dashboard-main-chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}><defs><linearGradient id="nexusIncomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#159b78" stopOpacity={0.25}/><stop offset="95%" stopColor="#159b78" stopOpacity={0.01}/></linearGradient><linearGradient id="nexusExpenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e6a34b" stopOpacity={0.22}/><stop offset="95%" stopColor="#e6a34b" stopOpacity={0.01}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dce7e5"/><XAxis dataKey="month" tickLine={false} axisLine={false}/><YAxis tickLine={false} axisLine={false} width={66} tickFormatter={(value) => value >= 1000 ? "R$ " + (value / 1000).toFixed(0) + "k" : String(value)}/><Tooltip formatter={(value) => money(Number(value))}/>{chartMode !== "expense" && <Area type="monotone" dataKey="receitas" name="Receitas" stroke="#159b78" strokeWidth={3.5} fill="url(#nexusIncomeFill)" activeDot={{ r: 7, stroke: "#fff", strokeWidth: 3 }} isAnimationActive animationBegin={120} animationDuration={1700} animationEasing="ease-out"/>}{chartMode !== "income" && <Area type="monotone" dataKey="despesas" name="Despesas" stroke="#e6a34b" strokeWidth={3.5} fill="url(#nexusExpenseFill)" activeDot={{ r: 7, stroke: "#fff", strokeWidth: 3 }} isAnimationActive animationBegin={260} animationDuration={1700} animationEasing="ease-out"/>}</AreaChart></ResponsiveContainer></div>
+        <div className="dashboard-chart-foot"><span><i className="chart-dot chart-dot-income"/> Receitas pagas</span><span><i className="chart-dot chart-dot-expense"/> Despesas pagas</span><small>Somente lançamentos com status pago.</small></div>
+      </section>
+      <section className="bottom-grid dashboard-insights-grid">
+        <article className="panel"><div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição no período selecionado</p></div></div>
+          {categoryTotals.length ? <><div className="dashboard-donut"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={categoryTotals} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={4} isAnimationActive animationBegin={180} animationDuration={1500} animationEasing="ease-out">{categoryTotals.map((item, index) => <Cell key={item.name} fill={colors[index % colors.length]}/>)}</Pie><Tooltip formatter={(value) => money(Number(value))}/><Legend verticalAlign="bottom" height={38}/></PieChart></ResponsiveContainer></div><div className="dashboard-category-list">{categoryTotals.map((item, index) => <div key={item.name}><i style={{ background: colors[index % colors.length] }}/><span>{item.name}</span><strong>{money(item.value)}</strong></div>)}</div></> : <p className="dashboard-empty">Ainda não há despesas pagas com categoria no período.</p>}
+        </article>
+        <article className="panel payables-panel"><div className="panel-heading"><div><h2>Próximos vencimentos</h2><p>Compromissos ainda em aberto</p></div></div>
+          {upcoming.map((item) => <div className="due-item" key={item.id}><div className="due-copy"><strong>{item.description}</strong><small>{dateLabel(item.due_date)} · {statusLabel(item)}</small></div><div className="due-value"><strong>{money(Number(item.amount))}</strong></div></div>)}
+          {upcoming.length === 0 && <p>Nenhum vencimento pendente.</p>}
+        </article>
+      </section>
+      <section className="panel transactions-panel dashboard-recent-panel"><div className="panel-heading"><div><h2>Transações recentes</h2><p>Últimos lançamentos cadastrados</p></div></div>
+        {data.transactions.slice(0, 6).map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Entrada" : "Saída"}</span><strong className={item.type === "income" ? "amount-in" : "amount-out"}>{money(Number(item.amount))}</strong></div>)}
+        {data.transactions.length === 0 && <p>Nenhuma movimentação cadastrada. Comece criando uma conta financeira e depois registre suas receitas e despesas.</p>}
+      </section>
+      <p className="demo-disclaimer"><ShieldCheck size={14}/> Indicadores calculados exclusivamente com os dados da sua conta no Supabase. Sem números de demonstração.</p>
+    </>}
+  </>;
+}
+
+export function SupabaseTransactions({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  return <><div className="welcome-row"><div><div className="eyebrow">FINANCEIRO · SUPABASE</div><h1>Transações</h1><p>Todos os lançamentos da sua conta em um só lugar.</p></div><button className="button-secondary" onClick={() => void data.reload()}><RefreshCw size={15}/> Atualizar</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <section className="panel payable-list-panel"><div className="panel-heading"><div><h2>{data.transactions.length} lançamento(s)</h2><p>Registros reais protegidos por RLS</p></div></div>
+      {data.transactions.map((item) => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{item.counterparty || "—"}</small></div><span>{dateLabel(item.transaction_date)}</span><span>{item.type === "income" ? "Receita" : "Despesa"}</span><strong>{money(Number(item.amount))}</strong><span>{statusLabel(item)}</span></div>)}
+      {data.transactions.length === 0 && <p>Nenhuma transação cadastrada ainda.</p>}
+    </section>}
+  </>;
+}
+
+export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
+  const data = useFinanceData(showNotice);
+  const paid = data.transactions.filter((item) => item.status === "paid");
+  const income = paid.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+  const expense = paid.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const openIncome = data.transactions.filter((item) => item.type === "income" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const openExpense = data.transactions.filter((item) => item.type === "expense" && item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const exportCsv = () => {
+    const fields = ["transaction_date", "type", "description", "counterparty", "amount", "status", "due_date", "paid_at", "account_id", "company_id"];
+    const escapeCsv = (value: unknown) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+    const rows = [fields, ...data.transactions.map(item => fields.map(field => (item as unknown as Record<string, unknown>)[field] ?? ""))];
+    const csv = "\\uFEFF" + rows.map(row => row.map(escapeCsv).join(";")).join("\\r\\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url; link.download = "nexus-finance-relatorio-" + today() + ".csv";
+    document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+    showNotice("Relatório CSV exportado com os lançamentos disponíveis.");
+  };
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · SUPABASE</div><h1>Relatórios</h1><p>Demonstrativos calculados com os seus lançamentos.</p></div><button className="button-secondary" disabled={data.loading || Boolean(data.error)} onClick={exportCsv}><Download size={15}/> Exportar CSV</button></div>
+    <DataState loading={data.loading} error={data.error} retry={() => void data.reload()}/>
+    {!data.loading && !data.error && <><section className="summary-grid"><div className="summary-card"><span>Receitas realizadas</span><strong>{money(income)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Despesas realizadas</span><strong>{money(expense)}</strong><small>Todos os lançamentos pagos</small></div><div className="summary-card"><span>Resultado realizado</span><strong>{money(income - expense)}</strong><small>Receitas menos despesas</small></div></section><section className="panel payable-list-panel"><h2>Posição financeira</h2><div className="summary-line"><span>Recebimentos pendentes</span><strong>{money(openIncome)}</strong></div><div className="summary-line"><span>Pagamentos pendentes</span><strong>{money(openExpense)}</strong></div><div className="summary-footer"><span>Contas cadastradas</span><strong>{data.transactions.length}</strong></div><div className="demo-disclaimer"><ShieldCheck size={14}/> Relatório calculado em tempo real a partir do Supabase; sem valores fictícios.</div></section></>}
+  </>;
+}
+
+
+export function SupabaseContacts({ contactType, showNotice }: { contactType: "customer" | "supplier"; showNotice: Notice }) {
+  const [items, setItems] = useState<BusinessContact[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [links, setLinks] = useState<{ supplier_id?: string; customer_id?: string; company_id: string }[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [selected, setSelected] = useState<BusinessContact | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState(""); const [document, setDocument] = useState("");
+  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const [contactPerson, setContactPerson] = useState(""); const [stateRegistration, setStateRegistration] = useState("");
+  const [postalCode, setPostalCode] = useState(""); const [street, setStreet] = useState("");
+  const [addressNumber, setAddressNumber] = useState(""); const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState(""); const [city, setCity] = useState(""); const [state, setState] = useState("");
+  const [website, setWebsite] = useState(""); const [notes, setNotes] = useState("");
+  const [companyIds, setCompanyIds] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const isCustomer = contactType === "customer";
+  const title = isCustomer ? "Clientes" : "Fornecedores";
+  const contactLinks = (id: string) => links.filter(link => (isCustomer ? link.customer_id : link.supplier_id) === id);
+  const companyNames = (id: string) => contactLinks(id).map(link => companies.find(company => company.id === link.company_id)?.name).filter(Boolean);
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const [contacts, companyList, companyLinks] = isCustomer
+        ? await Promise.all([listBusinessContacts("customer", true), listCompanies(), listCustomerCompanyLinks()])
+        : await Promise.all([listBusinessContacts("supplier", true), listCompanies(), listSupplierCompanyLinks()]);
+      setItems(contacts); setCompanies(companyList); setLinks(companyLinks);
+    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar contatos."); }
+    finally { setLoading(false); }
+  }, [isCustomer]);
+  useEffect(() => { void load(); }, [load]);
+  const reset = () => { setName(""); setDocument(""); setEmail(""); setPhone(""); setContactPerson(""); setStateRegistration(""); setPostalCode(""); setStreet(""); setAddressNumber(""); setComplement(""); setNeighborhood(""); setCity(""); setState(""); setWebsite(""); setNotes(""); setCompanyIds([]); };
+  const openContact = async (item: BusinessContact) => {
+    setSelected(item); setHistory([]); setDocuments([]);
+    try {
+      const [transactions, files] = isCustomer
+        ? await Promise.all([listCustomerTransactions(item.id), listCustomerDocuments(item.id)])
+        : await Promise.all([listSupplierTransactions(item.id), listSupplierDocuments(item.id)]);
+      setHistory(transactions); setDocuments(files);
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível carregar a ficha do contato."); }
+  };
+  const save = async (event: FormEvent) => {
+    event.preventDefault(); setSaving(true);
+    try {
+      const created = await createBusinessContact({
+        contact_type: contactType, name: name.trim(), document: document.trim() || null,
+        email: email.trim() || null, phone: phone.trim() || null, status: "active", notes: notes.trim() || null,
+        company_id: null, contact_person: contactPerson.trim() || null, state_registration: stateRegistration.trim() || null,
+        postal_code: postalCode.trim() || null, street_address: street.trim() || null, address_number: addressNumber.trim() || null,
+        address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null, city: city.trim() || null,
+        state: state.trim().toUpperCase() || null, website: website.trim() || null
+      } as any);
+      if (isCustomer) await saveCustomerCompanyLinks(created.id, companyIds);
+      else await saveSupplierCompanyLinks(created.id, companyIds);
+      await load(); setModal(false); reset();
+      showNotice(isCustomer ? "Cliente cadastrado e vinculado às empresas no Supabase." : "Fornecedor cadastrado e vinculado às empresas no Supabase.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar contato."); }
+    finally { setSaving(false); }
+  };
+  const filtered = items.filter(item => (item.name + " " + (item.document ?? "") + " " + (item.email ?? "")).toLowerCase().includes(query.toLowerCase()));
+  const paidTotal = history.filter(item => item.status === "paid").reduce((sum, item) => sum + Number(item.amount), 0);
+  const openTotal = history.filter(item => item.status !== "paid" && item.status !== "cancelled").reduce((sum, item) => sum + Number(item.amount), 0);
+  const overdue = history.filter(item => item.status !== "paid" && item.status !== "cancelled" && item.due_date && item.due_date < today()).reduce((sum, item) => sum + Number(item.amount), 0);
+  const uploadDocument = async (file: File) => {
+    if (!selected) return;
+    setUploadingDocument(true);
+    try {
+      if (isCustomer) await uploadCustomerDocument(selected.id, file); else await uploadSupplierDocument(selected.id, file);
+      setDocuments(isCustomer ? await listCustomerDocuments(selected.id) : await listSupplierDocuments(selected.id));
+      showNotice("Documento enviado com acesso privado.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao enviar documento."); }
+    finally { setUploadingDocument(false); }
+  };
+  const openDocument = async (storagePath: string) => {
+    try {
+      const url = isCustomer ? await createCustomerDocumentUrl(storagePath) : await createSupplierDocumentUrl(storagePath);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Não foi possível abrir o documento."); }
+  };
+  return <>
+    <div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>{title}</h1><p>{isCustomer ? "Clientes compartilhados entre empresas, vinculados às contas a receber e ao histórico real de recebimentos." : "Cadastro centralizado, compartilhado entre empresas e conectado às contas a pagar."}</p></div><button className="button-primary" onClick={() => { reset(); setModal(true); }}><Plus size={16}/> Novo {isCustomer ? "cliente" : "fornecedor"}</button></div>
+    <div className="payable-toolbar"><input placeholder={`Buscar ${isCustomer ? "cliente" : "fornecedor"} por nome, documento ou e-mail…`} value={query} onChange={e => setQuery(e.target.value)}/></div>
+    {loading ? <div className="panel">Carregando contatos…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{filtered.length} cadastro(s)</h2>{filtered.map(item => <button type="button" className="payable-table-row supplier-list-item" key={item.id} onClick={() => void openContact(item)}><div><strong>{item.name}</strong><small>{[item.document, item.email, item.phone].filter(Boolean).join(" · ")}</small><small>Empresas: {companyNames(item.id).join(", ") || "Ainda não vinculado"}</small></div><span>{item.status === "active" ? "Ativo" : "Inativo"}</span><span>Ver ficha →</span></button>)}{filtered.length === 0 && <p>Nenhum cadastro encontrado.</p>}</section>}
+    {selected && <section className="panel supplier-detail-panel"><div className="modal-heading"><div><h2>{selected.name}</h2><p>Ficha do {isCustomer ? "cliente" : "fornecedor"} · histórico financeiro real</p></div><button type="button" className="icon-button" onClick={() => setSelected(null)}>×</button></div>
+      <div className="payable-summary-grid"><article className="metric-card"><div className="metric-top">{isCustomer ? "Total recebido" : "Total pago"}</div><div className="metric-value">{money(paidTotal)}</div></article><article className="metric-card"><div className="metric-top">Em aberto</div><div className="metric-value">{money(openTotal)}</div></article><article className="metric-card"><div className="metric-top">Vencido</div><div className="metric-value">{money(overdue)}</div></article></div>
+      <p><strong>Documento:</strong> {selected.document || "Não informado"} · <strong>Contato:</strong> {selected.contact_person || "Não informado"}</p>
+      <p><strong>E-mail:</strong> {selected.email || "Não informado"} · <strong>Telefone:</strong> {selected.phone || "Não informado"}</p>
+      <p><strong>Empresas:</strong> {companyNames(selected.id).join(", ") || "Nenhuma empresa vinculada"}</p>
+      <p><strong>Endereço:</strong> {[selected.street_address, selected.address_number, selected.address_complement, selected.neighborhood, selected.city, selected.state, selected.postal_code].filter(Boolean).join(", ") || "Não informado"}</p>
+      <p><strong>Observações:</strong> {selected.notes || "Nenhuma observação"}</p>
+      <h3>Documentos do {isCustomer ? "cliente" : "fornecedor"}</h3>
+      <label className="button-secondary supplier-upload-control">{uploadingDocument ? "Enviando documento…" : "Anexar documento"}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.docx" disabled={uploadingDocument} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadDocument(file); event.target.value = ""; }}/></label>
+      {documents.map(file => <div className="payable-table-row" key={file.id}><strong>{file.file_name}</strong><button type="button" className="pay-action" onClick={() => void openDocument(file.storage_path)}>Abrir documento</button></div>)}{documents.length === 0 && <p>Nenhum documento anexado.</p>}
+      <h3>Histórico de {isCustomer ? "contas a receber" : "contas a pagar"}</h3>
+      {history.map(item => <div className="payable-table-row" key={item.id}><div><strong>{item.description}</strong><small>{companies.find(company => company.id === item.company_id)?.name || "Empresa não informada"} · vencimento {dateLabel(item.due_date)}</small></div><strong>{money(Number(item.amount))}</strong><span>{item.status === "paid" ? (isCustomer ? "Recebido" : "Pago") : item.due_date && item.due_date < today() ? "Vencido" : "Em aberto"}</span></div>)}{history.length === 0 && <p>Nenhuma movimentação vinculada a este cadastro ainda.</p>}
+    </section>}
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal supplier-form-modal" onClick={e => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Novo {isCustomer ? "cliente" : "fornecedor"}</h2><p>Uma ficha pode atender várias empresas.</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+      <label>Nome / razão social<input required maxLength={180} value={name} onChange={e => setName(e.target.value)}/></label>
+      <label>CPF / CNPJ<input value={document} onChange={e => setDocument(e.target.value)} maxLength={24}/></label>
+      <div className="modal-fields"><label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)}/></label><label>Telefone<input value={phone} onChange={e => setPhone(e.target.value)}/></label></div>
+      <label>Responsável / contato<input value={contactPerson} onChange={e => setContactPerson(e.target.value)}/></label><label>Inscrição estadual<input value={stateRegistration} onChange={e => setStateRegistration(e.target.value)}/></label>
+      <div className="modal-fields"><label>CEP<input value={postalCode} onChange={e => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={e => setState(e.target.value.toUpperCase())}/></label></div>
+      <label>Logradouro<input value={street} onChange={e => setStreet(e.target.value)}/></label><div className="modal-fields"><label>Número<input value={addressNumber} onChange={e => setAddressNumber(e.target.value)}/></label><label>Complemento<input value={complement} onChange={e => setComplement(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>Bairro<input value={neighborhood} onChange={e => setNeighborhood(e.target.value)}/></label><label>Cidade<input value={city} onChange={e => setCity(e.target.value)}/></label></div>
+      <label>Site<input type="url" placeholder="https://" value={website} onChange={e => setWebsite(e.target.value)}/></label>
+      <fieldset><legend>Empresas {isCustomer ? "atendidas" : "atendidas"}</legend>{companies.map(company => <label className="supplier-company-option" key={company.id}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={e => setCompanyIds(old => e.target.checked ? [...old, company.id] : old.filter(id => id !== company.id))}/>{company.name}</label>)}{companies.length === 0 && <small>Cadastre uma empresa para vincular contatos.</small>}</fieldset>
+      <label>Observações<textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)}/></label>
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving}>{saving ? "Salvando…" : "Salvar cadastro"}</button></div>
+    </form></div>}
+  </>;
+}
+
+export function SupabaseCompanies({ showNotice }: { showNotice: Notice }) {
+  const [items, setItems] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState(""); const [legalName, setLegalName] = useState("");
+  const [document, setDocument] = useState(""); const [stateRegistration, setStateRegistration] = useState("");
+  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
+  const [postalCode, setPostalCode] = useState(""); const [street, setStreet] = useState("");
+  const [number, setNumber] = useState(""); const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState(""); const [city, setCity] = useState(""); const [state, setState] = useState("");
+  const [cnpjError, setCnpjError] = useState("");
+  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(await listCompanies()); } catch (e) { setError(e instanceof Error ? e.message : "Falha ao carregar empresas."); } finally { setLoading(false); } }, []);
+  useEffect(() => { void load(); }, [load]);
+  const reset = () => { setName(""); setLegalName(""); setDocument(""); setStateRegistration(""); setEmail(""); setPhone(""); setPostalCode(""); setStreet(""); setNumber(""); setComplement(""); setNeighborhood(""); setCity(""); setState(""); setCnpjError(""); };
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    const normalized = normalizeCnpj(document);
+    if (normalized && !isValidCnpj(normalized)) { setCnpjError("CNPJ inválido. Confira os 14 caracteres e os dígitos verificadores."); return; }
+    if (normalized && items.some((item) => normalizeCnpj(item.document ?? "") === normalized)) { setCnpjError("Este CNPJ já está cadastrado neste workspace."); return; }
+    setSaving(true);
+    try {
+      await createCompany({ name: name.trim(), legal_name: legalName.trim() || null, document: normalized || null,
+        state_registration: stateRegistration.trim() || null, email: email.trim() || null, phone: phone.trim() || null,
+        postal_code: postalCode.trim() || null, street_address: street.trim() || null, address_number: number.trim() || null,
+        address_complement: complement.trim() || null, neighborhood: neighborhood.trim() || null,
+        city: city.trim() || null, state: state.trim().toUpperCase() || null,
+        status: "active", is_default: items.length === 0 } as any);
+      await load(); window.dispatchEvent(new Event("nexus-companies-updated")); setModal(false); reset(); showNotice("Empresa cadastrada com CNPJ validado e salva no Supabase.");
+    } catch (e) { showNotice(e instanceof Error ? e.message : "Falha ao salvar empresa."); }
+    finally { setSaving(false); }
+  };
+  const selected = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
+  return <><div className="welcome-row"><div><div className="eyebrow">GESTÃO · DADOS REAIS</div><h1>Empresas</h1><p>Cadastre várias empresas no mesmo workspace e mantenha os lançamentos separados.</p></div><button className="button-primary" onClick={() => setModal(true)}><Plus size={16}/> Nova empresa</button></div>
+    <section className="summary-grid"><div className="summary-card"><span>Empresas cadastradas</span><strong>{items.length}</strong><small>Registros reais deste workspace</small></div><div className="summary-card"><span>Visão financeira</span><strong>Consolidada</strong><small>Use o seletor no topo para filtrar uma empresa</small></div></section>
+    {loading ? <div className="panel">Carregando empresas…</div> : error ? <div className="panel"><p role="alert">{error}</p><button className="button-secondary" onClick={() => void load()}>Tentar novamente</button></div> : <section className="panel payable-list-panel"><h2>{items.length} empresa(s)</h2>{items.map((item) => <div className="payable-table-row company-record-row" key={item.id}><div><strong>{item.name}</strong><small>{[item.legal_name, item.document ? formatCnpj(item.document) : null, item.city, item.state, item.email].filter(Boolean).join(" · ")}</small></div><span>{selected === item.id ? "Selecionada" : item.is_default ? "Principal" : "Ativa"}</span></div>)}{items.length === 0 && <p>Nenhuma empresa cadastrada. Cadastre a primeira para começar.</p>}</section>}
+    {modal && <div className="modal-backdrop" onClick={() => !saving && setModal(false)}><form className="payable-modal company-form-modal" onClick={(e) => e.stopPropagation()} onSubmit={save}><div className="modal-heading"><div><h2>Nova empresa</h2><p>Dados cadastrais e endereço</p></div><button type="button" onClick={() => setModal(false)} disabled={saving}>×</button></div>
+      <label>Nome fantasia<input required maxLength={160} value={name} onChange={(e) => setName(e.target.value)}/></label>
+      <label>Razão social<input maxLength={200} value={legalName} onChange={(e) => setLegalName(e.target.value)}/></label>
+      <label>CNPJ<input required value={formatCnpj(document)} onChange={(e) => { const value = normalizeCnpj(e.target.value); setDocument(value); setCnpjError(value && value.length === 14 && !isValidCnpj(value) ? "CNPJ inválido: dígitos verificadores não conferem." : ""); }} placeholder="00.000.000/0000-00" maxLength={18} autoComplete="off"/>{cnpjError && <small className="field-error" role="alert">{cnpjError}</small>}<small>Compatível com CNPJ numérico e alfanumérico.</small></label>
+      <label>Inscrição estadual<input maxLength={40} value={stateRegistration} onChange={(e) => setStateRegistration(e.target.value)}/></label>
+      <div className="modal-fields"><label>E-mail<input type="email" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}/></label><label>Telefone<input type="tel" maxLength={30} value={phone} onChange={(e) => setPhone(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>CEP<input maxLength={9} value={postalCode} onChange={(e) => setPostalCode(e.target.value)}/></label><label>UF<input maxLength={2} value={state} onChange={(e) => setState(e.target.value.toUpperCase())}/></label></div>
+      <label>Logradouro<input maxLength={180} value={street} onChange={(e) => setStreet(e.target.value)}/></label>
+      <div className="modal-fields"><label>Número<input maxLength={20} value={number} onChange={(e) => setNumber(e.target.value)}/></label><label>Complemento<input maxLength={80} value={complement} onChange={(e) => setComplement(e.target.value)}/></label></div>
+      <div className="modal-fields"><label>Bairro<input maxLength={100} value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}/></label><label>Cidade<input maxLength={100} value={city} onChange={(e) => setCity(e.target.value)}/></label></div>
+      <div className="modal-actions"><button type="button" className="button-secondary" onClick={() => setModal(false)} disabled={saving}>Cancelar</button><button type="submit" className="button-primary" disabled={saving || Boolean(cnpjError)}>{saving ? "Salvando…" : "Salvar empresa"}</button></div>
+    </form></div>}
+  </>;
+}

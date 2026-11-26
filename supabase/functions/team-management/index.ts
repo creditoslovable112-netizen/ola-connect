@@ -1,0 +1,138 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
+  const url = Deno.env.get("SUPABASE_URL")!, anonKey = Deno.env.get("SUPABASE_ANON_KEY")!, serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return json({ error: "Sessão não informada." }, 401);
+  const caller = createClient(url, anonKey, { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } });
+  const { data: authData, error: authError } = await caller.auth.getUser();
+  if (authError || !authData.user) return json({ error: "Sessão inválida." }, 401);
+  const user = authData.user, admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const recordAudit = async (workspaceId: string, action: string, tableName: string, recordId: string | null, changedFields: string[] = []) => {
+    const { error } = await admin.from("workspace_audit_logs").insert({
+      workspace_id: workspaceId, actor_user_id: user.id, action, table_name: tableName,
+      record_id: recordId, changed_fields: changedFields, source: "team_management",
+    });
+    if (error) console.error("team-management audit", error);
+  };
+  const configuredAppUrl = Deno.env.get("NEXUS_APP_URL") ?? "";
+  const requestOrigin = req.headers.get("origin") ?? "";
+  const isTrustedAppOrigin = (candidate: string) => {
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== "https:") return false;
+      if (configuredAppUrl) {
+        const configured = new URL(configuredAppUrl);
+        if (parsed.origin === configured.origin) return true;
+      }
+      return /^ola-connect-[a-z0-9-]+\.vercel\.app$/i.test(parsed.hostname);
+    } catch { return false; }
+  };
+  const appRedirectUrl = isTrustedAppOrigin(requestOrigin)
+    ? new URL(requestOrigin).origin
+    : (isTrustedAppOrigin(configuredAppUrl) ? new URL(configuredAppUrl).origin : "");
+  try {
+    const body = await req.json(), action = String(body.action ?? "");
+    if (action === "accept") {
+      const { data: invites, error } = await admin.from("workspace_invites").select("*")
+        .eq("email", (user.email ?? "").toLowerCase()).eq("status", "pending").gt("expires_at", new Date().toISOString());
+      if (error) throw error;
+      for (const invite of invites ?? []) {
+        const { error: memberError } = await admin.from("workspace_members").upsert({ workspace_id: invite.workspace_id, user_id: user.id, role: invite.role, status: "active" }, { onConflict: "workspace_id,user_id" });
+        if (memberError) throw memberError;
+        const { error: updateError } = await admin.from("workspace_invites").update({ status: "accepted" }).eq("id", invite.id);
+        if (updateError) throw updateError;
+        await recordAudit(invite.workspace_id, "INVITE", "workspace_members", user.id, ["role", "status"]);
+      }
+      return json({ accepted: invites?.length ?? 0 });
+    }
+    const workspaceId = String(body.workspace_id ?? "");
+    if (!workspaceId) return json({ error: "Workspace obrigatório." }, 400);
+    const { data: membership, error: membershipError } = await admin.from("workspace_members").select("role")
+      .eq("workspace_id", workspaceId).eq("user_id", user.id).eq("status", "active").maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership) return json({ error: "Você não faz parte deste workspace." }, 403);
+    if (action === "list") {
+      const { data: members, error } = await admin.from("workspace_members").select("id,user_id,role,status,joined_at")
+        .eq("workspace_id", workspaceId).order("joined_at");
+      if (error) throw error;
+      let invites: any[] = [];
+      if (["owner", "admin"].includes(membership.role)) {
+        const { data, error: inviteError } = await admin.from("workspace_invites")
+          .select("id,email,role,status,expires_at,created_at").eq("workspace_id", workspaceId)
+          .eq("status", "pending").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false });
+        if (inviteError) throw inviteError;
+        invites = data ?? [];
+      }
+      const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (usersError) throw usersError;
+      const emailById = new Map((users.users ?? []).map((u) => [u.id, u.email]));
+      return json({ members: (members ?? []).map((m) => ({ ...m, email: emailById.get(m.user_id) ?? null })), invites: invites ?? [] });
+    }
+    if (!["owner", "admin"].includes(membership.role)) return json({ error: "Somente proprietários e administradores podem gerenciar a equipe." }, 403);
+    if (action === "invite") {
+      const email = String(body.email ?? "").trim().toLowerCase(), role = String(body.role ?? "editor");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Informe um e-mail válido." }, 400);
+      if (!["admin", "editor", "viewer"].includes(role)) return json({ error: "Permissão inválida." }, 400);
+      if (email === (user.email ?? "").toLowerCase()) return json({ error: "Você já é membro deste workspace." }, 400);
+      const { data: existing, error: existingError } = await admin.from("workspace_invites").select("id")
+        .eq("workspace_id", workspaceId).eq("email", email).eq("status", "pending").maybeSingle();
+      if (existingError) throw existingError;
+      if (existing) return json({ error: "Já existe um convite pendente para este e-mail." }, 409);
+      const { data: invite, error: insertError } = await admin.from("workspace_invites").insert({ workspace_id: workspaceId, email, role, invited_by: user.id }).select().single();
+      if (insertError) throw insertError;
+      let emailSent = false, message = "Convite registrado. Se a pessoa já tem conta, entre no NEXUS com esse mesmo e-mail para aceitar.";
+      if (!appRedirectUrl) {
+        await admin.from("workspace_invites").delete().eq("id", invite.id);
+        return json({ error: "Endereço seguro do aplicativo não configurado. Defina NEXUS_APP_URL no Supabase e tente novamente." }, 500);
+      }
+      const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { nexus_workspace_invite_id: invite.id, password_set: false },
+        redirectTo: appRedirectUrl,
+      });
+      if (!inviteError) { emailSent = true; message = "Convite enviado por e-mail."; }
+      else {
+        const msg = String(inviteError.message).toLowerCase();
+        if (msg.includes("database error saving new user")) {
+          console.error("team-management invite email", inviteError);
+          message = "Convite registrado. Peça para a pessoa criar a conta no NEXUS com esse mesmo e-mail; o acesso será liberado automaticamente.";
+        } else if (!msg.includes("already") && !msg.includes("registered")) {
+          await admin.from("workspace_invites").delete().eq("id", invite.id); throw inviteError;
+        }
+      }
+      await recordAudit(workspaceId, "INVITE", "workspace_invites", invite.id, ["email", "role", "status"]);
+      return json({ invite: { id: invite.id, email, role }, email_sent: emailSent, message });
+    }
+    if (action === "revoke_invite") {
+      const { error } = await admin.from("workspace_invites").update({ status: "revoked" }).eq("workspace_id", workspaceId).eq("id", String(body.invite_id)).eq("status", "pending");
+      if (error) throw error;
+      await recordAudit(workspaceId, "REVOKE_INVITE", "workspace_invites", String(body.invite_id), ["status"]);
+      return json({ success: true });
+    }
+    if (action === "change_role") {
+      const targetId = String(body.user_id ?? ""), role = String(body.role ?? "");
+      if (!["admin", "editor", "viewer"].includes(role)) return json({ error: "Permissão inválida." }, 400);
+      if (targetId === user.id) return json({ error: "Não é possível alterar sua própria permissão." }, 400);
+      const { error } = await admin.from("workspace_members").update({ role }).eq("workspace_id", workspaceId).eq("user_id", targetId).neq("role", "owner");
+      if (error) throw error;
+      await recordAudit(workspaceId, "ROLE_CHANGED", "workspace_members", targetId, ["role"]);
+      return json({ success: true });
+    }
+    if (action === "remove_member") {
+      const targetId = String(body.user_id ?? "");
+      if (targetId === user.id) return json({ error: "Não é possível remover sua própria conta." }, 400);
+      const { error } = await admin.from("workspace_members").delete().eq("workspace_id", workspaceId).eq("user_id", targetId).neq("role", "owner");
+      if (error) throw error;
+      await recordAudit(workspaceId, "MEMBER_REMOVED", "workspace_members", targetId, ["membership"]);
+      return json({ success: true });
+    }
+    return json({ error: "Ação desconhecida." }, 400);
+  } catch (error) {
+    console.error("team-management", error);
+    return json({ error: error instanceof Error ? error.message : "Erro interno ao gerenciar equipe." }, 500);
+  }
+});

@@ -1,0 +1,44 @@
+name: Validar aplicação
+
+on:
+  push:
+    branches:
+      - main
+      - feat/nexus-finance-foundation
+  pull_request:
+    branches:
+      - main
+      - feat/nexus-finance-foundation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Build, tipos, lint e testes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Instalar dependências travadas
+        run: bun install
+
+      - name: Verificar TypeScript
+        run: bunx tsc --noEmit
+
+      - name: Executar lint
+        run: bun run lint
+
+      - name: Executar testes
+        run: bun run test --passWithNoTests
+
+      - name: Gerar build de produção
+        run: bun run build
