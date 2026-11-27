@@ -12,6 +12,7 @@ import { Administration } from "../components/Administration";
 import { FinancialGoals } from "../components/FinancialGoals";
 import { PersonalFinance } from "../components/PersonalFinance";
 import { AdvancedManagement } from "../components/AdvancedManagement";
+import { BankReconciliation } from "../components/BankReconciliation";
 import { listCompanies } from "../lib/finance-data";
 import { recordMyConsent, listMyPrivacyConsents, COOKIE_VERSION, TERMS_VERSION, PRIVACY_VERSION } from "../lib/privacy";
 import type { Session } from "@supabase/supabase-js";
@@ -60,6 +61,7 @@ const navGroups = [
     { label: "Fluxo de caixa", icon: Activity },
     { label: "Transações", icon: ArrowLeftRight },
     { label: "Contas bancárias", icon: Landmark },
+    { label: "Conciliação bancária", icon: ClipboardCheck },
   ]},
   { title: "GESTÃO", items: [
     { label: "Relatórios", icon: FileBarChart },
@@ -123,7 +125,7 @@ function HelpCenter() {
 
 const proFeatureModules = new Set([
   "Dashboard", "Contas a pagar", "Contas a receber", "Fluxo de caixa",
-  "Transações", "Contas bancárias", "Relatórios", "Metas financeiras", "Categorias e centros de custo",
+  "Transações", "Contas bancárias", "Conciliação bancária", "Relatórios", "Metas financeiras", "Categorias e centros de custo",
   "Clientes", "Fornecedores", "Empresas", "Estoque", "Contratos", "Gestão de pessoas", "Aprovação de pagamentos", "Patrimônio pessoal", "Gestão de Pessoa Física",
 ]);
 
@@ -462,7 +464,7 @@ function DashboardPage() {
         </header>
 
         <div className="page-content" key={companyScope} aria-busy={tabLoading || (proFeatureModules.has(active) && proAccessLoading)}>
-          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Estoque" ? <AdvancedManagement mode="business" module="inventory" showNotice={showNotice}/> : active === "Contratos" ? <AdvancedManagement mode="business" module="contracts" showNotice={showNotice}/> : active === "Gestão de pessoas" ? <AdvancedManagement mode="business" module="people" showNotice={showNotice}/> : active === "Aprovação de pagamentos" ? <AdvancedManagement mode="business" module="approvals" showNotice={showNotice}/> : active === "Patrimônio pessoal" ? <AdvancedManagement mode="personal" module="assets" showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
+          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Conciliação bancária" ? <BankReconciliation showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Estoque" ? <AdvancedManagement mode="business" module="inventory" showNotice={showNotice}/> : active === "Contratos" ? <AdvancedManagement mode="business" module="contracts" showNotice={showNotice}/> : active === "Gestão de pessoas" ? <AdvancedManagement mode="business" module="people" showNotice={showNotice}/> : active === "Aprovação de pagamentos" ? <AdvancedManagement mode="business" module="approvals" showNotice={showNotice}/> : active === "Patrimônio pessoal" ? <AdvancedManagement mode="personal" module="assets" showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
