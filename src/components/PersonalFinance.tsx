@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Plus, RefreshCw, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { Download, Plus, RefreshCw, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { PersonalCreditCards } from "./PersonalCreditCards";
 import { PersonalBudget } from "./PersonalBudget";
@@ -155,9 +155,34 @@ export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}
  const removeEntry=async(id:string)=>{if(!window.confirm("Excluir esta movimentação pessoal?"))return;const {error}=await supabase.from("personal_transactions").delete().eq("id",id);if(error)showNotice(error.message);else{showNotice("Movimentação excluída.");await reload();}};
  const removeAccount=async(id:string)=>{if(!window.confirm("Desativar esta conta pessoal?"))return;const {error}=await supabase.from("personal_financial_accounts").update({is_active:false,updated_at:new Date().toISOString()}).eq("id",id);if(error)showNotice(error.message);else{showNotice("Conta desativada.");await reload();}};
  const removeFinancing=async(id:string)=>{if(!window.confirm("Arquivar este financiamento? O histórico de parcelas será preservado."))return;const {error}=await supabase.from("personal_financings").update({is_active:false,updated_at:new Date().toISOString()}).eq("id",id);if(error)showNotice(error.message);else{showNotice("Financiamento arquivado.");await reload();}};
+ const exportTransactions=()=>{
+  if(entries.length===0){showNotice("Não há movimentações para exportar.");return;}
+  const accountNames=new Map(accounts.map(account=>[account.id,account.name]));
+  const escapeCsv=(value:unknown)=>'"'+String(value??"").replace(/"/g,'""')+'"';
+  const rows=[
+   ["Data","Tipo","Descrição","Categoria","Conta","Valor (R$)","Status"],
+   ...entries.map(entry=>[
+    new Date(entry.transaction_date+"T12:00:00").toLocaleDateString("pt-BR"),
+    entry.type==="income"?"Receita":"Despesa",
+    entry.description,
+    entry.category||"",
+    entry.account_id?accountNames.get(entry.account_id)||"Conta não encontrada":"Sem conta vinculada",
+    Number(entry.amount).toFixed(2).replace(".",","),
+    entry.status==="paid"?"Efetivada":entry.status==="pending"?"Pendente":"Cancelada"
+   ])
+  ];
+  const csv="\\uFEFF"+rows.map(row=>row.map(escapeCsv).join(";")).join("\\r\\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download="nexus-financas-pessoais-"+today()+".csv";
+  document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  showNotice("Arquivo CSV preparado para download.");
+ };
 
  return <section className="personal-finance">
-  <div className="personal-heading"><div><span className="eyebrow">AMBIENTE INDIVIDUAL</span><h1>Gestão de Pessoa Física</h1><p>Organize suas contas, receitas, despesas e financiamentos pessoais.</p></div><button className="button-secondary" onClick={()=>void reload()}><RefreshCw size={16}/> Atualizar</button></div>
+  <div className="personal-heading"><div><span className="eyebrow">AMBIENTE INDIVIDUAL</span><h1>Gestão de Pessoa Física</h1><p>Organize suas contas, receitas, despesas e financiamentos pessoais.</p></div><div className="personal-form-actions"><button className="button-secondary" onClick={exportTransactions} disabled={entries.length===0}><Download size={16}/> Exportar CSV</button><button className="button-secondary" onClick={()=>void reload()}><RefreshCw size={16}/> Atualizar</button></div></div>
   <nav className="personal-tabs" aria-label="Seções da gestão pessoal">{([["overview","Visão geral"],["transactions","Movimentações"],["accounts","Contas"],["financings","Financiamentos"],["cards","Cartões de crédito"],["budget","Orçamento mensal"],["goals","Metas de economia"],["simulator","Simular financiamento"],["calendar","Calendário"]] as [Tab,string][]).map(([key,label])=><button key={key} className={tab===key?"is-active":""} onClick={()=>setTab(key)}>{label}</button>)}</nav>
   {loading?<div className="panel"><p>Carregando seus dados pessoais…</p></div>:<>
    {tab==="overview"&&<><div className="personal-metrics"><article><span>Saldo inicial + resultado</span><strong>{money(balance)}</strong><small>Contas e movimentações pagas</small></article><article><span>Receitas pagas</span><strong>{money(income)}</strong><small><TrendingUp size={14}/> Entradas registradas</small></article><article><span>Despesas pagas</span><strong>{money(expense)}</strong><small><TrendingDown size={14}/> Saídas registradas</small></article><article><span>Financiamentos restantes</span><strong>{money(remaining)}</strong><small>Estimativa baseada nas parcelas cadastradas</small></article></div><div className="panel personal-list"><div className="personal-section-title"><h2>Movimentações recentes</h2><button className="button-secondary" onClick={()=>setTab("transactions")}>Ver todas</button></div>{recent.length?recent.map(x=><div className="personal-row" key={x.id}><div><strong>{x.description}</strong><small>{x.category||"Sem categoria"} · {new Date(x.transaction_date+"T12:00:00").toLocaleDateString("pt-BR")}</small></div><b className={x.type==="income"?"positive":"negative"}>{x.type==="income"?"+":"−"} {money(Number(x.amount))}</b></div>):<p className="personal-empty">Nenhuma movimentação cadastrada. Comece registrando sua primeira receita ou despesa.</p>}</div></>}
