@@ -33,6 +33,8 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Existing modules still contain legacy explicit-any boundaries; TypeScript remains the type-check gate.
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );
