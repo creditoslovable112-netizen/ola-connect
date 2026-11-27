@@ -1787,3 +1787,11 @@ input, select, textarea {
 .personal-transaction-filters > button { min-height:39px; justify-content:center; }
 .personal-filter-summary { margin:8px 0 12px; color:var(--muted-foreground,#68756f); font-size:11px; line-height:1.6; }
 @media(max-width:560px) { .personal-transaction-filters { grid-template-columns:1fr 1fr; } .personal-transaction-filters label:first-child { grid-column:1/-1; } .personal-transaction-filters > button { grid-column:1/-1; width:100%; } }
+
+
+/* Gráfico de fluxo financeiro pessoal */
+.personal-flow-chart { margin:16px 0; padding:18px; }
+.personal-flow-chart .personal-section-title { margin-bottom:8px; }
+.personal-flow-chart .personal-section-title small { display:block; margin-top:4px; color:var(--muted-foreground,#68756f); font-size:11px; }
+.personal-flow-chart-area { width:100%; height:260px; min-width:0; }
+@media(max-width:560px) { .personal-flow-chart { padding:12px 8px; } .personal-flow-chart-area { height:230px; } }
