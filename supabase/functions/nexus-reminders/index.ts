@@ -34,19 +34,24 @@ const cardDue = (year: number, month: number, day: number) => {
 
 type Reminder = { userId: string; eventKey: string; entityId: string | null; title: string; body: string; url: string };
 
+// Reuse one stateless Supabase Data API client per warm Edge Function isolate.
+// This is HTTP pooling/keep-alive, not a direct PostgreSQL socket pool.
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const admin = supabaseUrl && serviceKey
+  ? createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceKey) return json({ error: "Server configuration missing" }, 500);
+    if (!admin) return json({ error: "Server configuration missing" }, 500);
 
     const token = req.headers.get("x-cron-token") ?? "";
-    const verifier = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: valid, error: validationError } = await verifier.rpc("validate_nexus_reminder_token", { p_token: token });
+    const { data: valid, error: validationError } = await admin.rpc("validate_nexus_reminder_token", { p_token: token });
     if (validationError || valid !== true) return json({ error: "Unauthorized" }, 401);
-
-    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const now = new Date();
     const today = dateKey(dateParts(now));
     const todayPartsForHorizon = parseDate(today);
