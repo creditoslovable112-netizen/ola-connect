@@ -83,7 +83,8 @@ Deno.serve(async (req: Request) => {
         const paidByFinancing = new Map<string, number>();
         for (const payment of payments.data ?? []) paidByFinancing.set(payment.financing_id, (paidByFinancing.get(payment.financing_id) ?? 0) + Number(payment.amount));
         const debt = (financing.data ?? []).reduce((sum: number, item: any) => sum + Math.max(0, Number(item.total_amount) - (paidByFinancing.get(item.id) ?? 0)), 0);
-        extra = { estimated_financing_balance: debt, savings_goals: goals.data ?? [] };
+        const goalRows = goals.data ?? [];
+        extra = { estimated_financing_balance: debt, savings_goals: { count: goalRows.length, target_total: goalRows.reduce((sum: number, goal: any) => sum + Number(goal.target_amount), 0), saved_total: goalRows.reduce((sum: number, goal: any) => sum + Number(goal.current_amount), 0), deadlines_within_30_days: goalRows.filter((goal: any) => goal.target_date && goal.target_date >= today && goal.target_date <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0,10)).length } };
       } else {
         const workspaceId = typeof body?.workspace_id === "string" ? body.workspace_id : "";
         if (!workspaceId) return json({ error: "Workspace não informado para a análise empresarial." }, 400);
