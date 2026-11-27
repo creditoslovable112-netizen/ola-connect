@@ -43,7 +43,7 @@ export function NexusVoice({ environment = "business" }: { environment?: "busine
     if (!open) return;
     let alive = true;
     if (environment === "personal") {
-      void supabase.from("personal_financial_accounts").select("id,name").eq("is_active", true).order("name")
+      void Promise.resolve(supabase.from("personal_financial_accounts").select("id,name").eq("is_active", true).order("name"))
         .then(({ data, error }) => {
           if (error) throw error;
           if (!alive) return;
@@ -69,7 +69,7 @@ export function NexusVoice({ environment = "business" }: { environment?: "busine
         const availableGoals = (goalRows ?? []) as VoiceGoal[];
         setAccounts(a); setCategories(c); setCompanies(co); setGoals(availableGoals);
         setAccountId((current) => current || a[0]?.id || "");
-        setGoalId((current) => current || (availableGoals.length === 1 ? availableGoals[0].id : ""));
+        setGoalId((current) => current || (availableGoals.length === 1 ? availableGoals[0]?.id ?? "" : ""));
         const savedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
         setCompanyId((current) => current || (savedCompany && savedCompany !== "all" ? savedCompany : co.length === 1 ? co[0].id : ""));
       })
@@ -114,7 +114,7 @@ export function NexusVoice({ environment = "business" }: { environment?: "busine
         const match = goals.find((item) => item.name.toLocaleLowerCase("pt-BR") === namedGoal.goal_name!.toLocaleLowerCase("pt-BR"));
         if (match) setGoalId(match.id);
       } else if (nextPlan.actions.some((item) => item.type === "goal_contribution") && goals.length === 1) {
-        setGoalId(goals[0].id);
+        setGoalId(goals[0]?.id ?? "");
       }
       if (!nextPlan.supported && nextPlan.clarification) setMessage(nextPlan.clarification);
     } catch (error) {
