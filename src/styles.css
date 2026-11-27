@@ -1756,3 +1756,9 @@ input, select, textarea {
  .report-section { break-inside:avoid; }
  .welcome-row { margin:0 0 16px!important; }
 }
+
+.nexus-ai-analysis-box { display:grid; grid-template-columns:minmax(0,1fr) 120px auto; align-items:center; gap:12px; padding:16px; margin-bottom:16px; border:1px solid var(--border,#dfe7e2); border-radius:14px; background:var(--card,#fff); }
+.nexus-ai-analysis-box strong { display:block; font-size:14px; }
+.nexus-ai-analysis-box p { margin:4px 0 0; color:var(--muted-foreground,#68756f); font-size:12px; }
+.nexus-ai-analysis-box select { min-height:40px; border:1px solid var(--border,#dfe7e2); border-radius:9px; padding:8px; background:var(--background,#fff); color:var(--foreground,#17211d); }
+@media(max-width:700px) { .nexus-ai-analysis-box { grid-template-columns:1fr; } .nexus-ai-analysis-box button { width:100%; justify-content:center; } }
