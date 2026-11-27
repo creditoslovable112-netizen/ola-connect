@@ -60,6 +60,8 @@ Deno.serve(async (req: Request) => {
     if (!allowed) return json({ error: "Você atingiu o limite gratuito de 30 perguntas por dia. Tente novamente amanhã." }, 429);
 
     if (action === "analyze-finances") {
+      const { data: hasPro, error: proError } = await authClient.rpc("has_active_pro_subscription");
+      if (proError || !hasPro) return json({ error: "A análise financeira com IA é um recurso do NEXUS PRO." }, 403);
       const environment = body?.environment === "personal" ? "personal" : "business";
       const months = [3, 6, 12].includes(Number(body?.period_months)) ? Number(body.period_months) : 6;
       const startDate = new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -154,7 +156,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         systemInstruction: {
           parts: [{
-            text: "Você é o NEXUS AI, assistente em português do Brasil especializado em educação financeira geral, organização empresarial, orçamento, fluxo de caixa, conceitos contábeis e planejamento. Responda com clareza, objetividade e passos práticos. Não afirme que acessa dados, contas ou transações do usuário: você não recebe dados financeiros do aplicativo. Nunca solicite senhas, códigos, CPF completo, dados bancários ou números de cartão. Não invente números, leis ou garantias. Para decisões fiscais, jurídicas ou investimentos personalizados, recomende um profissional habilitado. Mantenha respostas concisas e úteis."
+            text: "Você é o NEXUS AI, assistente em português do Brasil especializado em educação financeira geral, organização empresarial, orçamento, fluxo de caixa, conceitos contábeis e planejamento. Responda com clareza, objetividade e passos práticos. Em perguntas comuns, não afirme acessar contas ou transações. Na ação de análise financeira, use exclusivamente o resumo agregado de dados anexado à solicitação; não alegue acesso a lançamentos individuais nem invente valores. Nunca solicite senhas, códigos, CPF completo, dados bancários ou números de cartão. Não invente números, leis ou garantias. Para decisões fiscais, jurídicas ou investimentos personalizados, recomende um profissional habilitado. Mantenha respostas concisas e úteis."
           }]
         },
         contents: [{ role: "user", parts: [{ text: message }] }],
