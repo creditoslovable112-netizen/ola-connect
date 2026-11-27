@@ -1775,3 +1775,15 @@ input, select, textarea {
 .wealth-columns .personal-financing-card .personal-section-title{align-items:flex-start}
 @media(max-width:900px){.wealth-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.wealth-metrics{grid-template-columns:1fr}}
+
+
+/* Filtros de movimentações pessoais */
+.personal-transaction-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:14px 0 8px; align-items:end; }
+.personal-transaction-filters label { display:grid; gap:6px; min-width:0; color:var(--muted-foreground,#68756f); font-size:11px; font-weight:700; }
+.personal-transaction-filters label > span { color:var(--muted-foreground,#68756f); }
+.personal-transaction-filters input,.personal-transaction-filters select { width:100%; min-width:0; min-height:39px; padding:8px 10px; border:1px solid var(--border,#dfe5e2); border-radius:9px; background:var(--background,#fff); color:var(--foreground,#17211d); font:inherit; }
+.personal-search-field { display:flex; align-items:center; gap:7px; min-width:0; min-height:39px; padding:0 10px; border:1px solid var(--border,#dfe5e2); border-radius:9px; background:var(--background,#fff); }
+.personal-search-field input { min-height:35px; padding:5px 0; border:0; outline:0; }
+.personal-transaction-filters > button { min-height:39px; justify-content:center; }
+.personal-filter-summary { margin:8px 0 12px; color:var(--muted-foreground,#68756f); font-size:11px; line-height:1.6; }
+@media(max-width:560px) { .personal-transaction-filters { grid-template-columns:1fr 1fr; } .personal-transaction-filters label:first-child { grid-column:1/-1; } .personal-transaction-filters > button { grid-column:1/-1; width:100%; } }
