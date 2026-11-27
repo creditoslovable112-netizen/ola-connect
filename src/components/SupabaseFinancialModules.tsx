@@ -425,6 +425,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
     const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+personnelCosts;
     return {key,label:monthLabel(key),revenue,costs,result:revenue-costs};
   });
+  let projectedBalance = currentBalance;
   const dueForecast = Array.from({length:3},(_,index)=>{
     const date=new Date(todayDate.getFullYear(),todayDate.getMonth()+index,1);
     const key=date.toISOString().slice(0,7);
@@ -432,8 +433,10 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
     const expectedIn=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
     const personnelOut=pendingPersonnel.filter(item=>monthKey(item.due_date)===key).reduce((sum,item)=>sum+Number(item.amount),0);
     const expectedOut=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+personnelOut;
-    return {key,label:monthLabel(key),expectedIn,expectedOut,net:expectedIn-expectedOut};
+    projectedBalance += expectedIn - expectedOut;
+    return {key,label:monthLabel(key),expectedIn,expectedOut,net:expectedIn-expectedOut,projectedBalance};
   });
+  const cashShortfall = dueForecast.find(row=>row.projectedBalance<0);
   const categorySpending=data.categories.map(category=>{
     const value=paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&new Date((item.paid_at??item.transaction_date)+"T12:00:00")>=startMonth)
       .reduce((sum,item)=>sum+Number(item.amount),0);
@@ -481,8 +484,8 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
       </section>
       <section className="panel payable-list-panel report-section">
         <div className="panel-heading"><div><h2>Projeção de caixa · próximos 3 meses</h2><p>Estimativa baseada somente em lançamentos pendentes com vencimento informado.</p></div></div>
-        <div className="table-scroll"><table className="data-table"><thead><tr><th>Mês</th><th>Entradas previstas</th><th>Saídas previstas</th><th>Saldo do período</th></tr></thead><tbody>{dueForecast.map(row=><tr key={row.key}><td>{row.label}</td><td>{money(row.expectedIn)}</td><td>{money(row.expectedOut)}</td><td><strong>{money(row.net)}</strong></td></tr>)}</tbody></table></div>
-        <div className="summary-footer"><span>Saldo atual + compromissos em aberto</span><strong>{money(currentBalance+openIncome-openExpense)}</strong></div>
+        <div className="table-scroll"><table className="data-table"><thead><tr><th>Mês</th><th>Entradas previstas</th><th>Saídas previstas</th><th>Saldo do período</th><th>Saldo acumulado estimado</th></tr></thead><tbody>{dueForecast.map(row=><tr key={row.key}><td>{row.label}</td><td>{money(row.expectedIn)}</td><td>{money(row.expectedOut)}</td><td><strong>{money(row.net)}</strong></td><td><strong className={row.projectedBalance<0?"negative":"positive"}>{money(row.projectedBalance)}</strong></td></tr>)}</tbody></table></div>
+        <div className="summary-footer"><span>Saldo atual + compromissos em aberto</span><strong>{money(currentBalance+openIncome-openExpense)}</strong></div>{cashShortfall&&<div className="demo-disclaimer"><ShieldCheck size={14}/> Atenção: a projeção aponta possível saldo negativo em {cashShortfall.label}. Revise os vencimentos e confirme os valores com seus registros.</div>}
       </section>
       <section className="panel payable-list-panel report-section">
         <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Valores pagos no período selecionado.</p></div></div>
