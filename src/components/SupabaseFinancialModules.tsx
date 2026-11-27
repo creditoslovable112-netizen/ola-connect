@@ -392,7 +392,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
       if (alive) setPersonnelExpenses(error ? [] : rows ?? []);
     }).catch(() => { if (alive) setPersonnelExpenses([]); });
     return () => { alive = false; };
-  }, [data.transactions.length]);
+  }, [data.transactions.length, data.loading]);
   const [monthsBack, setMonthsBack] = useState("6");
   const paid = data.transactions.filter(item => item.status === "paid");
   const pending = data.transactions.filter(item => item.status === "pending" || item.status === "overdue");
@@ -406,7 +406,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const openIncome = pending.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
   const openExpense = pending.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0) + pendingPersonnel.reduce((sum,item)=>sum+Number(item.amount),0);
   const opening = data.accounts.reduce((sum,item)=>sum+Number(item.opening_balance),0);
-  const currentBalance = opening + paid.reduce((sum,item)=>sum+(item.type==="income"?1:-1)*Number(item.amount),0);
+  const currentBalance = opening + paid.reduce((sum,item)=>sum+(item.type==="income"?1:-1)*Number(item.amount),0) - paidPersonnel.reduce((sum,item)=>sum+Number(item.amount),0);
   const todayDate = new Date(today()+"T12:00:00");
   const startMonth = new Date(todayDate.getFullYear(),todayDate.getMonth()-Number(monthsBack)+1,1);
   const monthKey = (value:string|null) => value ? value.slice(0,7) : "";
