@@ -55,12 +55,12 @@ export function PushNotificationSettings() {
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: decodeVapidKey(config.publicKey),
+          applicationServerKey: decodeVapidKey(config.publicKey).buffer as ArrayBuffer,
         });
       }
       const serialized = subscription.toJSON();
-      const p256dh = serialized.keys?.p256dh;
-      const auth = serialized.keys?.auth;
+      const p256dh = serialized.keys?.["p256dh"];
+      const auth = serialized.keys?.["auth"];
       if (!subscription.endpoint || !p256dh || !auth) throw new Error("O navegador não retornou os dados completos da inscrição.");
       const { error: saveError } = await supabase.from("push_subscriptions").upsert({
         user_id: userData.user.id,
