@@ -71,7 +71,7 @@ export function NexusVoice({ environment = "business" }: { environment?: "busine
         setAccountId((current) => current || a[0]?.id || "");
         setGoalId((current) => current || (availableGoals.length === 1 ? availableGoals[0]?.id ?? "" : ""));
         const savedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
-        setCompanyId((current) => current || (savedCompany && savedCompany !== "all" ? savedCompany : co.length === 1 ? co[0].id : ""));
+        setCompanyId((current) => current || (savedCompany && savedCompany !== "all" ? savedCompany : co.length === 1 ? co[0]?.id ?? "" : ""));
       })
       .catch((error) => { if (alive) setMessage(error instanceof Error ? error.message : "Não foi possível carregar seus dados."); });
     return () => { alive = false; };
