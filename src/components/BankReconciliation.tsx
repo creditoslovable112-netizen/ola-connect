@@ -90,7 +90,7 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
     <div className="reconciliation-candidates"><h3>Movimentações do período</h3><p>Marque as linhas que você conferiu no extrato. Itens já conciliados não aparecem novamente.</p>
      {eligible.length?eligible.map(item=><label className="reconciliation-row" key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={()=>toggle(item.id)}/><span><strong>{item.description}</strong><small>{item.transaction_date} · {item.counterparty||"Sem contraparte"} · {item.status}</small></span><b className={item.type==="income"?"positive":"negative"}>{item.type==="income"?"+":"−"} {money(Number(item.amount))}</b></label>):<p>Nenhuma movimentação ainda não conciliada neste período.</p>}
     </div>
-    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving}>Concluir conciliação</button></div>
+    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving||!canFinalize}>Concluir conciliação</button></div>
    </form>}
   </div>
   <div className="panel advanced-panel"><div className="panel-heading"><div><h2>Histórico de conciliações</h2><p>Consulte os períodos já conferidos e as diferenças encontradas.</p></div></div>
