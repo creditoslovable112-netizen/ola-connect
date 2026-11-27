@@ -96,9 +96,9 @@ const streamNexusAI = async (
     while (true) {
       const { value, done } = await reader.read();
       buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-      const lines = buffer.split("\\n");
+      const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
-      for (const line of lines) processLine(line.replace(/\\r$/, ""));
+      for (const line of lines) processLine(line.replace(/\r$/, ""));
       if (done) break;
     }
     if (buffer.trim()) processLine(buffer.replace(/\\r$/, ""));
