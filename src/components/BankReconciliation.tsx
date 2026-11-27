@@ -51,12 +51,13 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
   event.preventDefault();
   if(!account||!statementBalance.trim()||!Number.isFinite(statementValue)){showNotice("Selecione uma conta e informe o saldo final do extrato.");return;}
   if(periodEnd<periodStart){showNotice("A data final deve ser igual ou posterior à data inicial.");return;}
+  if(!canFinalize){showNotice("Para concluir, o saldo do extrato deve bater com o saldo calculado e todas as movimentações do período precisam estar conferidas.");return;}
   setSaving(true);
   try{
    const {data,error}=await (supabase as any).from("bank_reconciliations").insert({
     workspace_id:workspaceId,account_id:account.id,company_id:account.company_id,user_id:userId,
     period_start:periodStart,period_end:periodEnd,statement_balance:statementValue,
-    calculated_balance:calculatedBalance,difference,notes:selectedIds.length+" movimentações marcadas como conferidas."
+    calculated_balance:calculatedBalance,difference,notes:selectedIds.length+" movimentações conferidas."
    }).select("*").single();
    if(error)throw error;
    if(canFinalize&&selectedIds.length){
@@ -89,7 +90,7 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
     <div className="reconciliation-candidates"><h3>Movimentações do período</h3><p>Marque as linhas que você conferiu no extrato. Itens já conciliados não aparecem novamente.</p>
      {eligible.length?eligible.map(item=><label className="reconciliation-row" key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={()=>toggle(item.id)}/><span><strong>{item.description}</strong><small>{item.transaction_date} · {item.counterparty||"Sem contraparte"} · {item.status}</small></span><b className={item.type==="income"?"positive":"negative"}>{item.type==="income"?"+":"−"} {money(Number(item.amount))}</b></label>):<p>Nenhuma movimentação ainda não conciliada neste período.</p>}
     </div>
-    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving}>{canFinalize?"Concluir conciliação":"Salvar como rascunho"}</button></div>
+    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving}>Concluir conciliação</button></div>
    </form>}
   </div>
   <div className="panel advanced-panel"><div className="panel-heading"><div><h2>Histórico de conciliações</h2><p>Consulte os períodos já conferidos e as diferenças encontradas.</p></div></div>
