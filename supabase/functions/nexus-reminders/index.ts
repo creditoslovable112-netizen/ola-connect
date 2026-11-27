@@ -38,12 +38,11 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "Server configuration missing" }, 500);
+    if (!supabaseUrl || !serviceKey) return json({ error: "Server configuration missing" }, 500);
 
     const token = req.headers.get("x-cron-token") ?? "";
-    const verifier = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const verifier = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: valid, error: validationError } = await verifier.rpc("validate_nexus_reminder_token", { p_token: token });
     if (validationError || valid !== true) return json({ error: "Unauthorized" }, 401);
 
@@ -59,7 +58,8 @@ Deno.serve(async (req: Request) => {
 
     const { data: directSubs, error: directError } = await admin.from("user_subscriptions")
       .select("user_id").eq("plan_id", proPlan.id).eq("status", "authorized")
-      .lte("current_period_start", now.toISOString()).gt("current_period_end", now.toISOString());
+      .lte("current_period_start", now.toISOString())
+      .or(`current_period_end.gt.${now.toISOString()},and(provider.eq.manual,current_period_end.is.null)`);
     if (directError) throw directError;
     const eligible = new Set((directSubs ?? []).map((r) => r.user_id as string));
 
@@ -74,7 +74,8 @@ Deno.serve(async (req: Request) => {
     if (memberOwners.length) {
       const { data: ownerSubs, error: ownerError } = await admin.from("user_subscriptions")
         .select("user_id").in("user_id", memberOwners).eq("plan_id", proPlan.id).eq("status", "authorized")
-        .lte("current_period_start", now.toISOString()).gt("current_period_end", now.toISOString());
+        .lte("current_period_start", now.toISOString())
+      .or(`current_period_end.gt.${now.toISOString()},and(provider.eq.manual,current_period_end.is.null)`);
       if (ownerError) throw ownerError;
       const proOwners = new Set((ownerSubs ?? []).map((r) => r.user_id as string));
       for (const member of memberships ?? []) {
