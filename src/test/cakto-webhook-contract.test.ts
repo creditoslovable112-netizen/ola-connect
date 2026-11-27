@@ -6,6 +6,10 @@ const webhook = readFileSync(
   resolve(process.cwd(), "supabase/functions/cakto-webhook/index.ts"),
   "utf8",
 );
+const logic = readFileSync(
+  resolve(process.cwd(), "supabase/functions/cakto-webhook/logic.ts"),
+  "utf8",
+);
 
 describe("Cakto webhook v28 contract", () => {
   it("validates the timestamped HMAC signature before processing", () => {
@@ -17,8 +21,9 @@ describe("Cakto webhook v28 contract", () => {
   });
 
   it("only accepts the configured subscription product", () => {
-    expect(webhook).toContain("order.product?.id !== productId");
-    expect(webhook).toContain('order.product?.type !== "subscription"');
+    expect(webhook).toContain("getOrderDecision(event, order, productId)");
+    expect(logic).toContain("order.product?.id !== expectedProductId");
+    expect(logic).toContain('order.product.type !== "subscription"');
   });
 
   it("requires a paid BRL purchase for the exact PRO price before activation", () => {
@@ -36,8 +41,8 @@ describe("Cakto webhook v28 contract", () => {
   it("deduplicates events and maps cancellation/refund states", () => {
     expect(webhook).toContain("makeEventKey(event, order.id)");
     expect(webhook).toContain(".insert({ event_key: eventKey");
-    expect(webhook).toContain('subscription_canceled: "cancelled"');
-    expect(webhook).toContain('refund: "cancelled"');
-    expect(webhook).toContain('chargeback: "cancelled"');
+    expect(logic).toContain('subscription_canceled: "cancelled"');
+    expect(logic).toContain('refund: "cancelled"');
+    expect(logic).toContain('chargeback: "cancelled"');
   });
 });
