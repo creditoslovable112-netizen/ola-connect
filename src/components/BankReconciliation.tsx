@@ -26,7 +26,7 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
   try{
    const [uid,wid,accountRows,transactionRows]=await Promise.all([requireUserId(),requireWorkspaceId(),listFinancialAccounts(),listTransactions()]);
    setUserId(uid);setWorkspaceId(wid);setAccounts(accountRows);setTransactions(transactionRows);
-   if(!accountId&&accountRows.length)setAccountId(accountRows[0].id);
+   if(!accountId&&accountRows.length&&accountRows[0])setAccountId(accountRows[0].id);
    const [r,i]=await Promise.all([
     (supabase as any).from("bank_reconciliations").select("*").eq("workspace_id",wid).order("period_end",{ascending:false}).limit(100),
     (supabase as any).from("bank_reconciliation_items").select("transaction_id").eq("workspace_id",wid)
