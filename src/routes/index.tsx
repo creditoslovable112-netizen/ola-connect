@@ -422,7 +422,7 @@ function DashboardPage() {
             <div className="promo-icon"><Sparkles size={17}/></div>
             <strong>Conheça o Nexus IA</strong>
             <p>Insights inteligentes para decisões melhores.</p>
-            <button onClick={() => showNotice("Nexus IA estará disponível em uma próxima etapa.")}>Explorar recurso <ArrowUpRight size={14}/></button>
+            <button onClick={() => { setActive("NEXUS AI"); setMobileOpen(false); }}>Explorar recurso <ArrowUpRight size={14}/></button>
           </div>
         </div>
         <div className="sidebar-bottom">
