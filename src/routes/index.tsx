@@ -194,15 +194,19 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
         const source = environment === "personal"
           ? await Promise.all([
               (supabase as any).from("personal_financial_goals").select("id,name,target_amount,current_amount,target_date"),
-              (supabase as any).from("personal_transactions").select("id,description,type,amount,due_date,status").in("status", ["pending"]).not("due_date", "is", null).order("due_date", { ascending: true }).limit(100)
+              (supabase as any).from("personal_transactions").select("id,description,type,amount,due_date,status").in("status", ["pending"]).not("due_date", "is", null).order("due_date", { ascending: true }).limit(100),
+              supabase.from("personal_financings").select("id,name,monthly_installment,installments_total,installments_paid,first_due_date").eq("is_active", true),
+              supabase.from("personal_credit_cards").select("id,name,due_day").eq("is_active", true)
             ])
           : await Promise.all([
               supabase.from("financial_goals").select("id,name,target_amount,current_amount,target_date").order("target_date", { ascending: true, nullsFirst: false }),
               (supabase as any).from("transactions").select("id,description,type,amount,due_date,status").in("status", ["pending","overdue"]).not("due_date", "is", null).order("due_date", { ascending: true }).limit(100)
             ]);
-        const [goalResult, transactionResult] = source;
+        const [goalResult, transactionResult, financingResult, cardResult] = source;
         if (goalResult.error) throw goalResult.error;
         if (transactionResult.error) throw transactionResult.error;
+        if (financingResult?.error) throw financingResult.error;
+        if (cardResult?.error) throw cardResult.error;
         const today = new Date(); today.setHours(0,0,0,0);
         const money = (value:number) => value.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
         const generated: NexusNotification[] = [];
@@ -230,6 +234,26 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
             message:overdue?`Vencida há ${Math.abs(days)} dia(s).`:days===0?"Vence hoje.":`Vence em ${days} dia(s).`,
             detail:`${transaction.description} · ${money(Number(transaction.amount||0))}`
           });
+        }
+        if (environment === "personal") {
+          for (const financing of financingResult?.data ?? []) {
+            const paidCount=Number(financing.installments_paid||0), total=Number(financing.installments_total||0);
+            if(paidCount>=total||!financing.first_due_date)continue;
+            const first=new Date(financing.first_due_date+"T12:00:00");
+            const due=new Date(first.getFullYear(),first.getMonth()+paidCount,1,12);
+            due.setDate(Math.min(first.getDate(),new Date(due.getFullYear(),due.getMonth()+1,0,12).getDate()));
+            const days=Math.ceil((due.getTime()-today.getTime())/86400000);
+            if(days>7)continue;
+            generated.push({id:`financing-due:${financing.id}:${due.toISOString().slice(0,10)}`,goalId:financing.id,tone:days<0?"warning":"info",title:days<0?"Parcela de financiamento em atraso":"Parcela de financiamento próxima",message:days<0?`Vencida há ${Math.abs(days)} dia(s).`:days===0?"Vence hoje.":`Vence em ${days} dia(s).`,detail:`${financing.name} · Parcela ${paidCount+1} de ${total} · ${money(Number(financing.monthly_installment||0))}`});
+          }
+          for (const card of cardResult?.data ?? []) {
+            const now=new Date();const due=new Date(now.getFullYear(),now.getMonth(),1,12);
+            due.setDate(Math.min(Number(card.due_day),new Date(due.getFullYear(),due.getMonth()+1,0,12).getDate()));
+            if(due.getTime()<today.getTime())due.setMonth(due.getMonth()+1);
+            const days=Math.ceil((due.getTime()-today.getTime())/86400000);
+            if(days>7)continue;
+            generated.push({id:`card-due:${card.id}:${due.getFullYear()}-${due.getMonth()+1}`,goalId:card.id,tone:days===0?"warning":"info",title:"Vencimento de cartão próximo",message:days===0?"A fatura vence hoje.":`A fatura vence em ${days} dia(s).`,detail:`${card.name} · Dia ${card.due_day} · confira o valor na aba Cartões.`});
+          }
         }
         if (alive) setItems(generated);
       } catch {
