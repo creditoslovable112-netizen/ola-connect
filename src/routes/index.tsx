@@ -180,6 +180,9 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
   const [items, setItems] = useState<NexusNotification[]>([]);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"alerts" | "history">("alerts");
+  const [history, setHistory] = useState<Array<{id:string;event_type:string;status:string;created_at:string;sent_at:string|null;error_message:string|null;metadata:Record<string,unknown>}>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const storageKey = `nexus-notifications-read:${userId}:${environment}`;
   useEffect(() => {
     try { setReadIds(JSON.parse(window.localStorage.getItem(storageKey) || "[]") as string[]); }
@@ -262,6 +265,21 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
     })();
     return () => { alive = false; };
   }, [enabled, hasProAccess, environment, userId]);
+  useEffect(() => {
+    let alive = true;
+    if (!open || view !== "history" || !enabled || !hasProAccess) return;
+    setHistoryLoading(true);
+    void (supabase as any).from("notification_dispatch_log")
+      .select("id,event_type,status,created_at,sent_at,error_message,metadata")
+      .eq("user_id", userId).eq("channel", "push")
+      .order("created_at", { ascending: false }).limit(40)
+      .then(({ data, error }: any) => {
+        if (!alive) return;
+        setHistory(error ? [] : (data ?? []));
+      })
+      .finally(() => { if (alive) setHistoryLoading(false); });
+    return () => { alive = false; };
+  }, [open, view, enabled, hasProAccess, userId]);
   const unread = items.filter(item => !readIds.includes(item.id)).length;
   const markAllRead = () => { const next=items.map(item=>item.id);setReadIds(next);window.localStorage.setItem(storageKey,JSON.stringify(next)); };
   const markRead = (id:string) => { const next=Array.from(new Set([...readIds,id]));setReadIds(next);window.localStorage.setItem(storageKey,JSON.stringify(next)); };
