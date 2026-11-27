@@ -73,39 +73,39 @@
 }
 
 :root {
-  --dashboard-canvas: oklch(0.987 0.005 305);
+  --dashboard-canvas: oklch(0.983 0.008 325);
   --dashboard-surface: oklch(1 0 0);
   --dashboard-text: oklch(0.31 0.013 285);
   --dashboard-muted: oklch(0.53 0.018 285);
   --dashboard-border: oklch(0.94 0.007 300);
   --dashboard-income: oklch(0.54 0.105 177);
-  --dashboard-expense: oklch(0.59 0.175 12);
+  --dashboard-expense: oklch(0.46 0.15 350);
   --dashboard-coral: oklch(0.65 0.155 28);
   --dashboard-income-soft: oklch(0.96 0.025 177);
-  --dashboard-expense-soft: oklch(0.97 0.016 12);
+  --dashboard-expense-soft: oklch(0.96 0.022 350);
   --dashboard-coral-soft: oklch(0.97 0.018 28);
   --dashboard-shadow: 0 4px 18px oklch(0.3 0.02 285 / 0.045);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.31 0.013 285);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
+  --primary: oklch(0.5 0.105 177);
   --primary-foreground: oklch(0.984 0.003 247.858);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.53 0.018 285);
+  --accent: oklch(0.96 0.025 177);
   --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.46 0.15 350);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
   --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-1: oklch(0.65 0.155 28);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
@@ -1951,4 +1951,168 @@ input, select, textarea {
 @keyframes finance-pulse { from { opacity:.45; } to { opacity:1; } }
 @media (prefers-reduced-motion:reduce) {
   .finance-dashboard *, .finance-personal-overview * { animation:none!important; transition:none!important; }
+}
+
+/* NEXUS identity: one semantic presentation layer for all existing modules. */
+:root {
+  --nexus-bg:var(--dashboard-canvas); --nexus-panel:var(--dashboard-surface);
+  --nexus-panel-2:var(--dashboard-canvas); --nexus-border:var(--dashboard-border);
+  --nexus-text:var(--dashboard-text); --nexus-muted:var(--dashboard-muted);
+  --nexus-blue:var(--primary); --nexus-cyan:var(--dashboard-income);
+  --accent-bg:var(--dashboard-income-soft);
+  --nexus-modal-shadow:0 20px 70px oklch(0.25 0.025 325 / .14);
+  --nexus-scrim:oklch(0.25 0.025 325 / .35);
+  --nexus-radius:12px;
+  font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif!important;
+}
+html, body, .nexus-app, .main-area, .page-content, .nexus-auth, .nexus-loading-screen, .nexus-skeleton {
+  background:var(--dashboard-canvas)!important; color:var(--dashboard-text)!important;
+}
+body, button, input, select, textarea { font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif!important; }
+.nexus-app::before, .auth-glow, .panel::before, .metric-card::before, .button-primary::after { content:none!important; background:none!important; box-shadow:none!important; }
+.nexus-app *, .nexus-auth *, .legal-gate *, .cookie-banner *, .pro-lock-dialog * { letter-spacing:0!important; }
+.sidebar, .topbar { background:var(--dashboard-surface)!important; border-color:var(--dashboard-border)!important; box-shadow:var(--dashboard-shadow)!important; backdrop-filter:none!important; }
+.sidebar { width:264px!important; }
+.main-area { margin-left:264px!important; width:calc(100% - 264px)!important; }
+.brand strong, .workspace-copy strong, .profile-copy strong, .breadcrumb strong { color:var(--dashboard-text)!important; }
+.brand small, .workspace-copy small, .profile-copy small, .nav-label, .breadcrumb { color:var(--dashboard-muted)!important; }
+.brand-mark, .workspace-avatar, .profile-avatar, .top-avatar, .team-member-avatar { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; box-shadow:none!important; }
+.workspace-switch, .search-box, .company-scope-control { background:var(--dashboard-canvas)!important; border:1px solid var(--dashboard-border)!important; color:var(--dashboard-muted)!important; border-radius:8px!important; box-shadow:none!important; backdrop-filter:none!important; }
+.search-box input, .payable-search input { color:var(--dashboard-text)!important; }
+.search-box kbd { background:var(--dashboard-surface)!important; color:var(--dashboard-muted)!important; border-color:var(--dashboard-border)!important; }
+.nav-item { background:transparent!important; color:var(--dashboard-muted)!important; min-height:44px; border-radius:8px!important; box-shadow:none!important; }
+.nav-item:hover, .nav-item.nav-active { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; box-shadow:none!important; transform:none!important; }
+.nav-item.nav-active { font-weight:700; box-shadow:inset 3px 0 var(--dashboard-income)!important; }
+.sidebar-bottom, .profile { border-color:var(--dashboard-border)!important; }
+.sidebar-promo { background:var(--dashboard-canvas)!important; border-color:var(--dashboard-border)!important; border-radius:var(--nexus-radius)!important; box-shadow:none!important; }
+.sidebar-promo strong { color:var(--dashboard-income)!important; }
+.sidebar-promo p { color:var(--dashboard-muted)!important; }
+.environment-switch { background:var(--dashboard-canvas)!important; border-color:var(--dashboard-border)!important; border-radius:8px!important; }
+.environment-switch button { color:var(--dashboard-muted)!important; min-height:40px; }
+.environment-switch button.environment-active { background:var(--dashboard-surface)!important; color:var(--dashboard-income)!important; box-shadow:var(--dashboard-shadow)!important; }
+:is(.nexus-app,.nexus-auth,.legal-gate,.pro-lock-dialog) :is(h1,h2,h3,h4,strong,b) { color:var(--dashboard-text)!important; }
+:is(.nexus-app,.nexus-auth,.legal-gate,.pro-lock-dialog) :is(p,small,label) { color:var(--dashboard-muted)!important; }
+.welcome-row h1, .personal-heading h1, .page-title, .auth-intro h1 { font-size:28px!important; line-height:1.25; font-weight:700; }
+.welcome-row p, .personal-heading p { font-size:13px!important; line-height:1.65; }
+.eyebrow, .auth-eyebrow { color:var(--dashboard-muted)!important; font-size:10px; }
+.panel, .metric-card, .summary-card, .stats-card, .financial-account-card, .account-transfer-panel, .account-total-card,
+.personal-metrics article, .personal-financing-card, .advanced-management .personal-metrics article,
+.plan-card, .workspace-module .summary-card, .workspace-module .insight-card,
+.legal-document, .legal-controls, .auth-card, .pro-lock-dialog, .workspace-unavailable,
+.personal-budget-chart, .personal-unbudgeted, .nexus-ai-chat, .nexus-ai-hero, .nexus-ai-faq, .nexus-ai-answer,
+.help-article, .push-settings, .reconciliation-summary > div, .wealth-metrics article:first-child {
+  background:var(--dashboard-surface)!important; border:1px solid var(--dashboard-border)!important;
+  border-radius:var(--nexus-radius)!important; box-shadow:var(--dashboard-shadow)!important;
+  color:var(--dashboard-text)!important; backdrop-filter:none!important; transform:none!important;
+}
+.panel { padding:24px!important; }
+.balance-card, .forecast-card, .subscription-plan-featured { background:var(--dashboard-surface)!important; color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important; }
+.metric-value, .metric-value-row strong, .summary-card > strong, .personal-metrics article > strong,
+.account-total-card strong, .cashflow-projection-total strong { font-size:24px!important; color:var(--dashboard-text)!important; line-height:1.35; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.metric-top, .metric-foot, .metric-label, .metric-card span, .summary-card > span,
+.workspace-module .summary-card > span, .workspace-module .summary-card > small { color:var(--dashboard-muted)!important; font-size:12px; }
+.metric-icon, .account-bank-icon, .promo-icon, .pro-access-icon { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; box-shadow:none!important; }
+.button-primary, .auth-submit, .nexus-ai-send, .nexus-ai-answer-actions button { background:var(--primary)!important; border:1px solid var(--primary)!important; color:var(--primary-foreground)!important; box-shadow:none!important; border-radius:8px!important; min-height:44px; }
+.button-secondary, .pay-action, .icon-button, .profile-signout, .more-button, .push-secondary-button, .notification-mark-read {
+  background:var(--dashboard-surface)!important; color:var(--dashboard-text)!important; border:1px solid var(--dashboard-border)!important;
+  border-radius:8px!important; box-shadow:none!important; backdrop-filter:none!important;
+}
+.button-secondary { min-height:44px; }
+.icon-button, .profile-signout { width:40px; height:40px; }
+button:disabled { opacity:.5; cursor:not-allowed; transform:none!important; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline:2px solid var(--dashboard-income)!important; outline-offset:3px!important; }
+:is(.nexus-app,.nexus-auth,.legal-gate) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea) {
+  background:var(--dashboard-surface)!important; color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important;
+  border-radius:8px!important; font-size:13px!important; min-height:44px; box-shadow:none!important;
+}
+:is(.nexus-app,.nexus-auth) input::placeholder, textarea::placeholder { color:var(--dashboard-muted)!important; opacity:.8; }
+input[type=checkbox], input[type=radio], input[type=range] { accent-color:var(--dashboard-income); }
+.auth-input-wrap, .payable-search, .personal-search-field, .nexus-ai-composer { background:var(--dashboard-surface)!important; border:1px solid var(--dashboard-border)!important; color:var(--dashboard-muted)!important; border-radius:8px!important; }
+.auth-input-wrap input, .search-box input, .payable-search input, .personal-search-field input { border:0!important; background:transparent!important; }
+.auth-input-wrap:focus-within, .payable-search:focus-within, .personal-search-field:focus-within { border-color:var(--dashboard-income)!important; box-shadow:0 0 0 3px var(--dashboard-income-soft)!important; }
+.auth-brand strong { color:var(--dashboard-text)!important; }
+.auth-brand span, .auth-brand-mark, .auth-links button, .auth-footer a, .cookie-link, .legal-document a { color:var(--dashboard-income)!important; }
+.auth-links span, .auth-security, .auth-footer, .auth-footer small { color:var(--dashboard-muted)!important; }
+.auth-consent-group, .legal-retention-table > div, .legal-consent-status > div, .privacy-request-history > div,
+.transfer-info, .insight-card, .advanced-form, .personal-financing-stats, .nexus-ai-privacy, .nexus-ai-chat-head,
+.help-categories, .notification-view-tabs { background:var(--dashboard-canvas)!important; border-color:var(--dashboard-border)!important; color:var(--dashboard-muted)!important; }
+.auth-consent-row, .auth-consent-group details, .auth-consent-group details p { color:var(--dashboard-muted)!important; }
+.auth-consent-row a, .auth-consent-group summary { color:var(--dashboard-income)!important; }
+.auth-error, .legal-warning, .budget-status-over, .nexus-ai-setup { background:var(--dashboard-expense-soft)!important; color:var(--dashboard-expense)!important; border-color:var(--dashboard-expense)!important; }
+.auth-success { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; border-color:var(--dashboard-income)!important; }
+.modal-backdrop, .personal-payment-modal, .pro-lock-backdrop, .mobile-scrim { background:var(--nexus-scrim)!important; backdrop-filter:blur(3px)!important; }
+.payable-modal, .company-menu, .nexus-notification-panel, .cookie-banner { background:var(--dashboard-surface)!important; color:var(--dashboard-text)!important; border:1px solid var(--dashboard-border)!important; border-radius:var(--nexus-radius)!important; box-shadow:var(--nexus-modal-shadow)!important; backdrop-filter:none!important; }
+.company-menu button, .cookie-banner strong { color:var(--dashboard-text)!important; }
+.cookie-banner p { color:var(--dashboard-muted)!important; }
+.company-menu button:hover { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; }
+.payable-table-head, .table-head, .data-table th { color:var(--dashboard-muted)!important; border-color:var(--dashboard-border)!important; font-size:11px!important; }
+.payable-table-row, .transaction-row, .cashflow-table-row, .personal-row, .team-member-row, .team-invite-row, .data-table td, .due-item,
+.dashboard-category-list > div, .summary-line, .nexus-notification-panel header, .nexus-notification-item { color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important; }
+.payable-table-row > div strong, .payable-table-row > strong, .transaction-name strong, .category-name-cell strong { color:var(--dashboard-text)!important; font-size:12px!important; }
+.payable-table-row > div small, .transaction-name small { color:var(--dashboard-muted)!important; font-size:11px!important; }
+.status-pill, .status-pending, .status-paid, .status-today, .account-kind, .team-role-pill, .subscription-access-ok, .subscription-access-pending { border:0!important; border-radius:6px!important; font-size:11px!important; }
+.status-paid, .subscription-access-ok, .workspace-module .status-pill { color:var(--dashboard-income)!important; background:var(--dashboard-income-soft)!important; }
+.status-pending, .account-kind, .team-role-pill { background:var(--dashboard-canvas)!important; color:var(--dashboard-muted)!important; }
+.status-late, .status-today, .subscription-access-pending { color:var(--dashboard-expense)!important; background:var(--dashboard-expense-soft)!important; }
+.personal-tabs button, .legal-tabs button, .category-tabs button, .help-categories button, .nexus-ai-categories button, .notification-view-tabs button { color:var(--dashboard-muted)!important; background:transparent!important; border-color:var(--dashboard-border)!important; border-radius:8px!important; min-height:40px; }
+.personal-tabs button.is-active, .legal-tabs button.active, .category-tabs button.active, .help-category-active, .nexus-ai-categories button.is-selected, .notification-view-tabs button.active { color:var(--dashboard-income)!important; background:var(--dashboard-income-soft)!important; border-color:var(--dashboard-income)!important; box-shadow:none!important; }
+.personal-progress { background:var(--dashboard-income-soft)!important; }
+.personal-progress i, .metric-progress i { background:var(--dashboard-income)!important; }
+.expense-progress i, .personal-progress i.near-budget { background:var(--dashboard-expense)!important; }
+.subscription-price, .pro-lock-price { color:var(--dashboard-text)!important; font-size:34px; }
+.subscription-plan-heading, .subscription-plan-heading svg, .plan-card li svg { color:var(--dashboard-income)!important; }
+.subscription-current { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; }
+.free-workspace-home { background:transparent!important; color:var(--dashboard-text)!important; }
+.nexus-ai-orb { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; box-shadow:none!important; animation:none!important; }
+.nexus-ai-status, .nexus-ai-message.assistant p, .nexus-ai-faq-question { background:var(--dashboard-income-soft)!important; color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important; }
+.nexus-ai-message.user p { background:var(--primary)!important; color:var(--primary-foreground)!important; border-color:var(--primary)!important; }
+.nexus-ai-question-list button, .nexus-ai-suggestions button { background:var(--dashboard-canvas)!important; color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important; }
+.notification-count, .notification-unread-dot { background:var(--dashboard-expense)!important; color:var(--primary-foreground)!important; }
+.notification-item-icon { background:var(--dashboard-income-soft)!important; color:var(--dashboard-income)!important; }
+.nexus-notification-item.warning .notification-item-icon { background:var(--dashboard-expense-soft)!important; color:var(--dashboard-expense)!important; }
+.notification-item-copy strong, .notification-item-copy span { color:var(--dashboard-text)!important; }
+.notification-item-copy small, .notification-empty { color:var(--dashboard-muted)!important; }
+.recharts-cartesian-grid line { stroke:var(--dashboard-border)!important; }
+.recharts-text, .recharts-cartesian-axis-tick-value { fill:var(--dashboard-muted)!important; }
+.recharts-tooltip-wrapper .recharts-default-tooltip { background:var(--dashboard-surface)!important; color:var(--dashboard-text)!important; border-color:var(--dashboard-border)!important; border-radius:8px!important; box-shadow:var(--dashboard-shadow); }
+.recharts-default-tooltip .recharts-tooltip-item { color:var(--dashboard-text)!important; }
+.finance-dashboard .finance-tone-income .metric-value, .finance-dashboard .finance-tone-income > strong,
+.positive, .amount-in, .budget-status-ok, .income-amount, .nexus-app .positive, .nexus-app .amount-in { color:var(--dashboard-income)!important; }
+.finance-dashboard .finance-tone-expense .metric-value, .finance-dashboard .finance-tone-expense > strong,
+.negative, .amount-out, .budget-status-over, .expense-amount, .nexus-app .negative, .nexus-app .amount-out { color:var(--dashboard-expense)!important; }
+.animated-amount, .animated-amount > span { font:inherit!important; color:inherit!important; line-height:inherit!important; font-variant-numeric:tabular-nums; }
+* { scrollbar-color:var(--dashboard-border) var(--dashboard-canvas); }
+@media (min-width:761px) {
+  .page-content { padding:32px!important; }
+  .personal-finance, .advanced-management, .legal-center { gap:22px; }
+}
+@media (max-width:760px) {
+  .sidebar { width:min(330px,88vw)!important; }
+  .main-area { margin-left:0!important; width:100%!important; }
+  .page-content { padding:22px 14px 30px!important; }
+  .panel { padding:18px!important; }
+  .welcome-row h1, .personal-heading h1, .page-title { font-size:24px!important; }
+  .welcome-row, .personal-heading { gap:16px; }
+  .welcome-actions, .personal-heading > .personal-form-actions { flex-wrap:wrap; }
+  .welcome-actions button, .personal-heading > .personal-form-actions button { flex:1; }
+  .team-invite-form { grid-template-columns:1fr!important; }
+  .team-member-row, .team-invite-row { flex-wrap:wrap; gap:12px; }
+  .subscription-current { align-items:flex-start; }
+  .nexus-notification-wrap .notification-button { display:grid!important; }
+  .auth-card { padding:28px 22px; }
+  .metric-value, .metric-value-row strong, .summary-card > strong, .personal-metrics article > strong { font-size:21px!important; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .nexus-app .panel, .nexus-app .metric-card, .nexus-app .summary-card, .personal-metrics article, .auth-card { animation:finance-enter .38s ease-out both; }
+  .nexus-app .metric-card:nth-child(2), .personal-metrics article:nth-child(2) { animation-delay:45ms; }
+  .nexus-app .metric-card:nth-child(3), .personal-metrics article:nth-child(3) { animation-delay:90ms; }
+  button { transition:background-color .16s ease, box-shadow .16s ease, transform .16s ease!important; }
+  button:active:not(:disabled) { transform:scale(.98)!important; }
+  @media (hover:hover) {
+    .button-primary:hover, .auth-submit:hover { filter:brightness(1.06); transform:translateY(-1px)!important; }
+    .button-secondary:hover, .icon-button:hover { background:var(--dashboard-income-soft)!important; }
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 }

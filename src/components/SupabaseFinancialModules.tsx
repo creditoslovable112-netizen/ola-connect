@@ -16,6 +16,7 @@ import {
 import { parseCsv, parseOfx, type ParsedBankStatementRow } from "../lib/bank-statements";
 import { Button } from "./ui/button";
 import { FinanceDistribution, FinanceEvolution } from "./FinanceDashboardCharts";
+import { AnimatedAmount } from "./AnimatedAmount";
 import { useDashboardMotion } from "../hooks/use-dashboard-motion";
 
 type Notice = (message: string) => void;
@@ -341,17 +342,17 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
     {data.loading ? <div className="finance-loading" role="status" aria-busy="true"><span>Carregando suas finanças…</span><div className="finance-loading-metrics" aria-hidden="true">{[0,1,2,3].map(key => <i key={key}/>)}</div><div className="finance-loading-chart" aria-hidden="true"/></div> : <DataState loading={false} error={data.error} retry={() => void data.reload()}/>}
     {!data.loading && !data.error && <>
       <section className="metrics-grid">
-        <article className={`metric-card balance-card ${balance < 0 ? "finance-tone-expense" : "finance-tone-income"}`}><div className="metric-top">Saldo consolidado <Wallet size={17}/></div><div className="metric-value">{money(balance)}</div><div className="metric-foot">{data.accounts.length} contas financeiras</div></article>
-        <article className="metric-card finance-tone-income"><div className="metric-top">Receitas recebidas <ArrowDownLeft size={17}/></div><div className="metric-value">{money(income)}</div><div className="metric-foot">Neste mês</div></article>
-        <article className="metric-card finance-tone-expense"><div className="metric-top">Despesas pagas <ArrowUpRight size={17}/></div><div className="metric-value">{money(expense)}</div><div className="metric-foot">Neste mês</div></article>
-        <article className={`metric-card ${income - expense < 0 ? "finance-tone-expense" : "finance-tone-income"}`}><div className="metric-top">Resultado do mês <Activity size={17}/></div><div className="metric-value">{money(income - expense)}</div><div className="metric-foot">Receitas menos despesas pagas</div></article>
+        <article className={`metric-card balance-card ${balance < 0 ? "finance-tone-expense" : "finance-tone-income"}`}><div className="metric-top">Saldo consolidado <Wallet size={17}/></div><div className="metric-value"><AnimatedAmount value={balance}/></div><div className="metric-foot">{data.accounts.length} contas financeiras</div></article>
+        <article className="metric-card finance-tone-income"><div className="metric-top">Receitas recebidas <ArrowDownLeft size={17}/></div><div className="metric-value"><AnimatedAmount value={income}/></div><div className="metric-foot">Neste mês</div></article>
+        <article className="metric-card finance-tone-expense"><div className="metric-top">Despesas pagas <ArrowUpRight size={17}/></div><div className="metric-value"><AnimatedAmount value={expense}/></div><div className="metric-foot">Neste mês</div></article>
+        <article className={`metric-card ${income - expense < 0 ? "finance-tone-expense" : "finance-tone-income"}`}><div className="metric-top">Resultado do mês <Activity size={17}/></div><div className="metric-value"><AnimatedAmount value={income - expense}/></div><div className="metric-foot">Receitas menos despesas pagas</div></article>
       </section>
       <section className="summary-grid dashboard-extra-metrics">
-        <div className="summary-card finance-tone-income"><span>Entradas · a receber</span><strong>{money(pendingIncome)}</strong><small><TrendingUp size={13}/> {pending.filter((item) => item.type === "income").length} cobranças em aberto</small></div>
-        <div className="summary-card finance-tone-expense"><span>Despesas · a pagar</span><strong>{money(pendingExpense)}</strong><small><TrendingDown size={13}/> {pending.filter((item) => item.type === "expense").length} contas em aberto</small></div>
+        <div className="summary-card finance-tone-income"><span>Entradas · a receber</span><strong><AnimatedAmount value={pendingIncome}/></strong><small><TrendingUp size={13}/> {pending.filter((item) => item.type === "income").length} cobranças em aberto</small></div>
+        <div className="summary-card finance-tone-expense"><span>Despesas · a pagar</span><strong><AnimatedAmount value={pendingExpense}/></strong><small><TrendingDown size={13}/> {pending.filter((item) => item.type === "expense").length} contas em aberto</small></div>
         <div className="summary-card"><span>Contas vencidas</span><strong>{overdue.length}</strong><small>Precisam de atenção</small></div>
         <div className="summary-card"><span>Movimentações</span><strong>{data.transactions.length}</strong><small>Registros na sua conta</small></div>
-        <div className="summary-card forecast-card"><span>Saldo projetado</span><strong>{money(projectedBalance)}</strong><small>Saldo atual + a receber − a pagar</small></div>
+        <div className="summary-card forecast-card"><span>Saldo projetado</span><strong><AnimatedAmount value={projectedBalance}/></strong><small>Saldo atual + a receber − a pagar</small></div>
       </section>
       <div className="finance-chart-grid"><FinanceDistribution income={income} expense={expense} caption="Pagamentos do mês atual"/><section className="panel dashboard-chart-panel">
         <div className="panel-heading dashboard-chart-heading"><div><h2>Evolução financeira</h2><p>Comparativo de receitas e despesas pagas</p></div>
