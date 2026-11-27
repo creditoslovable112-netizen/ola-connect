@@ -388,7 +388,10 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   useEffect(() => {
     let alive = true;
     void requireWorkspaceId().then(async workspaceId => {
-      const { data: rows, error } = await (supabase as any).from("personnel_expenses").select("id,description,amount,due_date,paid_at,status,company_id").eq("workspace_id", workspaceId);
+      const activeCompany = window.localStorage.getItem("nexus-active-company");
+      let query = (supabase as any).from("personnel_expenses").select("id,description,amount,due_date,paid_at,status,company_id").eq("workspace_id", workspaceId);
+      if (activeCompany && activeCompany !== "all") query = query.eq("company_id", activeCompany);
+      const { data: rows, error } = await query;
       if (alive) setPersonnelExpenses(error ? [] : rows ?? []);
     }).catch(() => { if (alive) setPersonnelExpenses([]); });
     return () => { alive = false; };
@@ -438,7 +441,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   });
   const cashShortfall = dueForecast.find(row=>row.projectedBalance<0);
   const categorySpending=data.categories.map(category=>{
-    const value=paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&new Date((item.paid_at??item.transaction_date)+"T12:00:00")>=startMonth)
+    const value=paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&new Date(String(item.paid_at??item.transaction_date).slice(0,10)+"T12:00:00")>=startMonth)
       .reduce((sum,item)=>sum+Number(item.amount),0);
     return {name:category.name,value};
   }).filter(item=>item.value>0).sort((a,b)=>b.value-a.value);
