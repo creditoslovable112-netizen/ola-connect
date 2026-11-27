@@ -24,7 +24,7 @@ import {
   Download, FileBarChart, FileText, Filter, LayoutDashboard, LifeBuoy,
   Menu, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Sparkles,
   TrendingUp, Wallet, X, Users, LockKeyhole, Receipt, Landmark, CircleDollarSign, Tags, Network,
-  ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut, Target, ClipboardCheck
+  ArrowLeftRight, Check, Clock3, Eye, EyeOff, LogOut, Target, ClipboardCheck, RefreshCw, TrendingDown
 } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -97,8 +97,7 @@ const helpArticles = [
  { category:"Financeiro", question:"A importação altera o saldo da conta?", answer:"Sim. Após confirmar, as movimentações válidas são registradas como efetivadas e entram no saldo calculado. Revise o arquivo antes de confirmar e evite importar um mesmo extrato repetidamente. Lançamentos reconhecidos como duplicados são ignorados." },
  { category:"Financeiro", question:"O NEXUS conecta automaticamente ao meu banco?", answer:"Não nesta etapa. O módulo atual usa cadastro manual e importação de arquivos OFX/CSV. Conexão automática por Open Finance exigirá integração com um provedor compatível e autorização do titular." },
  { category:"Financeiro", question:"Quando uma conta a pagar ou receber altera o saldo?", answer:"O saldo considera movimentações efetivadas vinculadas à conta bancária. Um registro pendente não deve ser tratado como dinheiro já movimentado. Confira a conta selecionada ao registrar a baixa ou recebimento." },
- { category:"Financeiro", question:"Como funcionam categorias e centros de custo?", answer:"Categorias classificam receitas e despesas. Centros de custo ajudam a identificar onde o dinheiro é aplicado. Eles podem ser compartilhados no workspace ou vinculados a uma empresa, conforme o cadastro." },
- { category:"Cadastros", question:"Como cadastrar clientes e fornecedores?", answer:"Use os módulos Clientes e Fornecedores para registrar os dados de contato e associar o cadastro às empresas atendidas. Depois, selecione o cadastro correspondente nas movimentações financeiras quando aplicável." },
+ { category:"Financeiro", question:"Como funcionam categorias e centros de custo?", answer:"Categorias classificam receitas e despesas. Centros de custo ajudam a identificar onde o dinheiro é aplicado. Eles podem ser compartilhados no workspace ou vinculados a uma empresa, conforme o cadastro." }, { category:"Cadastros", question:"Como cadastrar clientes e fornecedores?", answer:"Use os módulos Clientes e Fornecedores para registrar os dados de contato e associar o cadastro às empresas atendidas. Depois, selecione o cadastro correspondente nas movimentações financeiras quando aplicável." },
  { category:"Relatórios", question:"De onde vêm os números do dashboard e relatórios?", answer:"Os indicadores são calculados a partir dos registros financeiros existentes e acessíveis no seu workspace e no filtro de empresa selecionado. O aplicativo não deve preencher indicadores com movimentações de demonstração." },
  { category:"Conta e segurança", question:"Quem pode acessar os dados da minha empresa?", answer:"O acesso depende do workspace e do papel atribuído a cada membro. Convide somente pessoas autorizadas e revise os acessos da equipe periodicamente. Nunca compartilhe sua senha ou códigos de autenticação." },
  { category:"Assinatura", question:"Como consultar meu plano?", answer:"Abra Assinatura para consultar as informações do plano disponíveis na sua conta. A cobrança e a ativação de pagamentos dependem da configuração do provedor de pagamento." },
@@ -197,8 +196,7 @@ function PersonalWealth({showNotice}:{showNotice:(message:string)=>void}) {
    <div className="personal-columns wealth-columns">
     <div className="panel personal-list"><h2><Landmark size={18}/> Ativos financeiros</h2>{balances.length?balances.map(account=><div className="personal-row" key={account.id}><div><strong>{account.name}</strong><small>{accountLabels[account.account_type]||account.account_type}{account.institution?" · "+account.institution:""}</small></div><b className={account.balance>=0?"positive":"negative"}>{money(account.balance)}</b></div>):<p className="personal-empty">Cadastre suas contas na Gestão de Pessoa Física para acompanhar seus ativos.</p>}</div>
     <div className="panel personal-list"><h2><TrendingDown size={18}/> Dívidas e financiamentos</h2>{financings.length?financings.map(financing=>{
-      const paid=payments.filter(payment=>payment.financing_id===financing.id).reduce((sum,payment)=>sum+Number(payment.amount),0);
-      const outstanding=Math.max(0,Number(financing.total_amount)-paid);
+      const paid=payments.filter(payment=>payment.financing_id===financing.id).reduce((sum,payment)=>sum+Number(payment.amount),0);      const outstanding=Math.max(0,Number(financing.total_amount)-paid);
       const progress=Number(financing.total_amount)>0?Math.min(100,paid/Number(financing.total_amount)*100):0;
       return <article className="personal-financing-card" key={financing.id}><div className="personal-section-title"><strong>{financing.name}</strong><b className="negative">{money(outstanding)}</b></div><div className="personal-progress"><i style={{width:progress+"%"}}/></div><small>{Number(financing.installments_paid)} de {Number(financing.installments_total)} parcelas registradas · {progress.toFixed(0)}% do valor total pago</small></article>;
     }):<p className="personal-empty">Nenhum financiamento ativo cadastrado.</p>}</div>
@@ -297,8 +295,7 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
             message:overdue?`Vencida há ${Math.abs(days)} dia(s).`:days===0?"Vence hoje.":`Vence em ${days} dia(s).`,
             detail:`${transaction.description} · ${money(Number(transaction.amount||0))}`
           });
-        }
-        if (environment === "personal") {
+        }        if (environment === "personal") {
           for (const financing of financingResult?.data ?? []) {
             const paidCount=Number(financing.installments_paid||0), total=Number(financing.installments_total||0);
             if(paidCount>=total||!financing.first_due_date)continue;
@@ -397,8 +394,7 @@ function DashboardPage() {
   const [notice, setNotice] = useState("");
   const [lockedFeature, setLockedFeature] = useState<string | null>(null);
   const [cookieBanner, setCookieBanner] = useState(false);
-  const [legalStatusLoading, setLegalStatusLoading] = useState(false);
-  const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
+  const [legalStatusLoading, setLegalStatusLoading] = useState(false);  const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const showNotice = useCallback((message: string) => {
     setNotice(message);
@@ -497,8 +493,7 @@ function DashboardPage() {
     return () => { active = false; };
   }, [session?.user.id, showNotice]);
   const saveCookieChoice = async (choice: "necessary" | "all") => {
-    window.localStorage.setItem("nexus-cookie-choice", choice);
-    if (session?.user.id) {
+    window.localStorage.setItem("nexus-cookie-choice", choice);    if (session?.user.id) {
       try { await recordMyConsent("cookies", choice === "all", COOKIE_VERSION, "cookie_banner"); }
       catch (error) { showNotice(error instanceof Error ? error.message : "Não foi possível registrar a preferência de cookies."); }
     }
