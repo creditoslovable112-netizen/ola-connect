@@ -87,13 +87,13 @@ describe("Cakto mocked repository integration (memory only)", () => {
     const result = store.process("purchase_approved", paidOrder, productId, new Date("2026-11-27T12:00:00Z"));
 
     expect(result).toBe("updated");
-    expect(store.subscriptions[0]).toMatchObject({
+    expect(store.subscriptions[0]!).toMatchObject({
       id: "local-subscription-row",
       user_id: "fake-user-only",
       status: "authorized",
       provider_subscription_id: "isolated-subscription-1",
     });
-    expect(store.subscriptions[0].current_period_end).toBe("2026-12-27T12:00:00.000Z");
+    expect(store.subscriptions[0]!.current_period_end).toBe("2026-12-27T12:00:00.000Z");
     expect(store.events).toHaveLength(1);
   });
 
@@ -108,7 +108,7 @@ describe("Cakto mocked repository integration (memory only)", () => {
     expect(store.process("purchase_approved", paidOrder, productId, now)).toBe("updated");
     expect(store.process("purchase_approved", paidOrder, productId, now)).toBe("duplicate");
     expect(store.events).toHaveLength(1);
-    expect(store.subscriptions[0].status).toBe("authorized");
+    expect(store.subscriptions[0]!.status).toBe("authorized");
   });
 
   it("applies cancellation to the linked subscription without extending its period", () => {
@@ -119,12 +119,12 @@ describe("Cakto mocked repository integration (memory only)", () => {
       current_period_end: "2026-12-27T12:00:00.000Z",
     };
     const store = createMemoryStore([row]);
-    const before = store.subscriptions[0].current_period_end;
+    const before = store.subscriptions[0]!.current_period_end;
     const result = store.process("subscription_canceled", paidOrder, productId, new Date("2026-11-27T12:00:00Z"));
 
     expect(result).toBe("updated");
-    expect(store.subscriptions[0].status).toBe("cancelled");
-    expect(store.subscriptions[0].current_period_end).toBe(before);
+    expect(store.subscriptions[0]!.status).toBe("cancelled");
+    expect(store.subscriptions[0]!.current_period_end).toBe(before);
     expect(store.events).toHaveLength(1);
   });
 });
