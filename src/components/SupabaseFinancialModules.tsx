@@ -455,7 +455,8 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const companyResults=data.companies.map(company=>{
     const rows=paid.filter(item=>item.company_id===company.id);
     const revenue=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
-    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    const payrollCosts=paidPersonnel.filter(item=>item.company_id===company.id).reduce((sum,item)=>sum+Number(item.amount),0);
+    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+payrollCosts;
     return {name:company.name,revenue,costs,result:revenue-costs};
   }).filter(item=>item.revenue>0||item.costs>0).sort((a,b)=>b.costs-a.costs);
   const deviations=data.categories.map(category=>{
@@ -467,7 +468,9 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const exportCsv=()=>{
     const fields=["transaction_date","type","description","counterparty","amount","status","due_date","paid_at","account_id","company_id","category_id","cost_center_id"];
     const quote=(value:unknown)=>'"'+String(value??"").replace(/"/g,'""')+'"';
-    const rows=[fields,...data.transactions.map(item=>fields.map(field=>(item as unknown as Record<string,unknown>)[field]??""))];
+    const transactionRows=data.transactions.map(item=>fields.map(field=>(item as unknown as Record<string,unknown>)[field]??""));
+    const payrollRows=personnelExpenses.map(item=>fields.map(field=>({transaction_date:item.paid_at??item.due_date,type:"expense",description:item.description,amount:item.amount,status:item.status,due_date:item.due_date,paid_at:item.paid_at,company_id:item.company_id}[field]??"")));
+    const rows=[fields,...transactionRows,...payrollRows];
     const csv="\\uFEFF"+rows.map(row=>row.map(quote).join(";")).join("\\r\\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
     const link=document.createElement("a");link.href=url;link.download="nexus-finance-relatorio-"+today()+".csv";
