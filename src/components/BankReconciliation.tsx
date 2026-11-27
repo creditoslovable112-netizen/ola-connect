@@ -44,6 +44,7 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
  const calculatedBalance=account?Number(account.opening_balance)+transactions.filter(item=>item.account_id===account.id&&item.status==="paid"&&(!account.opening_date||item.transaction_date>=account.opening_date)&&item.transaction_date<=periodEnd).reduce((sum,item)=>sum+(item.type==="income"?1:-1)*Number(item.amount),0):0;
  const statementValue=Number(statementBalance);
  const difference=statementBalance.trim()?statementValue-calculatedBalance:0;
+ const canFinalize=Math.abs(difference)<0.01&&selectedIds.length===eligible.length;
  const toggle=(id:string)=>setSelectedIds(current=>current.includes(id)?current.filter(value=>value!==id):[...current,id]);
 
  const createReconciliation=async(event:FormEvent)=>{
@@ -58,11 +59,11 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
     calculated_balance:calculatedBalance,difference,notes:selectedIds.length+" movimentações marcadas como conferidas."
    }).select("*").single();
    if(error)throw error;
-   if(selectedIds.length){
+   if(canFinalize&&selectedIds.length){
     const {error:itemError}=await (supabase as any).from("bank_reconciliation_items").insert(selectedIds.map(transaction_id=>({reconciliation_id:data.id,workspace_id:workspaceId,transaction_id,user_id:userId,match_status:"matched"})));
     if(itemError)throw itemError;
    }
-   if(Math.abs(difference)<0.01){
+   if(canFinalize){
     const {error:updateError}=await (supabase as any).from("bank_reconciliations").update({status:"reconciled",reconciled_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",data.id);
     if(updateError)throw updateError;
     showNotice("Conciliação concluída: o saldo do extrato confere com o saldo calculado.");
@@ -81,14 +82,14 @@ export function BankReconciliation({showNotice}:{showNotice:(message:string)=>vo
    <div className="panel-heading"><div><h2>Nova conciliação</h2><p>Os dados são calculados a partir da conta e das transações reais cadastradas.</p></div></div>
    {!accounts.length?<p>Cadastre uma conta bancária antes de iniciar a conciliação.</p>:<form className="settings-form advanced-form" onSubmit={createReconciliation}>
     <label>Conta bancária<select required value={accountId} onChange={event=>{setAccountId(event.target.value);setSelectedIds([]);}}>{accounts.map(item=><option key={item.id} value={item.id}>{item.name} · {item.institution||"Banco não informado"}</option>)}</select></label>
-    <label>Início do período<input required type="date" value={periodStart} onChange={event=>setPeriodStart(event.target.value)}/></label>
-    <label>Fim do período<input required type="date" value={periodEnd} onChange={event=>setPeriodEnd(event.target.value)}/></label>
+    <label>Início do período<input required type="date" value={periodStart} onChange={event=>{setPeriodStart(event.target.value);setSelectedIds([]);}}/></label>
+    <label>Fim do período<input required type="date" value={periodEnd} onChange={event=>{setPeriodEnd(event.target.value);setSelectedIds([]);}}/></label>
     <label>Saldo final do extrato (R$)<input required type="number" step="0.01" value={statementBalance} onChange={event=>setStatementBalance(event.target.value)} placeholder="0,00"/></label>
     <div className="reconciliation-summary"><div><span>Saldo calculado no sistema</span><strong>{money(calculatedBalance)}</strong></div><div><span>Diferença para o extrato</span><strong className={Math.abs(difference)<0.01?"positive":"negative"}>{money(difference)}</strong></div></div>
     <div className="reconciliation-candidates"><h3>Movimentações do período</h3><p>Marque as linhas que você conferiu no extrato. Itens já conciliados não aparecem novamente.</p>
      {eligible.length?eligible.map(item=><label className="reconciliation-row" key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={()=>toggle(item.id)}/><span><strong>{item.description}</strong><small>{item.transaction_date} · {item.counterparty||"Sem contraparte"} · {item.status}</small></span><b className={item.type==="income"?"positive":"negative"}>{item.type==="income"?"+":"−"} {money(Number(item.amount))}</b></label>):<p>Nenhuma movimentação ainda não conciliada neste período.</p>}
     </div>
-    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving}>{Math.abs(difference)<0.01?"Concluir conciliação":"Salvar como rascunho"}</button></div>
+    <div className="form-actions"><span>{selectedIds.length} movimentações marcadas</span><button className="button-primary" disabled={saving}>{canFinalize?"Concluir conciliação":"Salvar como rascunho"}</button></div>
    </form>}
   </div>
   <div className="panel advanced-panel"><div className="panel-heading"><div><h2>Histórico de conciliações</h2><p>Consulte os períodos já conferidos e as diferenças encontradas.</p></div></div>
