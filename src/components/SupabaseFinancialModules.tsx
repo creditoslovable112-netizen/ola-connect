@@ -414,7 +414,10 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const startMonth = new Date(todayDate.getFullYear(),todayDate.getMonth()-Number(monthsBack)+1,1);
   const monthKey = (value:string|null) => value ? value.slice(0,7) : "";
   const monthLabel = (key:string) => {
-    const [year,month] = key.split("-").map(Number);
+    const parts = key.split("-");
+    const year = Number(parts[0] ?? 0);
+    const month = Number(parts[1] ?? 0);
+    if (!year || month < 1 || month > 12) return "—";
     return new Date(year,month-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
   };
   const months = Array.from({length:Number(monthsBack)},(_,index)=>{
