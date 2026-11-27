@@ -1719,3 +1719,40 @@ input, select, textarea {
   .advanced-panel .panel-heading { align-items: flex-start; }
   .advanced-panel .panel-heading > button { width: 100%; justify-content: center; }
 }
+
+
+/* NEXUS FINANCE — conciliação e relatórios */
+.reconciliation-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; grid-column:1/-1; }
+.reconciliation-summary > div { display:grid; gap:6px; padding:14px; border:1px solid var(--border,#e2e9e5); border-radius:12px; background:var(--card,#fff); }
+.reconciliation-summary span { color:var(--muted-foreground,#68756f); font-size:12px; }
+.reconciliation-summary strong { font-size:20px; overflow-wrap:anywhere; }
+.reconciliation-candidates { grid-column:1/-1; min-width:0; }
+.reconciliation-candidates h3 { margin:8px 0 4px; }
+.reconciliation-candidates > p { color:var(--muted-foreground,#68756f); font-size:13px; }
+.reconciliation-row { display:flex!important; align-items:center; gap:12px!important; padding:11px 0; border-bottom:1px solid var(--border,#e7ece9); font-weight:400!important; }
+.reconciliation-row > input { width:18px; min-height:18px; flex:0 0 auto; }
+.reconciliation-row > span { display:grid; gap:3px; flex:1; min-width:0; }
+.reconciliation-row small { color:var(--muted-foreground,#68756f); font-size:11px; }
+.reconciliation-row b { white-space:nowrap; }
+.reconciliation-summary .positive,.reconciliation-summary .negative { font-weight:700; }
+.report-section { margin-top:16px; }
+.report-section .panel-heading { margin-bottom:14px; }
+.report-section .table-scroll { overflow-x:auto; }
+.report-section .data-table { width:100%; min-width:620px; border-collapse:collapse; }
+.report-section .data-table th,.report-section .data-table td { padding:11px 12px; border-bottom:1px solid var(--border,#e7ece9); text-align:left; font-size:13px; }
+.report-section .data-table th { color:var(--muted-foreground,#68756f); }
+.report-alert-grid { margin-top:16px; }
+.report-section .summary-line small { display:block; color:var(--muted-foreground,#68756f); font-size:11px; margin-top:3px; }
+@media (max-width:700px) {
+ .reconciliation-summary { grid-template-columns:1fr; }
+ .reconciliation-row { align-items:flex-start!important; flex-wrap:wrap; }
+ .reconciliation-row > b { margin-left:30px; }
+}
+@media print {
+ @page { size:auto; margin:14mm; }
+ body,.nexus-app,.main-area,.page-content { background:#fff!important; color:#111!important; width:100%!important; max-width:none!important; margin:0!important; padding:0!important; }
+ .sidebar,.topbar,.toast,.cookie-banner,.welcome-actions,.icon-button,.button-primary,.button-secondary,.mobile-scrim { display:none!important; }
+ .panel,.summary-card,.metric-card { box-shadow:none!important; break-inside:avoid; border:1px solid #ddd!important; }
+ .report-section { break-inside:avoid; }
+ .welcome-row { margin:0 0 16px!important; }
+}
