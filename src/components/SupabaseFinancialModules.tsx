@@ -469,7 +469,7 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
     const fields=["transaction_date","type","description","counterparty","amount","status","due_date","paid_at","account_id","company_id","category_id","cost_center_id"];
     const quote=(value:unknown)=>'"'+String(value??"").replace(/"/g,'""')+'"';
     const transactionRows=data.transactions.map(item=>fields.map(field=>(item as unknown as Record<string,unknown>)[field]??""));
-    const payrollRows=personnelExpenses.map(item=>fields.map(field=>({transaction_date:item.paid_at??item.due_date,type:"expense",description:item.description,amount:item.amount,status:item.status,due_date:item.due_date,paid_at:item.paid_at,company_id:item.company_id}[field]??"")));
+    const payrollRows=personnelExpenses.map(item=>{const row:Record<string,unknown>={transaction_date:item.paid_at??item.due_date,type:"expense",description:item.description,amount:item.amount,status:item.status,due_date:item.due_date,paid_at:item.paid_at,company_id:item.company_id};return fields.map(field=>row[field]??"");});
     const rows=[fields,...transactionRows,...payrollRows];
     const csv="\\uFEFF"+rows.map(row=>row.map(quote).join(";")).join("\\r\\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
