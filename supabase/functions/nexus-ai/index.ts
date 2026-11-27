@@ -101,9 +101,9 @@ Deno.serve(async (req: Request) => {
         if (companyId) txQuery = txQuery.eq("company_id", companyId);
         const [tx, accountQuery, categoryQuery, payrollQuery] = await Promise.all([
           txQuery,
-          (() => { let q = authClient.from("financial_accounts").select("opening_balance").eq("workspace_id", workspaceId); return companyId ? q.eq("company_id", companyId) : q; })(),
+          (() => { const q = authClient.from("financial_accounts").select("opening_balance").eq("workspace_id", workspaceId); return companyId ? q.eq("company_id", companyId) : q; })(),
           authClient.from("categories").select("id,name").eq("workspace_id", workspaceId),
-          (() => { let q = authClient.from("personnel_expenses").select("amount,status,due_date,paid_at").eq("workspace_id", workspaceId); return companyId ? q.eq("company_id", companyId) : q; })()
+          (() => { const q = authClient.from("personnel_expenses").select("amount,status,due_date,paid_at").eq("workspace_id", workspaceId); return companyId ? q.eq("company_id", companyId) : q; })()
         ]);
         if (tx.error || accountQuery.error || categoryQuery.error) return json({ error: "Não foi possível ler os dados financeiros do workspace." }, 403);
         transactions = tx.data ?? [];
