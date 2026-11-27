@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
       const { data: ownerSubs, error: ownerError } = await admin.from("user_subscriptions")
         .select("user_id").in("user_id", memberOwners).eq("plan_id", proPlan.id).eq("status", "authorized")
         .lte("current_period_start", now.toISOString())
-      .or(`current_period_end.gt.${now.toISOString()},and(provider.eq.manual,current_period_end.is.null)`);
+        .or(`current_period_end.gt.${now.toISOString()},and(provider.eq.manual,current_period_end.is.null)`);
       if (ownerError) throw ownerError;
       const proOwners = new Set((ownerSubs ?? []).map((r) => r.user_id as string));
       for (const member of memberships ?? []) {
