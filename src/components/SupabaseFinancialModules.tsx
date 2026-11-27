@@ -384,16 +384,27 @@ export function SupabaseTransactions({ showNotice }: { showNotice: Notice }) {
 
 export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const data = useFinanceData(showNotice);
+  const [personnelExpenses, setPersonnelExpenses] = useState<any[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void requireWorkspaceId().then(async workspaceId => {
+      const { data: rows, error } = await (supabase as any).from("personnel_expenses").select("id,description,amount,due_date,paid_at,status,company_id").eq("workspace_id", workspaceId);
+      if (alive) setPersonnelExpenses(error ? [] : rows ?? []);
+    }).catch(() => { if (alive) setPersonnelExpenses([]); });
+    return () => { alive = false; };
+  }, [data.transactions.length]);
   const [monthsBack, setMonthsBack] = useState("6");
   const paid = data.transactions.filter(item => item.status === "paid");
   const pending = data.transactions.filter(item => item.status === "pending" || item.status === "overdue");
   const overdue = pending.filter(item => Boolean(item.due_date && item.due_date < today()));
   const income = paid.filter(item => item.type === "income").reduce((sum,item)=>sum+Number(item.amount),0);
-  const expense = paid.filter(item => item.type === "expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const paidPersonnel = personnelExpenses.filter(item=>item.status==="paid");
+  const pendingPersonnel = personnelExpenses.filter(item=>item.status==="pending");
+  const expense = paid.filter(item => item.type === "expense").reduce((sum,item)=>sum+Number(item.amount),0) + paidPersonnel.reduce((sum,item)=>sum+Number(item.amount),0);
   const overdueAmount = overdue.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
-  const overduePayables = overdue.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const overduePayables = overdue.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0) + pendingPersonnel.filter(item=>item.due_date&&item.due_date<today()).reduce((sum,item)=>sum+Number(item.amount),0);
   const openIncome = pending.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
-  const openExpense = pending.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+  const openExpense = pending.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0) + pendingPersonnel.reduce((sum,item)=>sum+Number(item.amount),0);
   const opening = data.accounts.reduce((sum,item)=>sum+Number(item.opening_balance),0);
   const currentBalance = opening + paid.reduce((sum,item)=>sum+(item.type==="income"?1:-1)*Number(item.amount),0);
   const todayDate = new Date(today()+"T12:00:00");
@@ -410,7 +421,8 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const dre = months.map(key=>{
     const rows=paid.filter(item=>monthKey(item.paid_at ?? item.transaction_date)===key);
     const revenue=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
-    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    const personnelCosts=paidPersonnel.filter(item=>monthKey(item.paid_at??item.due_date)===key).reduce((sum,item)=>sum+Number(item.amount),0);
+    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+personnelCosts;
     return {key,label:monthLabel(key),revenue,costs,result:revenue-costs};
   });
   const dueForecast = Array.from({length:3},(_,index)=>{
@@ -418,7 +430,8 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
     const key=date.toISOString().slice(0,7);
     const rows=pending.filter(item=>monthKey(item.due_date)===key);
     const expectedIn=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
-    const expectedOut=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    const personnelOut=pendingPersonnel.filter(item=>monthKey(item.due_date)===key).reduce((sum,item)=>sum+Number(item.amount),0);
+    const expectedOut=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+personnelOut;
     return {key,label:monthLabel(key),expectedIn,expectedOut,net:expectedIn-expectedOut};
   });
   const categorySpending=data.categories.map(category=>{
