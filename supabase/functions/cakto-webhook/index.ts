@@ -4,12 +4,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 type CaktoOrder = {
   id?: string;
   status?: string;
-  amount?: number | null;
+  amount?: number | string | null;
   currency?: string;
-  callback?: string | null;
   paidAt?: string | null;
+  customer?: { email?: string | null };
   product?: { id?: string; type?: string };
-  offer?: { price?: number; currency?: string };
+  offer?: { price?: number | string; currency?: string };
   subscription?: { id?: string; status?: string } | null;
   subscription_period?: number | null;
 };
@@ -58,34 +58,19 @@ Deno.serve(async (req: Request) => {
     if (payload.secret !== secret || typeof payload.event !== "string" || !payload.data) {
       return json({ error: "Invalid webhook payload" }, 400);
     }
+
     const orders = Array.isArray(payload.data) ? payload.data : [payload.data];
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
 
     for (const order of orders) {
       if (!order || typeof order !== "object" || !order.id) continue;
       if (order.product?.id !== productId || order.product?.type !== "subscription") continue;
-      const callback = order.callback ?? "";
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(callback)) continue;
 
-      const eventKey = `${payload.event}:${order.id}`;
-      const { error: dedupeError } = await admin.from("cakto_webhook_events")
-        .insert({ event_key: eventKey, event_name: payload.event, order_id: order.id });
-      if (dedupeError) {
-        if (dedupeError.code === "23505") continue;
-        throw dedupeError;
-      }
-
-      const { data: plan, error: planError } = await admin.from("subscription_plans")
-        .select("id,price_brl").eq("slug", "pro").single();
-      if (planError || !plan) throw planError ?? new Error("NEXUS PRO plan missing");
-
-      const paidAmount = Number(order.offer?.price ?? order.amount ?? NaN);
-      const correctAmount = Number.isFinite(paidAmount) && Math.abs(paidAmount - 29.9) < 0.01
-        && (order.offer?.currency ?? order.currency ?? "BRL") === "BRL";
-      const subscriptionId = String(order.subscription?.id ?? "");
       const event = payload.event;
-      const activates = ["purchase_approved", "subscription_created", "subscription_renewed", "subscription_late_recovered", "subscription_resumed"].includes(event)
-        && order.status === "paid" && correctAmount && Boolean(subscriptionId);
+      const activationEvents = [
+        "purchase_approved", "subscription_created", "subscription_renewed",
+        "subscription_late_recovered", "subscription_resumed",
+      ];
       const deactivates: Record<string, string> = {
         subscription_renewal_refused: "past_due",
         subscription_late: "past_due",
@@ -94,30 +79,86 @@ Deno.serve(async (req: Request) => {
         refund: "cancelled",
         chargeback: "cancelled",
       };
-      const nextStatus = activates ? "authorized" : deactivates[event];
+      const isActivationEvent = activationEvents.includes(event);
+      const nextStatus = isActivationEvent ? "authorized" : deactivates[event];
       if (!nextStatus) continue;
 
-      const { data: existing } = await admin.from("user_subscriptions")
-        .select("id,current_period_end").eq("user_id", callback).eq("provider", "cakto")
-        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const subscriptionId = String(order.subscription?.id ?? "");
+      if (!subscriptionId) continue;
+
+      const paidAmount = Number(order.amount ?? order.offer?.price ?? NaN);
+      const correctAmount = Number.isFinite(paidAmount) && Math.abs(paidAmount - 29.9) < 0.01
+        && (order.currency ?? order.offer?.currency ?? "BRL") === "BRL";
+      if (isActivationEvent && (order.status !== "paid" || !correctAmount)) continue;
+
+      let existing: { id: string; user_id: string; current_period_end: string | null } | null = null;
+      const { data: bySubscription, error: subscriptionLookupError } = await admin.from("user_subscriptions")
+        .select("id,user_id,current_period_end")
+        .eq("provider", "cakto")
+        .eq("provider_subscription_id", subscriptionId)
+        .limit(2);
+      if (subscriptionLookupError) throw subscriptionLookupError;
+      if (bySubscription && bySubscription.length > 1) {
+        console.error("Multiple NEXUS subscriptions share a Cakto subscription ID");
+        continue;
+      }
+      if (bySubscription?.length === 1) existing = bySubscription[0];
+
+      if (!existing && isActivationEvent) {
+        const email = order.customer?.email?.trim().toLowerCase();
+        if (!email || email.length > 320) continue;
+        const { data: pendingRows, error: pendingError } = await admin.from("user_subscriptions")
+          .select("id,user_id,current_period_end")
+          .eq("provider", "cakto")
+          .eq("status", "pending")
+          .ilike("payer_email", email)
+          .limit(2);
+        if (pendingError) throw pendingError;
+        if (!pendingRows || pendingRows.length !== 1) {
+          console.error("Cakto payment not linked: no unique pending subscription for customer email");
+          continue;
+        }
+        existing = pendingRows[0];
+      }
+
+      if (!existing) continue;
+
+      const eventKey = `${event}:${order.id}`;
+      const { error: dedupeError } = await admin.from("cakto_webhook_events")
+        .insert({ event_key: eventKey, event_name: event, order_id: order.id });
+      if (dedupeError) {
+        if (dedupeError.code === "23505") continue;
+        throw dedupeError;
+      }
+
+      const { data: plan, error: planError } = await admin.from("subscription_plans")
+        .select("id").eq("slug", "pro").single();
+      if (planError || !plan) throw planError ?? new Error("NEXUS PRO plan missing");
 
       const now = new Date();
-      const existingEnd = existing?.current_period_end ? new Date(existing.current_period_end) : now;
+      const existingEnd = existing.current_period_end ? new Date(existing.current_period_end) : now;
       const base = existingEnd > now ? existingEnd : now;
-      const periodEnd = activates ? addOneMonth(base) : null;
+      const periodEnd = isActivationEvent ? addOneMonth(base) : null;
       const update = {
-        user_id: callback, plan_id: plan.id, provider: "cakto", provider_subscription_id: subscriptionId || null,
+        user_id: existing.user_id,
+        plan_id: plan.id,
+        provider: "cakto",
+        provider_subscription_id: subscriptionId,
         status: nextStatus,
-        ...(activates ? {
+        ...(isActivationEvent ? {
           current_period_start: now.toISOString(),
           current_period_end: periodEnd?.toISOString(),
         } : {}),
         updated_at: now.toISOString(),
-        metadata: { provider: "cakto", last_event: event, last_order_id: order.id, subscription_period: order.subscription_period ?? null },
+        metadata: {
+          provider: "cakto",
+          last_event: event,
+          last_order_id: order.id,
+          subscription_period: order.subscription_period ?? null,
+        },
       };
-      const result = existing
-        ? await admin.from("user_subscriptions").update(update).eq("id", existing.id)
-        : await admin.from("user_subscriptions").insert(update);
+
+      const result = await admin.from("user_subscriptions").update(update).eq("id", existing.id);
       if (result.error) {
         await admin.from("cakto_webhook_events").delete().eq("event_key", eventKey);
         throw result.error;
