@@ -445,6 +445,16 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
   const currentMonth=today().slice(0,7);
   const previousDate=new Date(todayDate.getFullYear(),todayDate.getMonth()-1,1);
   const previousMonth=previousDate.toISOString().slice(0,7);
+  const centerSpending=data.centers.map(center=>{
+    const value=paid.filter(item=>item.type==="expense"&&item.cost_center_id===center.id&&new Date((item.paid_at??item.transaction_date)+"T12:00:00")>=startMonth).reduce((sum,item)=>sum+Number(item.amount),0);
+    return {name:center.name,value};
+  }).filter(item=>item.value>0).sort((a,b)=>b.value-a.value);
+  const companyResults=data.companies.map(company=>{
+    const rows=paid.filter(item=>item.company_id===company.id);
+    const revenue=rows.filter(item=>item.type==="income").reduce((sum,item)=>sum+Number(item.amount),0);
+    const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    return {name:company.name,revenue,costs,result:revenue-costs};
+  }).filter(item=>item.revenue>0||item.costs>0).sort((a,b)=>b.costs-a.costs);
   const deviations=data.categories.map(category=>{
     const values=(month:string)=>paid.filter(item=>item.type==="expense"&&item.category_id===category.id&&monthKey(item.paid_at??item.transaction_date)===month).reduce((sum,item)=>sum+Number(item.amount),0);
     const previous=values(previousMonth), current=values(currentMonth);
@@ -490,6 +500,14 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
       <section className="panel payable-list-panel report-section">
         <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Valores pagos no período selecionado.</p></div></div>
         {categorySpending.length?categorySpending.map(row=><div className="summary-line" key={row.name}><span>{row.name}</span><strong>{money(row.value)}</strong></div>):<p>Não há despesas categorizadas no período.</p>}
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Despesas por centro de custo</h2><p>Valores pagos por centro de custo no período selecionado.</p></div></div>
+        {centerSpending.length?centerSpending.map(row=><div className="summary-line" key={row.name}><span>{row.name}</span><strong>{money(row.value)}</strong></div>):<p>Não há despesas vinculadas a centros de custo no período.</p>}
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Resultado por empresa</h2><p>Visão consolidada do workspace; use o seletor de empresa para analisar uma unidade.</p></div></div>
+        <div className="table-scroll"><table className="data-table"><thead><tr><th>Empresa</th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead><tbody>{companyResults.map(row=><tr key={row.name}><td>{row.name}</td><td>{money(row.revenue)}</td><td>{money(row.costs)}</td><td><strong>{money(row.result)}</strong></td></tr>)}{!companyResults.length&&<tr><td colSpan={4}>Não há movimentações por empresa no período.</td></tr>}</tbody></table></div>
       </section>
       <section className="panel payable-list-panel report-section">
         <div className="panel-heading"><div><h2>Alertas de variação</h2><p>Categorias com aumento de pelo menos 50% em relação ao mês anterior. É um alerta estatístico, não uma conclusão automática de fraude.</p></div></div>
