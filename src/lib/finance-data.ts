@@ -91,7 +91,7 @@ export async function listTransactions() {
   query = scopedToCompany(query).order("transaction_date", { ascending: false });
   const { data, error } = await query; if (error) throw error; return data as Transaction[];
 }
-export async function createTransaction(transaction: Omit<TablesInsert<"transactions">, "user_id"> & { company_id?: string | null; supplier_id?: string | null; customer_id?: string | null }) {
+export async function createTransaction(transaction: Omit<TablesInsert<"transactions">, "user_id" | "workspace_id"> & { company_id?: string | null; supplier_id?: string | null; customer_id?: string | null }) {
   const user_id = await requireUserId(); const workspace_id = await requireWorkspaceId();
   const { data, error } = await (supabase as any).from("transactions").insert({ ...transaction, company_id: transaction.company_id ?? getActiveCompanyId(), user_id, workspace_id }).select().single();
   if (error) throw error; return data as Transaction;
