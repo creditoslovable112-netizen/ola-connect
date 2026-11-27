@@ -7,11 +7,12 @@ const webhook = readFileSync(
   "utf8",
 );
 
-describe("Cakto webhook v26 contract", () => {
+describe("Cakto webhook v28 contract", () => {
   it("validates the timestamped HMAC signature before processing", () => {
     expect(webhook).toContain('req.headers.get("X-Cakto-Timestamp")');
     expect(webhook).toContain('req.headers.get("X-Cakto-Signature")');
     expect(webhook).toContain("verifySignature(raw, timestamp, signature, secret)");
+    expect(webhook).toContain('from "./logic.ts"');
     expect(webhook).toContain('return json({ error: "Invalid signature" }, 401)');
   });
 
@@ -21,20 +22,19 @@ describe("Cakto webhook v26 contract", () => {
   });
 
   it("requires a paid BRL purchase for the exact PRO price before activation", () => {
-    expect(webhook).toContain('Math.abs(paidAmount - 29.9) < 0.01');
-    expect(webhook).toContain('order.status !== "paid" || !correctAmount');
-    expect(webhook).toContain('nextStatus = isActivationEvent ? "authorized"');
+    expect(webhook).toContain("getOrderDecision(event, order, productId)");
   });
 
   it("links a new purchase only to one pending Cakto row by customer email", () => {
-    expect(webhook).toContain('order.customer?.email?.trim().toLowerCase()');
+    expect(webhook).toContain("normalizeCustomerEmail(order.customer?.email)");
     expect(webhook).toContain('.eq("status", "pending")');
     expect(webhook).toContain('.ilike("payer_email", email)');
-    expect(webhook).toContain("pendingRows.length !== 1");
+    expect(webhook).toContain("selectUniquePendingRow(pendingRows)");
     expect(webhook).not.toContain("order.callback");
   });
 
   it("deduplicates events and maps cancellation/refund states", () => {
+    expect(webhook).toContain("makeEventKey(event, order.id)");
     expect(webhook).toContain(".insert({ event_key: eventKey");
     expect(webhook).toContain('subscription_canceled: "cancelled"');
     expect(webhook).toContain('refund: "cancelled"');
