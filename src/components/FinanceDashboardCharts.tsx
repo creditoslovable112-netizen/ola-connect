@@ -15,8 +15,8 @@ export function FinanceDistribution({ income, expense, caption }: { income: numb
   return <section className="finance-distribution">
     <div className="finance-section-heading"><h2>Receitas × despesas</h2><p>{caption}</p></div>
     {total > 0 ? <>
-      <div className="finance-donut" role="img" aria-label={`Receitas: ${money(income)}. Despesas: ${money(expense)}.`}>
-        <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={segments} dataKey="value" nameKey="name" innerRadius="72%" outerRadius="92%" paddingAngle={3} stroke="var(--dashboard-surface)" strokeWidth={3} isAnimationActive={animate} animationDuration={650}>{segments.map(segment => <Cell key={segment.name} fill={segment.color}/>)}</Pie><Tooltip formatter={value => money(Number(value))}/></PieChart></ResponsiveContainer>
+      <div className="finance-donut" role="img" aria-label={`Receitas: ${money(income)}, ${(income / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%. Despesas: ${money(expense)}, ${(expense / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%.`}>
+        <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={segments} dataKey="value" nameKey="name" innerRadius="72%" outerRadius="92%" paddingAngle={3} stroke="var(--dashboard-surface)" strokeWidth={3} isAnimationActive={animate} animationDuration={650}>{segments.map(segment => <Cell key={segment.name} fill={segment.color}/>)}</Pie><Tooltip contentStyle={{ background: "var(--dashboard-surface)", borderColor: "var(--dashboard-border)", borderRadius: 8, color: "var(--dashboard-text)" }} formatter={value => money(Number(value))}/></PieChart></ResponsiveContainer>
         <div className="finance-donut-center"><span>Total movimentado</span><strong>{money(total)}</strong></div>
       </div>
       <div className="finance-distribution-legend">{segments.map(segment => <div key={segment.name}><span><i className={segment.name === "Receitas" ? "finance-dot-income" : "finance-dot-expense"}/>{segment.name}</span><strong>{money(segment.value)}</strong><small>{(segment.value / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</small></div>)}</div>
@@ -35,11 +35,12 @@ export function FinanceEvolution({ data, mode = "both" }: { data: { month: strin
         <CartesianGrid stroke="var(--dashboard-border)" vertical={false} strokeDasharray="3 5"/>
         <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--dashboard-muted)" }} axisLine={false} tickLine={false} minTickGap={18}/>
         <YAxis width={52} tick={{ fontSize: 10, fill: "var(--dashboard-muted)" }} axisLine={false} tickLine={false} tickFormatter={value => Math.abs(Number(value)) >= 1000 ? (Number(value) / 1000).toLocaleString("pt-BR") + " mil" : String(value)}/>
-        <Tooltip formatter={value => money(Number(value))}/>
+        <Tooltip contentStyle={{ background: "var(--dashboard-surface)", borderColor: "var(--dashboard-border)", borderRadius: 8, color: "var(--dashboard-text)" }} formatter={value => money(Number(value))}/>
         {mode !== "expense" && <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--dashboard-coral)" fill={`url(#${id}-fill)`} strokeWidth={2.5} isAnimationActive={animate} animationDuration={650}/>}
         {mode !== "income" && <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--dashboard-expense)" strokeDasharray="5 4" fill="none" strokeWidth={2} isAnimationActive={animate} animationDuration={650}/>}
       </AreaChart></ResponsiveContainer> : <p className="finance-empty">Nenhuma movimentação paga no período selecionado.</p>}
     </div>
     <div className="finance-chart-legend">{mode !== "expense" && <span><i className="finance-dot-coral"/> Receitas pagas</span>}{mode !== "income" && <span><i className="finance-dot-expense"/> Despesas pagas</span>}</div>
+    {visible && <details className="finance-chart-values"><summary>Valores mensais</summary><table><caption className="sr-only">Evolução financeira no período selecionado</caption><thead><tr><th scope="col">Mês</th>{mode !== "expense" && <th scope="col">Receitas</th>}{mode !== "income" && <th scope="col">Despesas</th>}</tr></thead><tbody>{data.map((item, index) => <tr key={`${item.month}-${index}`}><th scope="row">{item.month}</th>{mode !== "expense" && <td>{money(item.receitas)}</td>}{mode !== "income" && <td>{money(item.despesas)}</td>}</tr>)}</tbody></table></details>}
   </>;
 }
