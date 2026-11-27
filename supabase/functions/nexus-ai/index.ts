@@ -50,6 +50,10 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    if (action === "analyze-finances") {
+      const { data: hasPro, error: proError } = await authClient.rpc("has_active_pro_subscription");
+      if (proError || !hasPro) return json({ error: "A análise financeira com IA é um recurso do NEXUS PRO." }, 403);
+    }
     const { data: allowed, error: quotaError } = await admin.rpc("consume_nexus_ai_quota", {
       p_user_id: userData.user.id,
     });
@@ -60,8 +64,6 @@ Deno.serve(async (req: Request) => {
     if (!allowed) return json({ error: "Você atingiu o limite gratuito de 30 perguntas por dia. Tente novamente amanhã." }, 429);
 
     if (action === "analyze-finances") {
-      const { data: hasPro, error: proError } = await authClient.rpc("has_active_pro_subscription");
-      if (proError || !hasPro) return json({ error: "A análise financeira com IA é um recurso do NEXUS PRO." }, 403);
       const environment = body?.environment === "personal" ? "personal" : "business";
       const months = [3, 6, 12].includes(Number(body?.period_months)) ? Number(body.period_months) : 6;
       const startDate = new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
