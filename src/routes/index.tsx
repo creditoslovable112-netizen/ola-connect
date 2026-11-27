@@ -148,6 +148,66 @@ function FreeWorkspaceHome() {
   return <section className="free-workspace-home"><div className="eyebrow">SEU ESPAÇO FINANCEIRO</div><h1>Bem-vindo ao NEXUS FINANCE</h1><p>Escolha uma opção no menu para conhecer os recursos disponíveis.</p></section>;
 }
 
+type WealthAccount = {id:string;name:string;account_type:string;institution:string|null;opening_balance:number};
+type WealthEntry = {account_id:string|null;type:"income"|"expense";amount:number};
+type WealthFinancing = {id:string;name:string;total_amount:number;installments_total:number;installments_paid:number;monthly_installment:number};
+type WealthPayment = {financing_id:string;amount:number};
+
+function PersonalWealth({showNotice}:{showNotice:(message:string)=>void}) {
+ const [accounts,setAccounts]=useState<WealthAccount[]>([]);
+ const [entries,setEntries]=useState<WealthEntry[]>([]);
+ const [financings,setFinancings]=useState<WealthFinancing[]>([]);
+ const [payments,setPayments]=useState<WealthPayment[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState(false);
+ const load=useCallback(async()=>{
+  setLoading(true);setError(false);
+  const [a,e,f,p]=await Promise.all([
+   supabase.from("personal_financial_accounts").select("id,name,account_type,institution,opening_balance").eq("is_active",true).order("name"),
+   supabase.from("personal_transactions").select("account_id,type,amount").eq("status","paid"),
+   supabase.from("personal_financings").select("id,name,total_amount,installments_total,installments_paid,monthly_installment").eq("is_active",true),
+   supabase.from("personal_financing_payments").select("financing_id,amount")
+  ]);
+  const failure=a.error||e.error||f.error||p.error;
+  if(failure){setError(true);showNotice(failure.message);setLoading(false);return;}
+  setAccounts((a.data||[]) as WealthAccount[]);
+  setEntries((e.data||[]) as WealthEntry[]);
+  setFinancings((f.data||[]) as WealthFinancing[]);
+  setPayments((p.data||[]) as WealthPayment[]);
+  setLoading(false);
+ },[showNotice]);
+ useEffect(()=>{void load();},[load]);
+ const balances=accounts.map(account=>{
+  const movement=entries.filter(entry=>entry.account_id===account.id).reduce((sum,entry)=>sum+(entry.type==="income"?1:-1)*Number(entry.amount),0);
+  return {...account,balance:Number(account.opening_balance)+movement};
+ });
+ const assets=balances.reduce((sum,account)=>sum+account.balance,0);
+ const debts=financings.reduce((sum,financing)=>sum+Math.max(0,Number(financing.total_amount)-payments.filter(payment=>payment.financing_id===financing.id).reduce((total,payment)=>total+Number(payment.amount),0)),0);
+ const netWorth=assets-debts;
+ const money=(value:number)=>value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+ const accountLabels:Record<string,string>={checking:"Conta corrente",savings:"Poupança",cash:"Dinheiro",investment:"Investimento",other:"Outra conta"};
+ return <section className="personal-finance">
+  <div className="personal-heading"><div><span className="eyebrow">VISÃO PATRIMONIAL</span><h1>Patrimônio pessoal</h1><p>Acompanhe seus saldos e dívidas cadastrados no NEXUS.</p></div><button className="button-secondary" onClick={()=>void load()}><RefreshCw size={16}/> Atualizar</button></div>
+  {loading?<div className="panel"><p>Calculando seu patrimônio…</p></div>:error?<div className="panel"><p>Não foi possível carregar os dados patrimoniais. Tente atualizar.</p></div>:<>
+   <div className="personal-metrics wealth-metrics">
+    <article><span>Patrimônio líquido estimado</span><strong className={netWorth>=0?"positive":"negative"}>{money(netWorth)}</strong><small>Ativos menos financiamentos restantes</small></article>
+    <article><span>Saldo em contas</span><strong>{money(assets)}</strong><small>{balances.length} conta(s) ativa(s)</small></article>
+    <article><span>Financiamentos restantes</span><strong>{money(debts)}</strong><small>{financings.length} contrato(s) ativo(s)</small></article>
+   </div>
+   <div className="personal-columns wealth-columns">
+    <div className="panel personal-list"><h2><Landmark size={18}/> Ativos financeiros</h2>{balances.length?balances.map(account=><div className="personal-row" key={account.id}><div><strong>{account.name}</strong><small>{accountLabels[account.account_type]||account.account_type}{account.institution?" · "+account.institution:""}</small></div><b className={account.balance>=0?"positive":"negative"}>{money(account.balance)}</b></div>):<p className="personal-empty">Cadastre suas contas na Gestão de Pessoa Física para acompanhar seus ativos.</p>}</div>
+    <div className="panel personal-list"><h2><TrendingDown size={18}/> Dívidas e financiamentos</h2>{financings.length?financings.map(financing=>{
+      const paid=payments.filter(payment=>payment.financing_id===financing.id).reduce((sum,payment)=>sum+Number(payment.amount),0);
+      const outstanding=Math.max(0,Number(financing.total_amount)-paid);
+      const progress=Number(financing.total_amount)>0?Math.min(100,paid/Number(financing.total_amount)*100):0;
+      return <article className="personal-financing-card" key={financing.id}><div className="personal-section-title"><strong>{financing.name}</strong><b className="negative">{money(outstanding)}</b></div><div className="personal-progress"><i style={{width:progress+"%"}}/></div><small>{Number(financing.installments_paid)} de {Number(financing.installments_total)} parcelas registradas · {progress.toFixed(0)}% do valor total pago</small></article>;
+    }):<p className="personal-empty">Nenhum financiamento ativo cadastrado.</p>}</div>
+   </div>
+   <p className="personal-disclaimer">Estimativa baseada nos saldos iniciais e movimentações efetivadas vinculadas às contas, menos pagamentos registrados de financiamentos. Movimentações sem conta vinculada e saldos de cartões não entram neste cálculo.</p>
+  </>}
+ </section>;
+}
+
 function WorkspaceModule({title,showNotice,environment,hasProAccess}:{title:string;showNotice:(message:string)=>void;environment:"business"|"personal";hasProAccess:boolean}) {
  const [settings,setSettings]=useState({language:"Português (Brasil)",currency:"BRL",timezone:"America/Sao_Paulo",notifications:true});
  useEffect(() => {
@@ -507,7 +567,7 @@ function DashboardPage() {
         </header>
 
         <div className="page-content" key={companyScope} aria-busy={tabLoading || (proFeatureModules.has(active) && proAccessLoading)}>
-          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Conciliação bancária" ? <BankReconciliation showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Estoque" ? <AdvancedManagement mode="business" module="inventory" showNotice={showNotice}/> : active === "Contratos" ? <AdvancedManagement mode="business" module="contracts" showNotice={showNotice}/> : active === "Gestão de pessoas" ? <AdvancedManagement mode="business" module="people" showNotice={showNotice}/> : active === "Aprovação de pagamentos" ? <AdvancedManagement mode="business" module="approvals" showNotice={showNotice}/> : active === "Patrimônio pessoal" ? <AdvancedManagement mode="personal" module="assets" showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice} environment={environment} hasProAccess={hasProAccess}/>}
+          {tabLoading || (proFeatureModules.has(active) && proAccessLoading) ? <DashboardSkeleton /> : proFeatureModules.has(active) && !hasProAccess ? <FreeWorkspaceHome/> : active === "Central de ajuda" ? <HelpCenter/> : active === "Dashboard" ? <SupabaseDashboard showNotice={showNotice}/> : active === "Contas a pagar" ? <SupabasePayables showNotice={showNotice}/> : active === "Contas a receber" ? <SupabaseReceivables showNotice={showNotice}/> : active === "Fluxo de caixa" ? <SupabaseCashFlow showNotice={showNotice}/> : active === "Contas bancárias" ? <SupabaseAccounts showNotice={showNotice}/> : active === "Conciliação bancária" ? <BankReconciliation showNotice={showNotice}/> : active === "Categorias e centros de custo" ? <SupabaseCategories showNotice={showNotice}/> : active === "Transações" ? <SupabaseTransactions showNotice={showNotice}/> : active === "Relatórios" ? <SupabaseReports showNotice={showNotice}/> : active === "Clientes" ? <SupabaseContacts contactType="customer" showNotice={showNotice}/> : active === "Fornecedores" ? <SupabaseContacts contactType="supplier" showNotice={showNotice}/> : active === "Empresas" ? <SupabaseCompanies showNotice={showNotice}/> : active === "Equipe" ? <TeamManager showNotice={showNotice}/> : active === "Metas financeiras" ? <FinancialGoals showNotice={showNotice}/> : active === "Estoque" ? <AdvancedManagement mode="business" module="inventory" showNotice={showNotice}/> : active === "Contratos" ? <AdvancedManagement mode="business" module="contracts" showNotice={showNotice}/> : active === "Gestão de pessoas" ? <AdvancedManagement mode="business" module="people" showNotice={showNotice}/> : active === "Aprovação de pagamentos" ? <AdvancedManagement mode="business" module="approvals" showNotice={showNotice}/> : active === "Patrimônio pessoal" ? <PersonalWealth showNotice={showNotice}/> : active === "Gestão de Pessoa Física" ? <PersonalFinance showNotice={showNotice}/> : active === "Administração" ? <Administration showNotice={showNotice} onOpenTeam={() => setActive("Equipe")}/> : active === "Privacidade e termos" ? <LegalCenter onNotice={showNotice} onManageCookies={() => setCookieBanner(true)}/> : <WorkspaceModule title={active} showNotice={showNotice} environment={environment} hasProAccess={hasProAccess}/>}
         </div>
       </main>
       {notice && <div className="toast" role="status"><Check size={16}/>{notice}</div>}
