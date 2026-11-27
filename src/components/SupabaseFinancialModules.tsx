@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, FileUp, Landmark, Plus, RefreshCw, ShieldCheck, Tags, Wallet, TrendingUp, TrendingDown, Download } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "../lib/supabase";
 import { formatCnpj, isValidCnpj, normalizeCnpj } from "../lib/cnpj";
 import {
@@ -433,6 +433,10 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
     const costs=rows.filter(item=>item.type==="expense").reduce((sum,item)=>sum+Number(item.amount),0)+personnelCosts;
     return {key,label:monthLabel(key),revenue,costs,result:revenue-costs};
   });
+  const comparisonChart = dre.map(row=>({
+    month: new Date(Number(row.key.slice(0,4)), Number(row.key.slice(5,7))-1, 1).toLocaleDateString("pt-BR",{month:"short"}),
+    Receitas: row.revenue, Despesas: row.costs, Resultado: row.result,
+  }));
   let projectedBalance = currentBalance;
   const dueForecast = Array.from({length:3},(_,index)=>{
     const date=new Date(todayDate.getFullYear(),todayDate.getMonth()+index,1);
@@ -496,6 +500,23 @@ export function SupabaseReports({ showNotice }: { showNotice: Notice }) {
         <div className="panel-heading"><div><h2>DRE gerencial</h2><p>Demonstrativo simplificado por competência de pagamento, usando os lançamentos disponíveis.</p></div></div>
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Período</th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead><tbody>{dre.map(row=><tr key={row.key}><td>{row.label}</td><td>{money(row.revenue)}</td><td>{money(row.costs)}</td><td><strong>{money(row.result)}</strong></td></tr>)}</tbody></table></div>
         <div className="demo-disclaimer"><ShieldCheck size={14}/> DRE gerencial simplificada; não substitui escrituração contábil ou demonstrações assinadas por contador.</div>
+      </section>
+      <section className="panel payable-list-panel report-section">
+        <div className="panel-heading"><div><h2>Comparativo mensal</h2><p>Receitas, despesas e resultado dos meses selecionados, considerando pagamentos confirmados.</p></div></div>
+        <div style={{width:"100%",height:300,minWidth:0}}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={comparisonChart} margin={{top:12,right:12,left:8,bottom:8}}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+              <XAxis dataKey="month"/>
+              <YAxis tickFormatter={(value:number)=>value>=1000?"R$ "+(value/1000).toLocaleString("pt-BR")+" mil":"R$ "+value}/>
+              <Tooltip formatter={(value:number)=>money(Number(value))}/>
+              <Legend/>
+              <Bar dataKey="Receitas" fill="#16A36A" radius={[5,5,0,0]}/>
+              <Bar dataKey="Despesas" fill="#EF6461" radius={[5,5,0,0]}/>
+              <Bar dataKey="Resultado" fill="#438DE0" radius={[5,5,0,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </section>
       <section className="summary-grid report-alert-grid">
         <div className="summary-card"><span>Recebíveis vencidos</span><strong>{money(overdueAmount)}</strong><small>{overdue.filter(item=>item.type==="income").length} cobranças em atraso</small></div>
