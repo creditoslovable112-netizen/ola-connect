@@ -66,7 +66,7 @@ export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}
  const calendarEvents=useMemo<CalendarEvent[]>(()=>{
   const events:CalendarEvent[]=[];
   entries.filter(x=>x.status==="pending").forEach(x=>events.push({date:x.transaction_date,title:x.description,detail:"Conta pendente · "+(x.type==="income"?"Recebimento":"Despesa"),amount:Number(x.amount),kind:"bill"}));
-  const [year,month]=calendarMonth.slice(0,7).split("-").map(Number);
+  const [year= new Date().getFullYear(),month= new Date().getMonth()+1]=calendarMonth.slice(0,7).split("-").map(Number);
   financings.forEach(f=>{
    const paidCount=Number(f.installments_paid),total=Number(f.installments_total);
    if(paidCount>=total)return;
@@ -85,7 +85,7 @@ export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}
   return events.filter(e=>e.date.slice(0,7)===calendarMonth.slice(0,7)).sort((a,b)=>a.date.localeCompare(b.date));
  },[entries,financings,cards,calendarMonth]);
  const calendarDays=useMemo(()=>{
-  const [year,month]=calendarMonth.slice(0,7).split("-").map(Number);
+  const [year= new Date().getFullYear(),month= new Date().getMonth()+1]=calendarMonth.slice(0,7).split("-").map(Number);
   const offset=(new Date(year,month-1,1,12).getDay()+6)%7;
   return Array.from({length:new Date(year,month,0).getDate()},(_,i)=>{
    const day=i+1,date=year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0");
