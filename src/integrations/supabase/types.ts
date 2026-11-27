@@ -2386,6 +2386,10 @@ export type Database = {
         Args: { p_actual_cost_usd: number; p_reservation_id: string }
         Returns: boolean
       }
+      validate_nexus_reminder_token: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
