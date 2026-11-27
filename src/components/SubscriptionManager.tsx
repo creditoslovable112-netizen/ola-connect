@@ -17,6 +17,7 @@ type Subscription = {
   current_period_start: string | null;
   current_period_end: string | null;
   plan: { name: string; slug: string; price_brl: number } | null;
+  provider: string | null;
 };
 
 const planDescriptions: Record<string, string> = {
@@ -29,6 +30,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
   const [hasProAccess, setHasProAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -45,7 +47,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
       if (userId) {
         const { data, error } = await supabase
           .from("user_subscriptions")
-          .select("id,status,current_period_start,current_period_end,plan:subscription_plans(name,slug,price_brl)")
+          .select("id,status,provider,current_period_start,current_period_end,plan:subscription_plans(name,slug,price_brl)")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -102,6 +104,30 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
     }
   };
 
+  const manageCancellation = async () => {
+    if (!subscription) return;
+    if (subscription.provider === "cakto") {
+      window.open("https://assinatura.cakto.com.br/", "_blank", "noopener,noreferrer");
+      showNotice("Para cancelar sua assinatura Cakto, entre no portal com o mesmo e-mail usado na compra. O NEXUS atualizará o status quando receber a confirmação.");
+      return;
+    }
+    setCancelLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-subscription", { body: {} });
+      if (error) throw error;
+      if (data?.requires_external_cancel && typeof data?.cancel_url === "string") {
+        window.open(data.cancel_url, "_blank", "noopener,noreferrer");
+        showNotice("Conclua o cancelamento no portal oficial do provedor.");
+      } else {
+        showNotice(data?.message || "Solicitação de cancelamento enviada ao provedor.");
+      }
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Não foi possível iniciar o cancelamento.");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   if (loading) return <section className="panel payable-list-panel"><p>Verificando sua assinatura mensal...</p></section>;
 
   return (
@@ -119,6 +145,11 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
           {!hasProAccess && <p>A assinatura só libera os módulos depois que a Cakto confirmar o pagamento e registrar o período vigente.</p>}
         </div>
         {hasProAccess ? <span className="subscription-access-ok"><Check size={16}/> Acesso liberado</span> : <span className="subscription-access-pending"><LockKeyhole size={16}/> Aguardando ativação</span>}
+        {subscription?.status === "authorized" && (
+          <button className="button-secondary" type="button" onClick={() => void manageCancellation()} disabled={cancelLoading}>
+            {cancelLoading ? "Abrindo cancelamento..." : "Cancelar assinatura"}
+          </button>
+        )}
       </section>
       <div className="subscription-plans">
         {plans.map((plan) => (
