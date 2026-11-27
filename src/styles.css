@@ -73,6 +73,18 @@
 }
 
 :root {
+  --dashboard-canvas: oklch(0.987 0.005 305);
+  --dashboard-surface: oklch(1 0 0);
+  --dashboard-text: oklch(0.31 0.013 285);
+  --dashboard-muted: oklch(0.53 0.018 285);
+  --dashboard-border: oklch(0.94 0.007 300);
+  --dashboard-income: oklch(0.54 0.105 177);
+  --dashboard-expense: oklch(0.59 0.175 12);
+  --dashboard-coral: oklch(0.65 0.155 28);
+  --dashboard-income-soft: oklch(0.96 0.025 177);
+  --dashboard-expense-soft: oklch(0.97 0.016 12);
+  --dashboard-coral-soft: oklch(0.97 0.018 28);
+  --dashboard-shadow: 0 4px 18px oklch(0.3 0.02 285 / 0.045);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
