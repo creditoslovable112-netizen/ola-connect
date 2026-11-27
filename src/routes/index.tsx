@@ -284,21 +284,34 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
   const markAllRead = () => { const next=items.map(item=>item.id);setReadIds(next);window.localStorage.setItem(storageKey,JSON.stringify(next)); };
   const markRead = (id:string) => { const next=Array.from(new Set([...readIds,id]));setReadIds(next);window.localStorage.setItem(storageKey,JSON.stringify(next)); };
   return <div className="nexus-notification-wrap">
-    <button className="icon-button notification-button" aria-label={`Notificações, ${unread} não lidas`} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+    <button className="icon-button notification-button" aria-label={`Notificações, ${unread} não lidas`} aria-expanded={open} onClick={() => { setOpen(value => !value); setView("alerts"); }}>
       <Bell size={18}/>{unread>0&&<i/>}<span className="notification-count">{unread>9?"9+":unread}</span>
     </button>
     {open&&<>
       <button className="notification-dismiss-layer" aria-label="Fechar notificações" onClick={()=>setOpen(false)}/>
       <section className="nexus-notification-panel" aria-label="Central de notificações">
-        <header><div><strong>Notificações</strong><small>{unread?`${unread} não lidas`:"Tudo em dia"}</small></div><button className="notification-mark-read" onClick={markAllRead} disabled={!unread}>Marcar todas como lidas</button></header>
+        <header><div><strong>{view==="history"?"Histórico de envios":"Notificações"}</strong><small>{view==="history"?"Últimos 40 avisos push":unread?`${unread} não lidas`:"Tudo em dia"}</small></div>{view==="alerts"&&<button className="notification-mark-read" onClick={markAllRead} disabled={!unread}>Marcar todas como lidas</button>}</header>
+        <div className="notification-view-tabs" role="tablist" aria-label="Visualização das notificações">
+          <button role="tab" aria-selected={view==="alerts"} className={view==="alerts"?"active":""} onClick={()=>setView("alerts")}>Alertas atuais</button>
+          <button role="tab" aria-selected={view==="history"} className={view==="history"?"active":""} onClick={()=>setView("history")}>Histórico</button>
+        </div>
         <div className="nexus-notification-list">
-          {loading?<p className="notification-empty">Buscando vencimentos e metas…</p>:!enabled?<p className="notification-empty">Ative as notificações nas configurações.</p>:!hasProAccess?<p className="notification-empty">Ative o NEXUS PRO para acompanhar alertas financeiros.</p>:items.length===0?<p className="notification-empty">Nenhum vencimento próximo ou alerta de meta.</p>:items.map(item=><article className={`nexus-notification-item ${item.tone} ${readIds.includes(item.id)?"is-read":""}`} key={item.id}>
+          {view==="history" ? historyLoading ? <p className="notification-empty">Carregando histórico…</p> : !enabled || !hasProAccess ? <p className="notification-empty">O histórico fica disponível para contas PRO com notificações ativadas.</p> : history.length===0 ? <p className="notification-empty">Ainda não há envios registrados. Os lembretes aparecerão aqui após a primeira execução do agendador.</p> : history.map(entry=>{
+            const labels:Record<string,string>={"business-account":"Conta empresarial","personal-account":"Conta pessoal","personal-financing":"Financiamento pessoal","personal-card":"Cartão pessoal"};
+            const statusLabel=entry.status==="sent"?"Enviado":entry.status==="failed"?"Falhou":entry.status==="queued"?"Na fila":entry.status;
+            const statusClass=entry.status==="sent"?"success":entry.status==="failed"?"warning":"info";
+            const stamp=entry.sent_at||entry.created_at;
+            return <article className={`nexus-notification-item history-item ${statusClass}`} key={entry.id}>
+              <span className="notification-item-icon">{entry.status==="sent"?<Check size={16}/>:entry.status==="failed"?<X size={16}/>:<Clock3 size={16}/>}</span>
+              <div className="notification-item-copy"><strong>{labels[entry.event_type]||"Lembrete financeiro"} · {statusLabel}</strong><span>{new Date(stamp).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}</span><small>{entry.status==="failed"?(entry.error_message||"Não foi possível entregar o aviso."):entry.status==="sent"?`${Number(entry.metadata?.delivered_devices||0)} dispositivo(s) receberam o aviso.`:"Aguardando processamento do envio."}</small></div>
+            </article>;
+          }) : loading?<p className="notification-empty">Buscando vencimentos e metas…</p>:!enabled?<p className="notification-empty">Ative as notificações nas configurações.</p>:!hasProAccess?<p className="notification-empty">Ative o NEXUS PRO para acompanhar alertas financeiros.</p>:items.length===0?<p className="notification-empty">Nenhum vencimento próximo ou alerta de meta.</p>:items.map(item=><article className={`nexus-notification-item ${item.tone} ${readIds.includes(item.id)?"is-read":""}`} key={item.id}>
             <span className="notification-item-icon">{item.tone==="success"?<Check size={16}/>:item.tone==="warning"?<Clock3 size={16}/>:<Target size={16}/>}</span>
             <button className="notification-item-copy" onClick={()=>{markRead(item.id);setOpen(false);onOpenGoals(item);}}><strong>{item.title}</strong><span>{item.message}</span><small>{item.detail}</small></button>
             {!readIds.includes(item.id)&&<i className="notification-unread-dot"/>}
           </article>)}
         </div>
-        <footer><button onClick={()=>{setOpen(false);onOpenGoals();}}>{environment==="personal"?"Ver finanças pessoais":"Ver metas e financeiro"} <ChevronRight size={15}/></button></footer>
+        <footer><button onClick={()=>{setOpen(false);onOpenGoals();}}>{view==="history"?"Voltar ao financeiro":environment==="personal"?"Ver finanças pessoais":"Ver metas e financeiro"} <ChevronRight size={15}/></button></footer>
       </section>
     </>}
   </div>;
