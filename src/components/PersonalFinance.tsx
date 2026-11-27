@@ -66,15 +66,18 @@ export function PersonalFinance({showNotice}:{showNotice:(message:string)=>void}
  const calendarEvents=useMemo<CalendarEvent[]>(()=>{
   const events:CalendarEvent[]=[];
   entries.filter(x=>x.status==="pending").forEach(x=>events.push({date:x.transaction_date,title:x.description,detail:"Conta pendente · "+(x.type==="income"?"Recebimento":"Despesa"),amount:Number(x.amount),kind:"bill"}));
-  financings.forEach(f=>{
-   if(Number(f.installments_paid)>=Number(f.installments_total))return;
-   const first=new Date(f.first_due_date+"T12:00:00");
-   const due=new Date(first.getFullYear(),first.getMonth()+Number(f.installments_paid),1,12);
-   due.setDate(Math.min(first.getDate(),new Date(due.getFullYear(),due.getMonth()+1,0,12).getDate()));
-   const date=due.getFullYear()+"-"+String(due.getMonth()+1).padStart(2,"0")+"-"+String(due.getDate()).padStart(2,"0");
-   events.push({date,title:f.name,detail:"Parcela "+(Number(f.installments_paid)+1)+" de "+f.installments_total,amount:Number(f.monthly_installment),kind:"financing"});
-  });
   const [year,month]=calendarMonth.slice(0,7).split("-").map(Number);
+  financings.forEach(f=>{
+   const paidCount=Number(f.installments_paid),total=Number(f.installments_total);
+   if(paidCount>=total)return;
+   const first=new Date(f.first_due_date+"T12:00:00");
+   const dueIndex=(year-first.getFullYear())*12+(month-1-first.getMonth());
+   const installmentNumber=paidCount+dueIndex+1;
+   if(dueIndex<paidCount||installmentNumber<1||installmentNumber>total)return;
+   const day=Math.min(first.getDate(),new Date(year,month,0,12).getDate());
+   const date=year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+   events.push({date,title:f.name,detail:"Parcela "+installmentNumber+" de "+total,amount:Number(f.monthly_installment),kind:"financing"});
+  });
   cards.forEach(card=>{
    const day=Math.min(Number(card.due_day),new Date(year,month,0).getDate());
    events.push({date:year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0"),title:"Fatura · "+card.name,detail:"Vencimento do cartão · confira o valor na aba Cartões",kind:"card"});
