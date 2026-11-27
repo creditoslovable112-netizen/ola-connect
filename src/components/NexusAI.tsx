@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabase";
+import { requireWorkspaceId } from "../lib/finance-data";
 import { Bot, Send, Sparkles, UserRound, LoaderCircle, RotateCcw, ChevronRight, BookOpen } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
@@ -37,13 +39,14 @@ const faq: FAQ[] = [
 ];
 
 const categories = ["Todas", ...Array.from(new Set(faq.map((item) => item.category)))];
-const welcome = "Olá! Sou o Assistente NEXUS. Escolha uma categoria e toque em uma pergunta para ver a resposta. As respostas são preparadas pela equipe e não dependem de inteligência artificial.";
+const welcome = "Olá! Sou o NEXUS AI. Posso responder dúvidas sobre o aplicativo e, no plano PRO, analisar um resumo dos seus dados financeiros reais. Escolha uma pergunta ou solicite uma análise.";
 
-export function NexusAI() {
+export function NexusAI({ environment, hasProAccess }: { environment: "business" | "personal"; hasProAccess: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", text: welcome }]);
   const [category, setCategory] = useState("Todas");
   const [selected, setSelected] = useState<FAQ | null>(null);
   const [sending, setSending] = useState(false);
+  const [analysisPeriod, setAnalysisPeriod] = useState("6");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, sending]);
@@ -58,6 +61,27 @@ export function NexusAI() {
       setMessages((current) => [...current, { role: "assistant", text: question.answer }]);
       setSending(false);
     }, 650);
+  };
+
+  const analyzeFinances = async () => {
+    if (sending || !hasProAccess) return;
+    const question = environment === "personal" ? "Analisar minhas finanças pessoais" : "Analisar minhas finanças empresariais";
+    setMessages((current) => [...current, { role: "user", text: question + " · últimos " + analysisPeriod + " meses" }]);
+    setSending(true);
+    try {
+      const workspaceId = environment === "business" ? await requireWorkspaceId() : undefined;
+      const savedCompany = environment === "business" ? window.localStorage.getItem("nexus-active-company") : null;
+      const companyId = savedCompany && savedCompany !== "all" ? savedCompany : undefined;
+      const { data, error } = await supabase.functions.invoke("nexus-ai", {
+        body: { action: "analyze-finances", environment, workspace_id: workspaceId, company_id: companyId, period_months: Number(analysisPeriod) }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.reply) throw new Error("A análise não retornou um resultado.");
+      setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+    } catch (error) {
+      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Não foi possível analisar seus dados agora." }]);
+    } finally { setSending(false); }
   };
 
   const restart = () => {
@@ -116,7 +140,7 @@ export function NexusAI() {
           <div className="nexus-ai-composer-hint">{selected ? "Pronto para enviar sua pergunta" : "Selecione uma pergunta acima para continuar"}</div>
           <button type="button" className="button-primary" onClick={send} disabled={!selected || sending}><Send size={17}/> Enviar pergunta</button>
         </div>
-        <div className="nexus-ai-privacy"><BookOpen size={15}/><span>Respostas prontas, sem IA e sem envio de perguntas para serviços externos.</span></div>
+        <div className="nexus-ai-privacy"><BookOpen size={15}/><span>As dúvidas comuns usam respostas preparadas. A análise PRO envia à IA apenas resumos agregados de valores e categorias, sem descrições individuais, senhas ou dados bancários.</span></div>
       </div>
       <div className="nexus-ai-footnote">As orientações explicam como usar o aplicativo. Os recursos disponíveis podem variar conforme a configuração da sua conta.</div>
     </section>
