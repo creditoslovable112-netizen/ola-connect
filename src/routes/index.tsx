@@ -175,7 +175,7 @@ function WorkspaceModule({title,showNotice,environment,hasProAccess}:{title:stri
 
 
 type NexusNotification = { id: string; title: string; message: string; detail: string; tone: "success" | "warning" | "info"; goalId: string };
-function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpenGoals }: { userId: string; enabled: boolean; hasProAccess: boolean; environment: "business" | "personal"; onOpenGoals: () => void }) {
+function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpenGoals }: { userId: string; enabled: boolean; hasProAccess: boolean; environment: "business" | "personal"; onOpenGoals: (item?: NexusNotification) => void }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NexusNotification[]>([]);
   const [readIds, setReadIds] = useState<string[]>([]);
@@ -252,7 +252,7 @@ function NotificationCenter({ userId, enabled, hasProAccess, environment, onOpen
         <div className="nexus-notification-list">
           {loading?<p className="notification-empty">Buscando vencimentos e metas…</p>:!enabled?<p className="notification-empty">Ative as notificações nas configurações.</p>:!hasProAccess?<p className="notification-empty">Ative o NEXUS PRO para acompanhar alertas financeiros.</p>:items.length===0?<p className="notification-empty">Nenhum vencimento próximo ou alerta de meta.</p>:items.map(item=><article className={`nexus-notification-item ${item.tone} ${readIds.includes(item.id)?"is-read":""}`} key={item.id}>
             <span className="notification-item-icon">{item.tone==="success"?<Check size={16}/>:item.tone==="warning"?<Clock3 size={16}/>:<Target size={16}/>}</span>
-            <button className="notification-item-copy" onClick={()=>{markRead(item.id);setOpen(false);onOpenGoals();}}><strong>{item.title}</strong><span>{item.message}</span><small>{item.detail}</small></button>
+            <button className="notification-item-copy" onClick={()=>{markRead(item.id);setOpen(false);onOpenGoals(item);}}><strong>{item.title}</strong><span>{item.message}</span><small>{item.detail}</small></button>
             {!readIds.includes(item.id)&&<i className="notification-unread-dot"/>}
           </article>)}
         </div>
@@ -446,7 +446,7 @@ function DashboardPage() {
             {environment === "business" && companyOptions.length > 0 && <label className="company-scope-control"><Building2 size={15}/><select aria-label="Filtrar dados por empresa" value={companyScope} onChange={(e)=>{const value=e.target.value;setCompanyScope(value);window.localStorage.setItem("nexus-active-company",value);window.location.reload();}}><option value="all">Todas as empresas · Consolidado</option>{companyOptions.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
             <label className="search-box"><Search size={16}/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar transações..." /><kbd>⌘ K</kbd></label>
             <button className="icon-button help-button" aria-label="Ajuda" onClick={() => setActive("Central de ajuda")}><CircleHelp size={18}/></button>
-            <NotificationCenter userId={session.user.id} enabled={notificationsEnabled} hasProAccess={hasProAccess} environment={environment} onOpenGoals={() => setActive(environment === "personal" ? "Gestão de Pessoa Física" : "Metas financeiras")}/>
+            <NotificationCenter userId={session.user.id} enabled={notificationsEnabled} hasProAccess={hasProAccess} environment={environment} onOpenGoals={(item) => { if (environment === "personal") { setActive("Gestão de Pessoa Física"); return; } if (item?.id.startsWith("transaction-due:")) { setActive(item.title.toLowerCase().includes("recebimento") ? "Contas a receber" : "Contas a pagar"); return; } setActive("Metas financeiras"); }}/>
             <div className="top-avatar" aria-label="Perfil da conta">{(session.user.email || "NF").slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
