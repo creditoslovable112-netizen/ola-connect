@@ -108,3 +108,15 @@
   .dashboard-extra-metrics .summary-card:hover,
   .dashboard-insights-grid > .panel:hover { transform: none; }
 }
+
+/* Forecast card: distinguish calculated future balance from current cash balance */
+.dashboard-extra-metrics .forecast-card {
+  border-color: #d8e8fb;
+  background: linear-gradient(145deg, #ffffff 0%, #f1f7ff 100%);
+}
+.dashboard-extra-metrics .forecast-card > span { color: #52779e; }
+.dashboard-extra-metrics .forecast-card > strong { color: #2867a5; }
+.dashboard-extra-metrics .forecast-card small { color: #6d89a7; }
+@media (max-width: 760px) {
+  .dashboard-extra-metrics .forecast-card { grid-column: 1 / -1; }
+}
