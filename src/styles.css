@@ -1812,3 +1812,10 @@ input, select, textarea {
 .personal-budget-chart p { margin:4px 0 10px; color:var(--muted-foreground,#68756f); font-size:11px; }
 .personal-budget-chart-area { width:100%; height:230px; min-width:0; }
 @media(max-width:560px) { .personal-budget-chart { padding:10px 6px; } .personal-budget-chart-area { height:210px; } }
+
+
+/* Sinalização de limites de orçamento próximos do teto */
+.personal-progress i.near-budget { background:#e5a12d; }
+.budget-status-ok { color:#16865a; }
+.budget-status-near { color:#a66a08; font-weight:700; }
+.budget-status-over { color:#c43f45; font-weight:700; }
