@@ -308,6 +308,7 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
   const pending = data.transactions.filter((item) => item.status !== "paid" && item.status !== "cancelled");
   const pendingIncome = pending.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
   const pendingExpense = pending.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+  const projectedBalance = balance + pendingIncome - pendingExpense;
   const overdue = pending.filter((item) => item.due_date && item.due_date < today());
   const cutoff = new Date(now.getFullYear(), now.getMonth() - Number(period) + 1, 1);
   const periodTransactions = paid.filter((item) => {
@@ -345,6 +346,7 @@ export function SupabaseDashboard({ showNotice }: { showNotice: Notice }) {
         <div className="summary-card"><span>A pagar</span><strong>{money(pendingExpense)}</strong><small><TrendingDown size={13}/> {pending.filter((item) => item.type === "expense").length} contas em aberto</small></div>
         <div className="summary-card"><span>Contas vencidas</span><strong>{overdue.length}</strong><small>Precisam de atenção</small></div>
         <div className="summary-card"><span>Movimentações</span><strong>{data.transactions.length}</strong><small>Registros na sua conta</small></div>
+        <div className="summary-card forecast-card"><span>Saldo projetado</span><strong>{money(projectedBalance)}</strong><small>Saldo atual + a receber − a pagar</small></div>
       </section>
       <section className="panel dashboard-chart-panel">
         <div className="panel-heading dashboard-chart-heading"><div><h2>Evolução financeira</h2><p>Comparativo de receitas e despesas pagas</p></div>
