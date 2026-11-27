@@ -34,7 +34,7 @@ const faq: FAQ[] = [
   { category: "Configurações", question: "Como ativo as notificações?", answer: "Na página Configurações, marque ou desmarque Receber notificações no aplicativo e salve as preferências. A disponibilidade de alertas específicos depende dos recursos de notificação habilitados na plataforma." },
   { category: "Privacidade e segurança", question: "Onde leio os termos e a política de privacidade?", answer: "Acesse Privacidade e termos pelo menu Plataforma. Lá você encontra os documentos e as opções de gerenciamento de consentimento disponíveis." },
   { category: "Privacidade e segurança", question: "Como protejo minha conta?", answer: "Use uma senha exclusiva e forte, não compartilhe códigos de acesso e encerre a sessão em dispositivos compartilhados. Nunca envie senha, CPF, número de cartão ou dados bancários nesta conversa de ajuda." },
-  { category: "Ajuda", question: "Este assistente usa inteligência artificial?", answer: "Não. Este chat funciona com uma biblioteca de perguntas e respostas preparadas pela equipe do NEXUS. Quando você escolhe uma pergunta, o aplicativo exibe uma breve animação e apresenta a resposta correspondente. Nenhuma IA é chamada para responder." },
+  { category: "Ajuda", question: "Este assistente usa inteligência artificial?", answer: "Não. As perguntas frequentes usam respostas preparadas pela equipe. A análise financeira do plano PRO usa IA e considera somente um resumo agregado dos dados financeiros autorizados." },
   { category: "Ajuda", question: "Posso escrever uma pergunta diferente?", answer: "Por enquanto, este assistente responde às perguntas disponíveis na lista. Escolha uma categoria para encontrar assuntos relacionados e selecione a pergunta que mais se aproxima da sua dúvida. Novas perguntas e respostas podem ser adicionadas à biblioteca." },
 ];
 
@@ -123,6 +123,7 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
         </div>
 
         <div className="nexus-ai-question-area">
+          {hasProAccess && <div className="nexus-ai-analysis-box"><div><strong>Análise financeira com IA</strong><p>Use um resumo agregado dos dados do ambiente {environment === "personal" ? "pessoal" : "empresarial"} para identificar tendências e riscos.</p></div><select aria-label="Período da análise" value={analysisPeriod} onChange={event=>setAnalysisPeriod(event.target.value)}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select><button type="button" className="button-primary" onClick={analyzeFinances} disabled={sending}><Sparkles size={16}/> Analisar meus dados</button></div>}
           <div className="nexus-ai-question-title"><Sparkles size={16}/> Escolha uma pergunta</div>
           <div className="nexus-ai-categories" aria-label="Categorias de perguntas">
             {categories.map((item) => <button type="button" key={item} className={category === item ? "is-selected" : ""} onClick={() => { setCategory(item); setSelected(null); }}>{item}</button>)}
