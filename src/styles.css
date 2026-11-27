@@ -1768,3 +1768,10 @@ input, select, textarea {
 .nexus-ai-analysis-box p { margin:4px 0 0; color:var(--muted-foreground,#68756f); font-size:12px; }
 .nexus-ai-analysis-box select { min-height:40px; border:1px solid var(--border,#dfe7e2); border-radius:9px; padding:8px; background:var(--background,#fff); color:var(--foreground,#17211d); }
 @media(max-width:700px) { .nexus-ai-analysis-box { grid-template-columns:1fr; } .nexus-ai-analysis-box button { width:100%; justify-content:center; } }
+
+.wealth-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wealth-metrics article:first-child{border-color:#93c5fd;background:linear-gradient(145deg,#eff6ff,#fff)}
+.wealth-columns .personal-list h2{display:flex;align-items:center;gap:8px}
+.wealth-columns .personal-financing-card .personal-section-title{align-items:flex-start}
+@media(max-width:900px){.wealth-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.wealth-metrics{grid-template-columns:1fr}}
