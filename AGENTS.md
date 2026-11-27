@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Resolve PRO access only through the authenticated `public.has_active_pro_subscription()` bridge to the existing private rule; keep its fixed boolean result, empty search path, no caller-supplied identity, no anonymous execution and no private-schema grants because this preserves authorization and expiry without exposing financial records. Its authenticated SECURITY DEFINER linter warning is intentional for this narrowly scoped bridge.
+- Share one `useProAccess` result between module gates and the subscription screen, revalidating on session credentials, navigation, focus and a bounded interval because independent or stale client state must not override database entitlement.

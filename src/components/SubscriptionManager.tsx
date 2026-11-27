@@ -24,10 +24,13 @@ const planDescriptions: Record<string, string> = {
   pro: "Todos os recursos financeiros do NEXUS em um único plano mensal.",
 };
 
-export function SubscriptionManager({ showNotice }: { showNotice: (message: string) => void }) {
+export function SubscriptionManager({ showNotice, hasProAccess, proAccessLoading }: {
+  showNotice: (message: string) => void;
+  hasProAccess: boolean;
+  proAccessLoading: boolean;
+}) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [hasProAccess, setHasProAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -35,13 +38,11 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
   useEffect(() => {
     let active = true;
     void (async () => {
-      const [{ data: planRows, error: plansError }, { data: userData }, { data: accessData, error: accessError }] = await Promise.all([
+      const [{ data: planRows, error: plansError }, { data: userData }] = await Promise.all([
         supabase.from("subscription_plans").select("id,slug,name,price_brl,features,limits").eq("slug", "pro").eq("is_active", true).order("display_order"),
         supabase.auth.getUser(),
-        supabase.rpc("has_active_pro_subscription"),
       ]);
       if (plansError) showNotice("Não foi possível carregar o plano: " + plansError.message);
-      if (accessError) showNotice("Não foi possível validar o acesso PRO: " + accessError.message);
       const userId = userData.user?.id;
       let current: Subscription | null = null;
       if (userId) {
@@ -58,7 +59,6 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
       if (active) {
         setPlans((planRows || []) as Plan[]);
         setSubscription(current);
-        setHasProAccess(!accessError && accessData === true);
         setLoading(false);
       }
     })().catch((error) => {
@@ -128,7 +128,7 @@ export function SubscriptionManager({ showNotice }: { showNotice: (message: stri
     }
   };
 
-  if (loading) return <section className="panel payable-list-panel"><p>Verificando sua assinatura mensal...</p></section>;
+  if (loading || proAccessLoading) return <section className="panel payable-list-panel"><p>Verificando sua assinatura mensal...</p></section>;
 
   return (
     <div className="workspace-module subscription-page">
