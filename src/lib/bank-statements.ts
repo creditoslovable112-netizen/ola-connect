@@ -14,7 +14,7 @@ function parseDate(value: string): string | null {
   if (!raw) return null;
   const ofx = raw.match(/^(\d{4})(\d{2})(\d{2})/);
   if (ofx) return `${ofx[1]}-${ofx[2]}-${ofx[3]}`;
-  const br = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+  const br = raw.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
   if (br) return `${br[3]!}-${br[2]!.padStart(2, "0")}-${br[1]!.padStart(2, "0")}`;
   const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
