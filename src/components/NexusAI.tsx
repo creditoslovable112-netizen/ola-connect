@@ -41,6 +41,74 @@ const faq: FAQ[] = [
 const categories = ["Todas", ...Array.from(new Set(faq.map((item) => item.category)))];
 const welcome = "Olá! Sou o NEXUS AI. Escolha uma pergunta frequente ou digite sua própria dúvida. No plano PRO, também posso analisar um resumo dos seus dados financeiros reais.";
 
+const streamNexusAI = async (
+  body: Record<string, unknown>,
+  onText: (text: string) => void,
+): Promise<void> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
+
+  const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"] || "https://obaxshuklmrwjplvvhpd.supabase.co";
+  const publishableKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || "sb_publishable_lVpoQYe9lwg2FQv_5xCjHQ_vsKOVa1u";
+  const response = await fetch(`${supabaseUrl}/functions/v1/nexus-ai`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": publishableKey,
+      "Accept": "text/event-stream",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let message = raw || "Não foi possível consultar o NEXUS AI.";
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.error === "string") message = parsed.error;
+    } catch { /* mantém a mensagem original */ }
+    throw new Error(message);
+  }
+  if (!response.body) throw new Error("O navegador não conseguiu iniciar a resposta em tempo real.");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let receivedText = "";
+
+  const processLine = (line: string) => {
+    if (!line.startsWith("data:")) return;
+    const payload = line.slice(5).trim();
+    if (!payload || payload === "[DONE]") return;
+    const event = JSON.parse(payload);
+    const chunk = (event?.candidates?.[0]?.content?.parts ?? [])
+      .map((part: { text?: string }) => part.text ?? "")
+      .join("");
+    if (chunk) {
+      receivedText += chunk;
+      onText(chunk);
+    }
+    if (event?.error?.message) throw new Error(event.error.message);
+  };
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+      const lines = buffer.split("\\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) processLine(line.replace(/\\r$/, ""));
+      if (done) break;
+    }
+    if (buffer.trim()) processLine(buffer.replace(/\\r$/, ""));
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!receivedText.trim()) throw new Error("O assistente não retornou texto. Tente novamente.");
+};
+
 export function NexusAI({ environment, hasProAccess }: { environment: "business" | "personal"; hasProAccess: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", text: welcome }]);
   const [category, setCategory] = useState("Todas");
@@ -64,22 +132,39 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
     }, 650);
   };
 
+  const appendStreamText = (chunk: string) => {
+    setMessages((current) => {
+      const next = [...current];
+      const lastIndex = next.length - 1;
+      const last = next[lastIndex];
+      if (last?.role === "assistant") next[lastIndex] = { ...last, text: last.text + chunk };
+      else next.push({ role: "assistant", text: chunk });
+      return next;
+    });
+  };
+
+  const showStreamError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : "Não foi possível consultar o NEXUS AI agora.";
+    setMessages((current) => {
+      const next = [...current];
+      const lastIndex = next.length - 1;
+      const last = next[lastIndex];
+      if (last?.role === "assistant" && !last.text) next[lastIndex] = { ...last, text: message };
+      else next.push({ role: "assistant", text: message });
+      return next;
+    });
+  };
+
   const sendFreeMessage = async () => {
     const message = freeMessage.trim();
     if (!message || sending) return;
-    setMessages((current) => [...current, { role: "user", text: message }]);
+    setMessages((current) => [...current, { role: "user", text: message }, { role: "assistant", text: "" }]);
     setFreeMessage("");
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("nexus-ai", {
-        body: { action: "chat", message }
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (!data?.reply) throw new Error("O assistente não retornou uma resposta.");
-      setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+      await streamNexusAI({ action: "chat", message }, appendStreamText);
     } catch (error) {
-      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Não foi possível consultar o NEXUS AI agora." }]);
+      showStreamError(error);
     } finally {
       setSending(false);
     }
@@ -88,21 +173,21 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
   const analyzeFinances = async () => {
     if (sending || !hasProAccess) return;
     const question = environment === "personal" ? "Analisar minhas finanças pessoais" : "Analisar minhas finanças empresariais";
-    setMessages((current) => [...current, { role: "user", text: question + " · últimos " + analysisPeriod + " meses" }]);
+    setMessages((current) => [...current, { role: "user", text: question + " · últimos " + analysisPeriod + " meses" }, { role: "assistant", text: "" }]);
     setSending(true);
     try {
       const workspaceId = environment === "business" ? await requireWorkspaceId() : undefined;
       const savedCompany = environment === "business" ? window.localStorage.getItem("nexus-active-company") : null;
       const companyId = savedCompany && savedCompany !== "all" ? savedCompany : undefined;
-      const { data, error } = await supabase.functions.invoke("nexus-ai", {
-        body: { action: "analyze-finances", environment, workspace_id: workspaceId, company_id: companyId, period_months: Number(analysisPeriod) }
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (!data?.reply) throw new Error("A análise não retornou um resultado.");
-      setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+      await streamNexusAI({
+        action: "analyze-finances",
+        environment,
+        workspace_id: workspaceId,
+        company_id: companyId,
+        period_months: Number(analysisPeriod),
+      }, appendStreamText);
     } catch (error) {
-      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Não foi possível analisar seus dados agora." }]);
+      showStreamError(error instanceof Error ? error : new Error("Não foi possível analisar seus dados agora."));
     } finally { setSending(false); }
   };
 
