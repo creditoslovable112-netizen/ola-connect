@@ -59,7 +59,7 @@ export function AdvancedManagement({ mode, module, showNotice }: { mode: Mode; m
       const adminAccess = ["owner", "admin"].includes(String(membership?.role || ""));
       setCanManageSensitive(adminAccess);
       const savedCompany = typeof window !== "undefined" ? window.localStorage.getItem("nexus-active-company") : null;
-      const activeCompany = savedCompany && savedCompany !== "all" ? savedCompany : (companyRows.length === 1 ? companyRows[0].id : "");
+      const activeCompany = savedCompany && savedCompany !== "all" ? savedCompany : (companyRows.length === 1 ? companyRows[0]?.id ?? "" : "");
       setCompanyId(activeCompany);
       if (mode === "personal") {
         const [assetResult, financingResult, paymentResult, accountResult, entryResult] = await Promise.all([
