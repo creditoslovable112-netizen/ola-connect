@@ -163,7 +163,7 @@ Deno.serve(async (req: Request) => {
           }]
         },
         contents: [{ role: "user", parts: [{ text: message }] }],
-        generationConfig: { temperature: 0.45, maxOutputTokens: 650 },
+        generationConfig: { temperature: 0.35, maxOutputTokens: 650, thinkingConfig: { thinkingLevel: "low" } },
       }),
     });
 
