@@ -39,7 +39,7 @@ const faq: FAQ[] = [
 ];
 
 const categories = ["Todas", ...Array.from(new Set(faq.map((item) => item.category)))];
-const welcome = "Olá! Sou o NEXUS AI. Posso responder dúvidas sobre o aplicativo e, no plano PRO, analisar um resumo dos seus dados financeiros reais. Escolha uma pergunta ou solicite uma análise.";
+const welcome = "Olá! Sou o NEXUS AI. Escolha uma pergunta frequente ou digite sua própria dúvida. No plano PRO, também posso analisar um resumo dos seus dados financeiros reais.";
 
 export function NexusAI({ environment, hasProAccess }: { environment: "business" | "personal"; hasProAccess: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", text: welcome }]);
@@ -47,6 +47,7 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
   const [selected, setSelected] = useState<FAQ | null>(null);
   const [sending, setSending] = useState(false);
   const [analysisPeriod, setAnalysisPeriod] = useState("6");
+  const [freeMessage, setFreeMessage] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, sending]);
@@ -61,6 +62,27 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
       setMessages((current) => [...current, { role: "assistant", text: question.answer }]);
       setSending(false);
     }, 650);
+  };
+
+  const sendFreeMessage = async () => {
+    const message = freeMessage.trim();
+    if (!message || sending) return;
+    setMessages((current) => [...current, { role: "user", text: message }]);
+    setFreeMessage("");
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("nexus-ai", {
+        body: { action: "chat", message }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.reply) throw new Error("O assistente não retornou uma resposta.");
+      setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+    } catch (error) {
+      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Não foi possível consultar o NEXUS AI agora." }]);
+    } finally {
+      setSending(false);
+    }
   };
 
   const analyzeFinances = async () => {
@@ -138,8 +160,16 @@ export function NexusAI({ environment, hasProAccess }: { environment: "business"
           {selected && <div className="nexus-ai-selected"><span>Pergunta selecionada</span><strong>{selected.question}</strong></div>}
         </div>
         <div className="nexus-ai-composer">
-          <div className="nexus-ai-composer-hint">{selected ? "Pronto para enviar sua pergunta" : "Selecione uma pergunta acima para continuar"}</div>
-          <button type="button" className="button-primary" onClick={send} disabled={!selected || sending}><Send size={17}/> Enviar pergunta</button>
+          <textarea
+            rows={2}
+            maxLength={1200}
+            value={freeMessage}
+            onChange={(event) => setFreeMessage(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendFreeMessage(); } }}
+            placeholder="Digite sua pergunta para o NEXUS AI..."
+            aria-label="Digite sua pergunta para o NEXUS AI"
+          />
+          <button type="button" className="button-primary" onClick={sendFreeMessage} disabled={!freeMessage.trim() || sending} aria-label="Enviar mensagem"><Send size={17}/></button>
         </div>
         <div className="nexus-ai-privacy"><BookOpen size={15}/><span>As dúvidas comuns usam respostas preparadas. A análise PRO envia à IA apenas resumos agregados de valores e categorias, sem descrições individuais, senhas ou dados bancários.</span></div>
       </div>
